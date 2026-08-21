@@ -20,8 +20,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Detect local orphan development branches
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python -m scripts.orphan_branch_watch \
             --repo "${{ github.repository }}" \
             --base "origin/${{ github.event.repository.default_branch || 'main' }}"
-

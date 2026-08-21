@@ -1,0 +1,16 @@
+{
+  "issue": 4,
+  "red": {
+    "commit": "3a871ee1a2396fcb61c0ccb6b9c4c02663156134",
+    "command": "python -m pytest tests/test_workflows.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "8a4d0a294b95a8c12d3c58057fb3c75b080fbede"
+  },
+  "green": {
+    "commit": "22c00658b200b40c6840d0cb35e1f5bb6bc85a86",
+    "command": "python -m pytest tests/test_workflows.py",
+    "exit_code": 0
+  }
+}
