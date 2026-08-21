@@ -1,0 +1,16 @@
+{
+  "issue": 30,
+  "red": {
+    "commit": "7524e5f6f99a0e354f9735c1c8fc91107cb053f6",
+    "command": "python -m pytest tests/test_documentation_curation.py tests/deployment/test_phase3_deployment.py tests/phase4/test_phase4_scenarios.py",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "daff02581ebbe8497444a7c2fec7578390a4bad5"
+  },
+  "green": {
+    "commit": "cd8c1d5f4292f781d8cc57be25370d65d5b5e7a7",
+    "command": "python -m pytest",
+    "exit_code": 0
+  }
+}
