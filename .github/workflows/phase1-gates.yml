@@ -75,5 +75,5 @@ jobs:
           python -m simple_flow_gates.cli validate-pr \
             --event-path "$GITHUB_EVENT_PATH" \
             --issue-body issue_body.md \
-            --base-ref "origin/${{ github.base_ref }}" \
+            --base-ref "${{ github.event.pull_request.base.sha }}" \
             $tdd_arg
