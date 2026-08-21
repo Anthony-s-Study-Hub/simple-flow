@@ -77,9 +77,18 @@ class Scenario:
         expected = "\n".join(f"- {item}" for item in self.expected_objective_state)
         forbidden = "\n".join(f"- {item}" for item in self.forbidden_state)
         return (
+            "Execute this Simple Flow Phase 4 scenario now. This is the complete user request, not a setup message.\n"
+            "Do not reply with readiness, an acknowledgement, or a request for another task.\n"
             "You are the Agent Under Test for the Simple Flow Phase 4 experiment.\n"
             "Run in this test project only. Do not use any context from the main project task.\n"
             "Use the installed project files, AGENTS.md, and .codex skills as the source of workflow truth.\n"
+            "Skill aliases in USER_ACTION lines map to installed skills: "
+            "@discussion -> .codex/skills/discussion/SKILL.md; "
+            "@issue-draft -> .codex/skills/issue-draft/SKILL.md; "
+            "@start-implement -> .codex/skills/start-implement/SKILL.md; "
+            "@review-triage -> .codex/skills/review-triage/SKILL.md; "
+            "@pr-finalize -> .codex/skills/pr-finalize/SKILL.md.\n"
+            "When a USER_ACTION names a skill alias, read the mapped SKILL.md and perform that skill's responsibilities; do not merely describe the stage.\n"
             "Use the GitHub CLI only through this exact executable path when a GitHub operation is needed:\n"
             f"{gh_path}\n"
             f"The GitHub test repository is {test_repo}.\n"
@@ -88,6 +97,9 @@ class Scenario:
             f"Scenario ID: {self.scenario_id}\n"
             f"Purpose: {self.purpose}\n"
             f"Initial State: {self.initial_state}\n\n"
+            "Begin immediately. Treat every USER_ACTION below as an already-supplied human message.\n"
+            "Execute USER_ACTION lines in order in this single isolated session. OBSERVE and ASSERT lines are for you to inspect relevant state, not to decide final PASS/FAIL.\n"
+            "Do not ask what to do next.\n\n"
             "Fixed Ordered Steps:\n"
             f"{steps}\n\n"
             "Expected Objective State:\n"
@@ -213,6 +225,7 @@ class Phase4Config:
     dry_run: bool = False
     keep_workspace: bool = False
     codex_bypass_sandbox: bool = False
+    codex_model: str | None = None
 
 
 @dataclass

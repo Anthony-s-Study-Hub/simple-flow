@@ -150,7 +150,10 @@ _SCENARIOS = (
         "Issue-Draft creates a FEATURE Canonical Draft and stops.",
         (
             _ua("A02-U1", '@discussion "Health endpoint should return HTTP 200 and ok JSON."'),
-            _ua("A02-U2", "@issue-draft FEATURE with roadmap target UNMAPPED"),
+            _ua(
+                "A02-U2",
+                "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'; Requirements='Return HTTP 200 and JSON status ok from the health endpoint'; Acceptance Criteria='Automated test proves the health response returns status ok'; Scope='src/simple_flow_test_app/'; Out of Scope='Authentication, routing framework changes, deployment changes'; Documentation Impact='None'; Roadmap Target='UNMAPPED'",
+            ),
             _obs("A02-O1", "Read Canonical Draft JSON and Markdown."),
             _assert("A02-A1", "FEATURE draft exists with fixed issue contract fields and no GitHub artifacts."),
         ),

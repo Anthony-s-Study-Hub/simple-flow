@@ -31,6 +31,7 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=getattr(args, "dry_run", False),
         keep_workspace=getattr(args, "keep_workspace", False),
         codex_bypass_sandbox=getattr(args, "codex_bypass_sandbox", False),
+        codex_model=getattr(args, "codex_model", None),
     )
 
     if args.command == "list-scenarios":
@@ -88,6 +89,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     run_parser.add_argument("--dry-run", action="store_true")
     run_parser.add_argument("--keep-workspace", action="store_true")
     run_parser.add_argument("--codex-bypass-sandbox", action="store_true")
+    run_parser.add_argument("--codex-model")
 
     subparsers.add_parser("list-scenarios", parents=[parent])
     subparsers.add_parser("validate", parents=[parent])

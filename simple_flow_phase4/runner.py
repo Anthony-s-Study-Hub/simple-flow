@@ -125,13 +125,41 @@ class Phase4Runner:
                 repo_full_name=prepared.repo_full_name,
                 config=self.config,
             )
-            codex_result = self._run_codex(prepared.path, scenario)
+            codex_result = self._run_codex(prepared.path, prepared.repo_full_name, scenario)
             final_state = collect_state(
                 project_path=prepared.path,
                 repo_full_name=prepared.repo_full_name,
                 config=self.config,
                 codex_result=codex_result,
             )
+            infrastructure_blocker = _codex_infrastructure_blocker(codex_result)
+            if infrastructure_blocker:
+                evidence = {
+                    "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
+                    "codex_command": codex_result.to_json_data(),
+                    "harness_worktree_dirty": _worktree_dirty(self.config.source_root),
+                }
+                return ScenarioResult(
+                    scenario_id=scenario.scenario_id,
+                    status=Outcome.BLOCKED,
+                    prompt_reference=scenario.prompt_reference,
+                    expected_result=scenario.to_json_data(),
+                    observed_result=final_state.get("metrics", {}),
+                    evidence=evidence,
+                    failure_reason=infrastructure_blocker,
+                    initial_state=initial_state,
+                    final_state=final_state,
+                    github_test_repo=prepared.repo_full_name,
+                    relevant_issues=final_state.get("github", {}).get("issues", []),
+                    relevant_prs=final_state.get("github", {}).get("pull_requests", []),
+                    ci_result=_ci_summary(final_state),
+                    codex_cli_version=codex_cli_version,
+                    workflow_package_version=workflow_package_version,
+                    harness_commit_sha=harness_commit_sha,
+                    execution_timestamp=_now(),
+                    objective_rule_results=[],
+                    post_run_agentic_diagnosis=_diagnose(Outcome.BLOCKED, infrastructure_blocker),
+                )
             status, rule_results, failure_reason = evaluate_scenario(scenario, final_state)
             diagnosis = _diagnose(status, failure_reason)
             evidence = {
@@ -185,38 +213,71 @@ class Phase4Runner:
                 if scenario_path.exists():
                     self.environment._safe_reset_local_workspace(scenario_path)
 
-    def _run_codex(self, project_path: Path, scenario: Scenario) -> CommandResult:
-        output_path = self.config.workspace_root / f"{scenario.scenario_id}-last-message.txt"
-        prompt = scenario.fixed_prompt(gh_path=self.config.gh_path, test_repo=self.config.test_repo_url)
-        command = [
-            self.config.codex_command,
-            "exec",
-            "--ephemeral",
-            "--json",
-            "--output-last-message",
-            str(output_path),
-            "-C",
-            str(project_path),
-        ]
+    def _run_codex(self, project_path: Path, repo_full_name: str, scenario: Scenario) -> CommandResult:
+        session_id = ""
+        results: list[tuple[str, CommandResult]] = []
+        variables: dict[str, str] = {}
+
+        for step in scenario.ordered_steps:
+            if step.step_type.value != "USER_ACTION":
+                continue
+            variables.update(_mechanical_variables(project_path, repo_full_name, self.config))
+            action_text = _substitute_variables(step.text, variables)
+            prompt = _user_action_prompt(
+                scenario=scenario,
+                action_ref=step.ref,
+                action_text=action_text,
+                first_action=not session_id,
+                gh_path=self.config.gh_path,
+                test_repo=self.config.test_repo_url,
+            )
+            command = self._codex_command(project_path, prompt, session_id)
+            result = run_command(
+                command,
+                cwd=project_path,
+                timeout_seconds=self.config.timeout_seconds,
+            )
+            results.append((step.ref, result))
+            session_id = session_id or _extract_thread_id(result.stdout)
+            if result.exit_code != 0:
+                break
+
+        exit_code = 0 if all(result.exit_code == 0 for _, result in results) else 1
+        stdout = "\n\n".join(
+            f"=== {ref} STDOUT ===\n{result.stdout}" for ref, result in results
+        )
+        stderr = "\n\n".join(
+            f"=== {ref} STDERR ===\n{result.stderr}" for ref, result in results if result.stderr
+        )
+        return CommandResult(
+            command=("codex-scenario", scenario.scenario_id),
+            cwd=str(project_path),
+            exit_code=exit_code,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
+    def _codex_command(self, project_path: Path, prompt: str, session_id: str) -> list[str]:
+        if session_id:
+            command = [self.config.codex_command, "exec", "resume", "--json"]
+        else:
+            command = [
+                self.config.codex_command,
+                "exec",
+                "--json",
+                "-C",
+                str(project_path),
+            ]
         if self.config.codex_bypass_sandbox:
             command.append("--dangerously-bypass-approvals-and-sandbox")
         else:
             command.append("--full-auto")
+        if self.config.codex_model:
+            command.extend(["--model", self.config.codex_model])
+        if session_id:
+            command.append(session_id)
         command.append(prompt)
-        result = run_command(
-            command,
-            cwd=project_path,
-            timeout_seconds=self.config.timeout_seconds,
-        )
-        if output_path.exists():
-            result = CommandResult(
-                command=result.command,
-                cwd=result.cwd,
-                exit_code=result.exit_code,
-                stdout=result.stdout + "\n\nLAST MESSAGE:\n" + output_path.read_text(encoding="utf-8"),
-                stderr=result.stderr,
-            )
-        return result
+        return command
 
     def _dry_run_result(
         self,
@@ -361,6 +422,136 @@ def _ci_summary(state: dict[str, object]) -> dict[str, object]:
         "summary": "observed" if rollups else "not observed",
         "pull_request_checks": rollups,
     }
+
+
+def _user_action_prompt(
+    *,
+    scenario: Scenario,
+    action_ref: str,
+    action_text: str,
+    first_action: bool,
+    gh_path: str,
+    test_repo: str,
+) -> str:
+    prefix = (
+        "Start a new isolated Phase 4 scenario session."
+        if first_action
+        else "Continue the same isolated Phase 4 scenario session."
+    )
+    return (
+        f"USER_ACTION TO EXECUTE NOW: {action_text}\n"
+        "This is a human-supplied workflow action. Execute this action now; do not ask for the action again.\n\n"
+        f"{prefix}\n"
+        "Execute exactly this one fixed USER_ACTION. Do not execute future USER_ACTIONs until they are sent in a later turn.\n"
+        "Do not ask what to do next. Stop when the invoked skill stage says STOP.\n"
+        "The harness will perform OBSERVE and ASSERT steps after Codex exits; do not decide PASS or FAIL.\n"
+        "Run in this test project only and use AGENTS.md plus installed .codex skills as workflow truth.\n"
+        "Skill aliases map as follows: @discussion -> .codex/skills/discussion/SKILL.md; "
+        "@issue-draft -> .codex/skills/issue-draft/SKILL.md; "
+        "@start-implement -> .codex/skills/start-implement/SKILL.md; "
+        "@review-triage -> .codex/skills/review-triage/SKILL.md; "
+        "@pr-finalize -> .codex/skills/pr-finalize/SKILL.md.\n"
+        f"Use this GitHub CLI executable for GitHub operations: {gh_path}\n"
+        f"GitHub test repository: {test_repo}\n"
+        f"Scenario ID: {scenario.scenario_id}\n"
+        f"Scenario Purpose: {scenario.purpose}\n"
+        f"Action Reference: {action_ref}\n"
+    )
+
+
+def _substitute_variables(text: str, variables: dict[str, str]) -> str:
+    for name, value in variables.items():
+        text = text.replace("{{" + name + "}}", value)
+    return text
+
+
+def _extract_thread_id(stdout: str) -> str:
+    for line in stdout.splitlines():
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") == "thread.started" and event.get("thread_id"):
+            return str(event["thread_id"])
+    return ""
+
+
+def _mechanical_variables(project_path: Path, repo_full_name: str, config: Phase4Config) -> dict[str, str]:
+    variables: dict[str, str] = {}
+    drafts_dir = project_path / ".simple-flow" / "drafts"
+    draft_ids = sorted(path.stem for path in drafts_dir.glob("DRAFT-*.json")) if drafts_dir.exists() else []
+    if draft_ids:
+        variables["draft_id"] = draft_ids[-1]
+
+    issues = _gh_json(
+        [
+            config.gh_path,
+            "issue",
+            "list",
+            "--repo",
+            repo_full_name,
+            "--state",
+            "all",
+            "--json",
+            "number",
+            "--limit",
+            "100",
+        ],
+        project_path,
+    )
+    if issues:
+        variables["issue_number"] = str(max(int(item["number"]) for item in issues if "number" in item))
+
+    prs = _gh_json(
+        [
+            config.gh_path,
+            "pr",
+            "list",
+            "--repo",
+            repo_full_name,
+            "--state",
+            "all",
+            "--json",
+            "number,headRefName",
+            "--limit",
+            "100",
+        ],
+        project_path,
+    )
+    if prs:
+        latest_pr = max((item for item in prs if "number" in item), key=lambda item: int(item["number"]))
+        variables["pr_number"] = str(latest_pr["number"])
+        if latest_pr.get("headRefName"):
+            variables["branch_name"] = str(latest_pr["headRefName"])
+    return variables
+
+
+def _gh_json(command: list[str], cwd: Path) -> list[dict[str, object]]:
+    result = run_command(command, cwd=cwd, timeout_seconds=60)
+    if result.exit_code != 0 or not result.stdout.strip():
+        return []
+    data = json.loads(result.stdout)
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict)]
+
+
+def _codex_infrastructure_blocker(result: CommandResult) -> str:
+    if result.exit_code == 0:
+        return ""
+    output = f"{result.stdout}\n{result.stderr}".lower()
+    markers = (
+        "requires a newer version of codex",
+        "failed to refresh available models",
+        "failed to load models cache",
+        "no last agent message",
+    )
+    for marker in markers:
+        if marker in output:
+            return "Codex CLI infrastructure blocker: " + marker
+    return ""
 
 
 def _diagnose(status: Outcome, failure_reason: str) -> dict[str, str]:
