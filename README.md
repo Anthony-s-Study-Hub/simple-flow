@@ -12,6 +12,10 @@ The phase 1 implementation lives in `simple_flow_gates` and validates:
 - deterministic file scope and documentation impact rules
 - orphan development branches without open pull requests
 
+Phase 2 adds `AGENTS.md`, five Codex skill entrypoints under `skills/`, and
+deterministic helpers in `simple_flow_agent` for draft handoff, review triage,
+start-implement path selection, and PR-finalize prechecks.
+
 Run the local test suite:
 
 ```powershell
@@ -23,4 +27,3 @@ Run the gate CLI against a GitHub Actions event payload:
 ```powershell
 python -m simple_flow_gates.cli validate-pr --event-path $env:GITHUB_EVENT_PATH
 ```
-
