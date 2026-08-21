@@ -124,7 +124,7 @@ def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:
     assert remote_smoke.fixture_draft is not None
     assert remote_smoke.fixture_draft.work_type == "DOCUMENTATION"
     assert remote_smoke.fixture_draft.fields["Affected Project Documents"] == [
-        "docs/deployment/usage-guide.md"
+        "docs/simple-flow/usage-guide.md"
     ]
     assert "harness-seeded" in remote_smoke.initial_state.lower()
 

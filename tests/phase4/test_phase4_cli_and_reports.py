@@ -6,8 +6,9 @@ import subprocess
 import sys
 
 from simple_flow_phase4.cli import DEFAULT_CODEX_MODEL, _parse_args
+from simple_flow_phase4.models import CommandResult
 from simple_flow_phase4.reports import compact_report_data, render_markdown
-from simple_flow_phase4.runner import Phase4Runner
+from simple_flow_phase4.runner import Phase4Runner, _codex_infrastructure_blocker
 from simple_flow_phase4.scenarios import SMOKE_SCENARIO_IDS
 from simple_flow_phase4.transcript import compact_codex_response, compact_fixture_prompt
 
@@ -85,6 +86,18 @@ def test_phase4_defaults_use_short_smoke_gate_and_mini_model() -> None:
     assert "mini" in DEFAULT_CODEX_MODEL
     assert args.smoke_gate is True
     assert args.smoke_only is False
+
+
+def test_phase4_timeout_blocker_takes_precedence_over_noisy_model_cache_output() -> None:
+    result = CommandResult(
+        command=("codex-action", "S01", "S01-U1"),
+        cwd=str(ROOT),
+        exit_code=124,
+        stdout="",
+        stderr="Codex action S01-U1 timed out after 60 seconds.\nfailed to refresh available models",
+    )
+
+    assert _codex_infrastructure_blocker(result) == "Codex CLI infrastructure blocker: timed out"
 
 
 def test_phase4_default_run_dry_run_exercises_smoke_only_before_full_suite(tmp_path: Path) -> None:
