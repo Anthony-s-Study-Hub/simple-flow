@@ -40,6 +40,15 @@ class Review:
     state: str
     submitted_at: str = ""
     body: str = ""
+    url: str = ""
+
+
+@dataclass(frozen=True)
+class DiscussionComment:
+    comment_id: str
+    body: str = ""
+    created_at: str = ""
+    url: str = ""
 
 
 @dataclass(frozen=True)
@@ -59,6 +68,7 @@ class WorkItem:
     closed_at: str = ""
     reopened: bool = False
     reviews: tuple[Review, ...] = ()
+    comments: tuple[DiscussionComment, ...] = ()
     related_prs: tuple[str, ...] = ()
     closes: tuple[str, ...] = ()
     references: tuple[str, ...] = ()

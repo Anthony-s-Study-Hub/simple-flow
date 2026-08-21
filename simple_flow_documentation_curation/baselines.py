@@ -169,6 +169,7 @@ def _parse_decisions(text: str) -> dict[str, LockedDecision]:
         if not heading:
             raise BaselineSchemaError("Locked Decisions entries must start with ### Decision D-000")
         decision_id = heading.group("id")
+        _require_decision_field_order(block, decision_id)
         fields = _field_map(block)
         missing = [field for field in DECISION_FIELDS if field not in fields]
         if missing:
@@ -193,6 +194,25 @@ def _parse_decisions(text: str) -> dict[str, LockedDecision]:
             effective_date=fields["Effective Date"],
         )
     return decisions
+
+
+def _require_decision_field_order(block: str, decision_id: str) -> None:
+    observed: list[str] = []
+    for line in block.splitlines():
+        if line.startswith("###") or ":" not in line:
+            continue
+        name = line.split(":", 1)[0].strip()
+        observed.append(name)
+    unknown = [field for field in observed if field not in DECISION_FIELDS]
+    if unknown:
+        raise BaselineSchemaError(
+            f"unknown decision field in {decision_id}: {', '.join(unknown)}"
+        )
+    expected = list(DECISION_FIELDS)
+    if observed != expected:
+        raise BaselineSchemaError(
+            f"decision {decision_id} field order must be {', '.join(expected)}"
+        )
 
 
 def _field_map(block: str) -> dict[str, str]:

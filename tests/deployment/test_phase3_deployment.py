@@ -45,6 +45,7 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
     assert (target / ".github" / "pull_request_template.md").exists()
     assert (target / "simple_flow_gates" / "contracts.py").exists()
     assert (target / "simple_flow_agent" / "drafts.py").exists()
+    assert (target / "simple_flow_documentation_curation" / "collector.py").exists()
     assert (target / "simple_flow_documentation_curation" / "renderer.py").exists()
     assert (target / "scripts" / "orphan_branch_watch.py").exists()
     assert (target / ".simple-flow" / "project-config.json").exists()
@@ -330,6 +331,7 @@ def _hash_core_files(project: Path) -> dict[str, str]:
         ".codex/skills/issue-draft/scripts/create_draft.py",
         "simple_flow_gates/contracts.py",
         "simple_flow_agent/drafts.py",
+        "simple_flow_documentation_curation/collector.py",
         "simple_flow_documentation_curation/renderer.py",
     ]:
         files[relative] = (project / relative).read_text(encoding="utf-8")

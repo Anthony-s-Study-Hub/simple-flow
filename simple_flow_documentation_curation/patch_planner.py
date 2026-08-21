@@ -28,6 +28,21 @@ def plan_patch_operations(analysis: CurationAnalysis) -> list[PatchOperation]:
                     payload=decision.to_json_data(),
                 )
             )
+            if action == "SUPERSEDE_DECISION" and decision.supersedes.strip():
+                for superseded_id in _ids(decision.supersedes):
+                    operations.append(
+                        PatchOperation(
+                            operation="UPDATE_DECISION",
+                            target_component=decision.component,
+                            target_section=decision.affected_baseline_section,
+                            reason=f"{superseded_id} is superseded by {decision.decision_id}.",
+                            payload={
+                                "decision_id": superseded_id,
+                                "status": "SUPERSEDED",
+                                "superseded_by": decision.decision_id,
+                            },
+                        )
+                    )
         else:
             operations.append(
                 PatchOperation(
@@ -61,3 +76,7 @@ def plan_patch_operations(analysis: CurationAnalysis) -> list[PatchOperation]:
             )
         )
     return operations
+
+
+def _ids(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]

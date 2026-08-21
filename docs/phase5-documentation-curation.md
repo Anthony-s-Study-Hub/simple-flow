@@ -22,14 +22,18 @@ The `simple_flow_documentation_curation` package owns mechanical behavior:
 
 - history normalization
 - objective Issue / PR relationship resolution
-- curation cursor calculation
+- curation cursor calculation and pending cursor persistence
 - component mapping
 - baseline schema validation
 - structural conflict checks
-- reference validation
+- exact Issue, PR, review, comment, commit, and file-line reference validation
 - fixed patch operation planning
 - deterministic DOCUMENTATION draft rendering
 - version and Last Updated helpers
+
+The collector applies an `Updated At` plus stable-ID cursor boundary. A pending
+cursor is written for the current curation run, but the committed cursor advances
+only after the corresponding documentation PR is merged.
 
 The agent only performs semantic grouping, classification, baseline relevance
 judgement, conflict wording, and new component judgement.

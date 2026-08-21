@@ -41,6 +41,7 @@ CORE_FILES = [
     "simple_flow_agent/start_implement.py",
     "simple_flow_documentation_curation/__init__.py",
     "simple_flow_documentation_curation/baselines.py",
+    "simple_flow_documentation_curation/collector.py",
     "simple_flow_documentation_curation/conflicts.py",
     "simple_flow_documentation_curation/cursor.py",
     "simple_flow_documentation_curation/mapping.py",
