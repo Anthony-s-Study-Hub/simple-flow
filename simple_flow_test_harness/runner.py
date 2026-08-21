@@ -24,7 +24,7 @@ from simple_flow_test_harness.models import (
     Scenario,
     ScenarioResult,
 )
-from simple_flow_test_harness.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
+from simple_flow_test_harness.scenarios import FULL_SUITE_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
 from simple_flow_test_harness.transcript import compact_codex_response, compact_fixture_prompt, compact_text
 
 
@@ -77,7 +77,7 @@ class Phase4Runner:
             if all(result.status == Outcome.PASS for result in smoke_results):
                 remaining_ids = [
                     scenario_id
-                    for scenario_id in REQUIRED_SCENARIO_IDS
+                    for scenario_id in FULL_SUITE_SCENARIO_IDS
                     if scenario_id not in SMOKE_SCENARIO_IDS
                 ]
                 all_results.extend(

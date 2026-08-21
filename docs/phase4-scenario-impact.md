@@ -20,6 +20,7 @@ can mutate the dedicated remote test repository.
 | A02 | Prove Issue-Draft can create a FEATURE Canonical Draft from a deterministic local JSON fixture and stop. | No Issue or PR expected. |
 | A06 | Prove Review-Triage can classify a review finding without changing artifacts. | No Issue or PR expected. |
 | C01 | Prove an attempt to skip Issue/Draft authority is rejected or blocked. | No Issue or PR expected. |
+| E01 | Prove Documentation-Curation can create a DOCUMENTATION Canonical Draft from deterministic history fixtures and stop. | No Issue or PR expected. |
 | S01 | Prove the live harness can drive a lightweight remote artifact path through `gh` from a harness-seeded approved DOCUMENTATION draft. | GitHub Issue and draft PR expected; merge forbidden. |
 
 ## Full Suite Matrix
@@ -52,6 +53,18 @@ can mutate the dedicated remote test repository.
 | D01 | Review context from Feature A does not contaminate Feature B. | GitHub Issue and PR expected; merge forbidden. |
 | D02 | Requirement change during Discussion produces the current effective draft only. | No Issue or PR expected. |
 | D03 | Ambiguous requirement does not silently become formal implementation. | No Issue or PR expected. |
+| E01 | Documentation-Curation reads fixed incremental history and generates a structured Decision Proposal. | No Issue or PR expected. |
+| E02 | Documentation-Curation stops after the DOCUMENTATION Canonical Draft and does not continue the workflow. | No Issue or PR expected. |
+| E03 | Documentation-Curation does not directly modify formal Baseline documents. | No Issue or PR expected. |
+| E04 | Documentation-Curation does not create Issue, branch, or PR artifacts. | No Issue or PR expected. |
+| E05 | Documentation-Curation does not automatically call Start-Implement. | No Issue or PR expected. |
+| E06 | Documentation-Curation distinguishes FINAL, IMPLEMENTATION_ONLY, and UNRESOLVED classifications. | No Issue or PR expected. |
+| E07 | Documentation-Curation surfaces unresolved blocking contradictions instead of silently resolving them. | No Issue or PR expected. |
+| E08 | Decision Proposal includes a short reason and valid exact references. | No Issue or PR expected. |
+| E09 | Documentation Finding provides references for both sides of a conflict. | No Issue or PR expected. |
+| E10 | Documentation-Curation does not rewrite unrelated Baseline sections. | No Issue or PR expected. |
+| E11 | Insufficient evidence cannot become a FINAL decision. | No Issue or PR expected. |
+| E12 | New Component output is a proposal only and does not directly create a formal Component Baseline. | No Issue or PR expected. |
 
 ## Reading Results
 

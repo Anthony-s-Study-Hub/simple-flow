@@ -1,0 +1,16 @@
+{
+  "issue": 30,
+  "red": {
+    "commit": "b5895b6bec71529daf3522a175921260bf927048",
+    "command": "python -m pytest tests/test_documentation_curation_phase5_spec.py",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "b3a288a91d049798384264f021da1c0957f0fa39"
+  },
+  "green": {
+    "commit": "5bb06fc2bb34cef2590d6866c67f1ec04dae5b83",
+    "command": "python -m pytest",
+    "exit_code": 0
+  }
+}

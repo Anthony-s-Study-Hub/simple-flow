@@ -73,3 +73,10 @@ includes a remote Issue/PR artifact scenario. The full scenario set runs only
 after smoke passes. See
 `docs/phase4-scenario-impact.md` for each scenario goal and remote mutation
 impact.
+
+Phase 5 adds the Documentation-Curation skill and deterministic
+`simple_flow_documentation_curation` helpers. The skill turns normalized
+Issue/PR/review history into Decision Proposals, Documentation Findings, New
+Component Proposals, and a DOCUMENTATION Canonical Draft, then stops before the
+existing documentation workflow begins. The portable installer includes the
+sixth skill and baseline templates under `.simple-flow/baselines/`.

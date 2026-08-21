@@ -12,6 +12,10 @@ Every skill must stop after completing its owned stage. A skill must not call or
 
 Only Issue-Draft may generate a Canonical Draft.
 
+Only Documentation-Curation may curate technical history into Decision
+Proposals, Documentation Findings, New Component Proposals, and a
+DOCUMENTATION Canonical Draft.
+
 Only Start-Implement may publish or update formal Issues, create implementation
 branches, create draft pull requests, or continue formal implementation from an
 approved Draft ID.
@@ -19,6 +23,10 @@ approved Draft ID.
 Only PR-Finalize may merge pull requests after explicit human review acceptance.
 
 Review-Triage must not modify issues or code.
+
+Documentation-Curation must not directly modify formal Baselines, create Issues,
+create branches, create pull requests, invoke Start-Implement, modify code or
+configuration, invoke PR-Finalize, or merge.
 
 Discussion must not generate formal drafts, publish issues, create branches,
 create pull requests, or modify formal implementation.

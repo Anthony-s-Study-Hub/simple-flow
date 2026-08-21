@@ -114,6 +114,7 @@ class Scenario:
             "Use the installed project files, AGENTS.md, and installed agent skills as the source of workflow truth.\n"
             "Skill aliases in USER_ACTION lines map to installed skills: "
             "@discussion -> discussion/SKILL.md; "
+            "@documentation-curation -> documentation-curation/SKILL.md; "
             "@issue-draft -> issue-draft/SKILL.md; "
             "@start-implement -> start-implement/SKILL.md; "
             "@review-triage -> review-triage/SKILL.md; "

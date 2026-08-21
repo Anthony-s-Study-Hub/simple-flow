@@ -23,6 +23,8 @@ from simple_flow_test_harness.reports import write_reports
 from simple_flow_test_harness.runner import Phase4Runner
 from simple_flow_test_harness.scenarios import (
     ALL_SCENARIO_IDS,
+    FULL_SUITE_SCENARIO_IDS,
+    PHASE5_EXTENSION_SCENARIO_IDS,
     REQUIRED_SCENARIO_IDS,
     SMOKE_ONLY_SCENARIO_IDS,
     SMOKE_SCENARIO_IDS,
@@ -67,9 +69,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate":
         scenarios = load_scenarios()
         print(f"Phase 4 scenario catalog valid: {len(scenarios)} scenarios")
-        print(f"Full suite scenarios: {len(REQUIRED_SCENARIO_IDS)}")
+        print(f"Full suite scenarios: {len(FULL_SUITE_SCENARIO_IDS)}")
         print(f"Smoke-only scenarios: {len(SMOKE_ONLY_SCENARIO_IDS)}")
+        print(f"Phase 5 extension scenarios: {len(PHASE5_EXTENSION_SCENARIO_IDS)}")
         print("Required scenarios: " + ", ".join(REQUIRED_SCENARIO_IDS))
+        print("Phase 5 extension scenarios: " + ", ".join(PHASE5_EXTENSION_SCENARIO_IDS))
         print("Smoke scenarios: " + ", ".join(SMOKE_SCENARIO_IDS))
         return 0
 
