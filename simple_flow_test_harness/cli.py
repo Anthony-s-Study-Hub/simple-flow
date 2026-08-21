@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
+from simple_flow_test_harness.agent_backends import (
+    DEFAULT_AGENT_BACKEND,
+    DEFAULT_LOCAL_LLM_MODEL,
+    DEFAULT_LOCAL_LLM_URL,
+    SUPPORTED_AGENT_BACKENDS,
+    probe_local_openai_backend,
+)
 from simple_flow_test_harness.environment import (
     DEFAULT_TEST_REPO_URL,
     Phase4Environment,
@@ -24,6 +32,7 @@ from simple_flow_test_harness.scenarios import (
 
 DEFAULT_CODEX_MODEL = "gpt-5.4-mini"
 DEFAULT_TIMEOUT_SECONDS = 60
+DEFAULT_WORKSPACE_DIRNAME = "simple-flow-test-harness-workspace"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -44,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
         codex_model=getattr(args, "codex_model", None),
         smoke_gate=getattr(args, "smoke_gate", True),
         smoke_only=getattr(args, "smoke_only", False),
+        agent_backend=getattr(args, "agent_backend", DEFAULT_AGENT_BACKEND),
+        local_llm_url=getattr(args, "local_llm_url", DEFAULT_LOCAL_LLM_URL),
+        local_llm_model=getattr(args, "local_llm_model", DEFAULT_LOCAL_LLM_MODEL),
+        local_llm_max_tool_calls=getattr(args, "local_llm_max_tool_calls", 8),
     )
 
     if args.command == "list-scenarios":
@@ -62,8 +75,17 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "cleanup":
         Phase4Environment(config).cleanup_workspace()
-        print(f"Cleaned Phase 4 workspace: {config.workspace_root}")
+        print(f"Cleaned Simple Flow test harness workspace: {config.workspace_root}")
         return 0
+
+    if args.command == "probe-local-llm":
+        result = probe_local_openai_backend(
+            base_url=args.local_llm_url,
+            model=args.local_llm_model,
+            timeout_seconds=args.timeout_seconds,
+        )
+        print(json.dumps(result, indent=2))
+        return 0 if result["models_ok"] and result["chat_completions_ok"] and result["tool_calls_ok"] else 1
 
     if args.command == "run":
         report = Phase4Runner(config).run(args.scenario)
@@ -82,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     raw_args = list(sys.argv[1:] if argv is None else argv)
-    commands = {"run", "list-scenarios", "validate", "cleanup"}
+    commands = {"run", "list-scenarios", "validate", "cleanup", "probe-local-llm"}
     if not raw_args or raw_args[0] not in commands:
         raw_args.insert(0, "run")
 
@@ -90,13 +112,17 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parent = argparse.ArgumentParser(add_help=False)
     source_root = Path(__file__).resolve().parents[1]
     parent.add_argument("--source-root", default=str(source_root))
-    parent.add_argument("--workspace-root", default=str(source_root / ".simple-flow" / "phase4-workspace"))
+    parent.add_argument("--workspace-root", default=str(source_root / ".simple-flow" / DEFAULT_WORKSPACE_DIRNAME))
     parent.add_argument("--report-dir", default=str(source_root / ".simple-flow" / "phase4-reports"))
     parent.add_argument("--test-repo-url", default=DEFAULT_TEST_REPO_URL)
     parent.add_argument("--gh-path", default=default_gh_path())
     parent.add_argument("--codex-command", default=default_codex_command())
     parent.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
     parent.add_argument("--allow-remote-reset", action="store_true")
+    parent.add_argument("--agent-backend", choices=SUPPORTED_AGENT_BACKENDS, default=DEFAULT_AGENT_BACKEND)
+    parent.add_argument("--local-llm-url", default=DEFAULT_LOCAL_LLM_URL)
+    parent.add_argument("--local-llm-model", default=DEFAULT_LOCAL_LLM_MODEL)
+    parent.add_argument("--local-llm-max-tool-calls", type=int, default=8)
 
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run", parents=[parent])
@@ -114,6 +140,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     subparsers.add_parser("list-scenarios", parents=[parent])
     subparsers.add_parser("validate", parents=[parent])
     subparsers.add_parser("cleanup", parents=[parent])
+    subparsers.add_parser("probe-local-llm", parents=[parent])
     return parser.parse_args(raw_args)
 
 

@@ -111,13 +111,14 @@ class Scenario:
             "Do not reply with readiness, an acknowledgement, or a request for another task.\n"
             "You are the Agent Under Test for the Simple Flow Phase 4 experiment.\n"
             "Run in this test project only. Do not use any context from the main project task.\n"
-            "Use the installed project files, AGENTS.md, and .codex skills as the source of workflow truth.\n"
+            "Use the installed project files, AGENTS.md, and installed agent skills as the source of workflow truth.\n"
             "Skill aliases in USER_ACTION lines map to installed skills: "
-            "@discussion -> .codex/skills/discussion/SKILL.md; "
-            "@issue-draft -> .codex/skills/issue-draft/SKILL.md; "
-            "@start-implement -> .codex/skills/start-implement/SKILL.md; "
-            "@review-triage -> .codex/skills/review-triage/SKILL.md; "
-            "@pr-finalize -> .codex/skills/pr-finalize/SKILL.md.\n"
+            "@discussion -> discussion/SKILL.md; "
+            "@issue-draft -> issue-draft/SKILL.md; "
+            "@start-implement -> start-implement/SKILL.md; "
+            "@review-triage -> review-triage/SKILL.md; "
+            "@pr-finalize -> pr-finalize/SKILL.md. "
+            "In the current deployed test layout, these skill files live under .codex/skills/<skill>/SKILL.md.\n"
             "When a USER_ACTION names a skill alias, read the mapped SKILL.md and perform that skill's responsibilities; do not merely describe the stage.\n"
             "Use the GitHub CLI only through this exact executable path when a GitHub operation is needed:\n"
             f"{gh_path}\n"
@@ -229,6 +230,10 @@ class ScenarioResult:
     workflow_package_version: str
     harness_commit_sha: str
     execution_timestamp: str
+    agent_backend: str = "codex"
+    agent_model: str | None = None
+    agent_endpoint: str = ""
+    codex_cli_used: bool = True
     objective_rule_results: list[RuleResult] = field(default_factory=list)
     post_run_agentic_diagnosis: dict[str, Any] = field(default_factory=dict)
     prompt_exchange: list[PromptExchange] = field(default_factory=list)
@@ -252,6 +257,10 @@ class ScenarioResult:
             "workflow_package_version": self.workflow_package_version,
             "harness_commit_sha": self.harness_commit_sha,
             "execution_timestamp": self.execution_timestamp,
+            "agent_backend": self.agent_backend,
+            "agent_model": self.agent_model,
+            "agent_endpoint": self.agent_endpoint,
+            "codex_cli_used": self.codex_cli_used,
             "objective_rule_results": [
                 result.to_json_data() for result in self.objective_rule_results
             ],
@@ -276,6 +285,10 @@ class Phase4Config:
     codex_model: str | None = None
     smoke_gate: bool = True
     smoke_only: bool = False
+    agent_backend: str = "codex"
+    local_llm_url: str = "http://169.254.83.107:1234"
+    local_llm_model: str = "google/gemma-4-e4b"
+    local_llm_max_tool_calls: int = 8
 
 
 @dataclass
@@ -292,6 +305,10 @@ class RunReport:
     full_suite_skipped_reason: str = ""
     timeout_seconds: int = 0
     codex_model: str | None = None
+    agent_backend: str = "codex"
+    agent_model: str | None = None
+    agent_endpoint: str = ""
+    codex_cli_used: bool = True
 
     def status_counts(self) -> dict[str, int]:
         counts = {outcome.value: 0 for outcome in Outcome}
@@ -325,6 +342,10 @@ class RunReport:
             "full_suite_skipped_reason": self.full_suite_skipped_reason,
             "timeout_seconds": self.timeout_seconds,
             "codex_model": self.codex_model,
+            "agent_backend": self.agent_backend,
+            "agent_model": self.agent_model,
+            "agent_endpoint": self.agent_endpoint,
+            "codex_cli_used": self.codex_cli_used,
             "overall_status": self.overall_status.value,
             "status_counts": self.status_counts(),
             "scenarios": [result.to_json_data() for result in self.scenarios],

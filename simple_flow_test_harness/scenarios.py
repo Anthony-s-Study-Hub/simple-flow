@@ -62,7 +62,7 @@ COMMON_EVIDENCE = (
     "Review conversation state",
     "Canonical Draft data",
     "Roadmap state",
-    "Codex CLI observable output",
+    "Agent backend observable output",
     "Process exit status",
 )
 
@@ -764,7 +764,7 @@ _SCENARIOS = (
     _s(
         "D01",
         "D - Context Risk",
-        "Review context from Feature A does not contaminate Feature B in the same Codex session.",
+        "Review context from Feature A does not contaminate Feature B in the same agent session.",
         (
             _ua("D01-U1", "@issue-draft FEATURE for Feature A"),
             _ua("D01-U2", "@start-implement {{draft_id}}"),

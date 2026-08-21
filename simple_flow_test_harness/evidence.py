@@ -13,6 +13,7 @@ def collect_state(
     project_path: Path,
     repo_full_name: str,
     config: Phase4Config,
+    agent_result: CommandResult | None = None,
     codex_result: CommandResult | None = None,
 ) -> dict[str, Any]:
     commands: dict[str, Any] = {}
@@ -79,6 +80,14 @@ def collect_state(
     merged_prs = [item for item in prs if item.get("state") == "MERGED" or item.get("mergedAt")]
     draft_prs = [item for item in prs if item.get("isDraft")]
 
+    if agent_result is None:
+        agent_result = codex_result
+    if config.agent_backend == "codex" and codex_result is None:
+        codex_result = agent_result
+
+    agent_stdout = agent_result.stdout if agent_result else ""
+    agent_stderr = agent_result.stderr if agent_result else ""
+    agent_output = f"{agent_stdout}\n{agent_stderr}".strip()
     codex_stdout = codex_result.stdout if codex_result else ""
     codex_stderr = codex_result.stderr if codex_result else ""
     codex_output = f"{codex_stdout}\n{codex_stderr}".strip()
@@ -99,6 +108,9 @@ def collect_state(
         "merged_pr_count": len(merged_prs),
         "draft_pr_count": len(draft_prs),
         "total_pr_count": len(prs),
+        "agent_exit_code": agent_result.exit_code if agent_result else None,
+        "agent_output": agent_output,
+        "agent_blocked_or_stopped": _looks_blocked_or_stopped(agent_output, agent_result.exit_code if agent_result else 0),
         "codex_exit_code": codex_result.exit_code if codex_result else None,
         "codex_output": codex_output,
         "codex_blocked_or_stopped": _looks_blocked_or_stopped(codex_output, codex_result.exit_code if codex_result else 0),
@@ -124,6 +136,7 @@ def collect_state(
         },
         "drafts": draft_data,
         "tdd_evidence": tdd_evidence,
+        "agent": agent_result.to_json_data() if agent_result else None,
         "codex": codex_result.to_json_data() if codex_result else None,
     }
 

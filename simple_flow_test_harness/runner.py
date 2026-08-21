@@ -6,6 +6,11 @@ from pathlib import Path
 import subprocess
 from typing import Iterable
 
+from simple_flow_test_harness.agent_backends import (
+    CODEX_BACKEND,
+    LOCAL_OPENAI_BACKEND,
+    create_agent_backend,
+)
 from simple_flow_test_harness.assertions import evaluate_scenario
 from simple_flow_test_harness.commands import CommandFailure, run_command
 from simple_flow_test_harness.environment import Phase4Environment
@@ -27,6 +32,7 @@ class Phase4Runner:
     def __init__(self, config: Phase4Config):
         self.config = config
         self.environment = Phase4Environment(config)
+        self.agent_backend = create_agent_backend(config)
 
     def run(self, scenario_ids: Iterable[str] | None = None) -> RunReport:
         scenarios = load_scenarios()
@@ -39,11 +45,7 @@ class Phase4Runner:
         run_id = "phase4-" + generated_at.replace(":", "").replace("-", "").replace("+", "z")
         harness_commit_sha = _git_value(self.config.source_root, ["git", "rev-parse", "HEAD"])
         workflow_package_version = _workflow_version(self.config.source_root)
-        codex_cli_version = (
-            "not run in dry-run mode"
-            if self.config.dry_run
-            else _command_version(self.config.codex_command, self.config.source_root)
-        )
+        codex_cli_version = self._codex_cli_version()
 
         if scenario_ids is None and self.config.smoke_only:
             return self._new_report(
@@ -139,6 +141,12 @@ class Phase4Runner:
             ]
 
         blockers, prerequisite_evidence = self.environment.prerequisite_evidence()
+        backend_blockers, backend_evidence = self.agent_backend.prerequisite_evidence(
+            source_root=self.config.source_root,
+            timeout_seconds=self.config.timeout_seconds,
+        )
+        blockers.extend(backend_blockers)
+        prerequisite_evidence.update(backend_evidence)
         if blockers:
             return [
                 self._blocked_result(
@@ -191,7 +199,18 @@ class Phase4Runner:
             full_suite_skipped_reason=full_suite_skipped_reason,
             timeout_seconds=self.config.timeout_seconds,
             codex_model=self.config.codex_model,
+            agent_backend=self.config.agent_backend,
+            agent_model=_agent_model(self.config),
+            agent_endpoint=_agent_endpoint(self.config),
+            codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
         )
+
+    def _codex_cli_version(self) -> str:
+        if self.config.agent_backend != CODEX_BACKEND:
+            return self.agent_backend.version_label(source_root=self.config.source_root)
+        if self.config.dry_run:
+            return "not run in dry-run mode"
+        return self.agent_backend.version_label(source_root=self.config.source_root)
 
     def _run_one(
         self,
@@ -210,20 +229,29 @@ class Phase4Runner:
                 repo_full_name=prepared.repo_full_name,
                 config=self.config,
             )
-            codex_result, prompt_exchange = self._run_codex(prepared.path, prepared.repo_full_name, scenario)
+            agent_result, prompt_exchange, agent_metadata = self._run_agent(
+                prepared.path,
+                prepared.repo_full_name,
+                scenario,
+            )
             final_state = collect_state(
                 project_path=prepared.path,
                 repo_full_name=prepared.repo_full_name,
                 config=self.config,
-                codex_result=codex_result,
+                agent_result=agent_result,
+                codex_result=agent_result if self.config.agent_backend == CODEX_BACKEND else None,
             )
             _add_delta_metrics(initial_state, final_state)
-            infrastructure_blocker = _codex_infrastructure_blocker(codex_result)
+            infrastructure_blocker = _agent_infrastructure_blocker(agent_result, self.config.agent_backend)
             if infrastructure_blocker:
                 evidence = {
                     "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
                     "scenario_fixtures": scenario_fixtures,
-                    "codex_command": codex_result.to_json_data(),
+                    "agent_backend": agent_metadata,
+                    "agent_result": agent_result.to_json_data(),
+                    "codex_command": agent_result.to_json_data()
+                    if self.config.agent_backend == CODEX_BACKEND
+                    else None,
                     "harness_worktree_dirty": _worktree_dirty(self.config.source_root),
                 }
                 return ScenarioResult(
@@ -244,6 +272,10 @@ class Phase4Runner:
                     workflow_package_version=workflow_package_version,
                     harness_commit_sha=harness_commit_sha,
                     execution_timestamp=_now(),
+                    agent_backend=self.config.agent_backend,
+                    agent_model=_agent_model(self.config),
+                    agent_endpoint=_agent_endpoint(self.config),
+                    codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
                     objective_rule_results=[],
                     post_run_agentic_diagnosis=_diagnose(Outcome.BLOCKED, infrastructure_blocker),
                     prompt_exchange=prompt_exchange,
@@ -253,7 +285,11 @@ class Phase4Runner:
             evidence = {
                 "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
                 "scenario_fixtures": scenario_fixtures,
-                "codex_command": codex_result.to_json_data(),
+                "agent_backend": agent_metadata,
+                "agent_result": agent_result.to_json_data(),
+                "codex_command": agent_result.to_json_data()
+                if self.config.agent_backend == CODEX_BACKEND
+                else None,
                 "harness_worktree_dirty": _worktree_dirty(self.config.source_root),
             }
             return ScenarioResult(
@@ -274,6 +310,10 @@ class Phase4Runner:
                 workflow_package_version=workflow_package_version,
                 harness_commit_sha=harness_commit_sha,
                 execution_timestamp=_now(),
+                agent_backend=self.config.agent_backend,
+                agent_model=_agent_model(self.config),
+                agent_endpoint=_agent_endpoint(self.config),
+                codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
                 objective_rule_results=rule_results,
                 post_run_agentic_diagnosis=diagnosis,
                 prompt_exchange=prompt_exchange,
@@ -303,10 +343,16 @@ class Phase4Runner:
                 if scenario_path.exists():
                     self.environment._safe_reset_local_workspace(scenario_path)
 
-    def _run_codex(self, project_path: Path, repo_full_name: str, scenario: Scenario) -> tuple[CommandResult, list[PromptExchange]]:
+    def _run_agent(
+        self,
+        project_path: Path,
+        repo_full_name: str,
+        scenario: Scenario,
+    ) -> tuple[CommandResult, list[PromptExchange], dict[str, object]]:
         session_id = ""
         results: list[tuple[str, CommandResult]] = []
         exchanges: list[PromptExchange] = []
+        turns: list[dict[str, object]] = []
         variables: dict[str, str] = {}
 
         for step in scenario.ordered_steps:
@@ -322,15 +368,15 @@ class Phase4Runner:
                 gh_path=self.config.gh_path,
                 test_repo=self.config.test_repo_url,
             )
-            command = self._codex_command(project_path, prompt, session_id)
-            try:
-                result = run_command(
-                    command,
-                    cwd=project_path,
-                    timeout_seconds=self.config.timeout_seconds,
-                )
-            except subprocess.TimeoutExpired as exc:
-                result = _timeout_result(project_path, scenario.scenario_id, step.ref, exc)
+            turn = self.agent_backend.run_action(
+                project_path=project_path,
+                prompt=prompt,
+                session_id=session_id,
+                scenario_id=scenario.scenario_id,
+                action_ref=step.ref,
+                timeout_seconds=self.config.timeout_seconds,
+            )
+            result = turn.command_result
             exchanges.append(
                 PromptExchange(
                     action_ref=step.ref,
@@ -339,11 +385,12 @@ class Phase4Runner:
                 )
             )
             results.append((step.ref, result))
-            session_id = session_id or _extract_thread_id(result.stdout)
+            turns.append({"action_ref": step.ref, **turn.metadata})
+            session_id = turn.session_id or session_id
             if result.exit_code != 0:
                 break
 
-        exit_code = _combined_codex_exit_code(results)
+        exit_code = _combined_agent_exit_code(results)
         stdout = "\n\n".join(
             f"=== {ref} STDOUT ===\n{result.stdout}" for ref, result in results
         )
@@ -351,34 +398,18 @@ class Phase4Runner:
             f"=== {ref} STDERR ===\n{result.stderr}" for ref, result in results if result.stderr
         )
         return CommandResult(
-            command=("codex-scenario", scenario.scenario_id),
+            command=("agent-scenario", self.config.agent_backend, scenario.scenario_id),
             cwd=str(project_path),
             exit_code=exit_code,
             stdout=stdout,
             stderr=stderr,
-        ), exchanges
-
-    def _codex_command(self, project_path: Path, prompt: str, session_id: str) -> list[str]:
-        if session_id:
-            command = [self.config.codex_command, "exec", "resume", "--json"]
-        else:
-            command = [
-                self.config.codex_command,
-                "exec",
-                "--json",
-                "-C",
-                str(project_path),
-            ]
-        if self.config.codex_bypass_sandbox:
-            command.append("--dangerously-bypass-approvals-and-sandbox")
-        else:
-            command.append("--full-auto")
-        if self.config.codex_model:
-            command.extend(["--model", self.config.codex_model])
-        if session_id:
-            command.append(session_id)
-        command.append(prompt)
-        return command
+        ), exchanges, {
+            "backend": self.config.agent_backend,
+            "model": _agent_model(self.config),
+            "endpoint": _agent_endpoint(self.config),
+            "codex_cli_used": self.config.agent_backend == CODEX_BACKEND,
+            "turns": turns,
+        }
 
     def _dry_run_result(
         self,
@@ -407,12 +438,17 @@ class Phase4Runner:
             workflow_package_version=workflow_package_version,
             harness_commit_sha=harness_commit_sha,
             execution_timestamp=generated_at,
+            agent_backend=self.config.agent_backend,
+            agent_model=_agent_model(self.config),
+            agent_endpoint=_agent_endpoint(self.config),
+            codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
             objective_rule_results=[],
             post_run_agentic_diagnosis={},
             prompt_exchange=_dry_run_exchanges(
                 scenario,
                 gh_path=self.config.gh_path,
                 test_repo=self.config.test_repo_url,
+                agent_backend=self.config.agent_backend,
             ),
         )
 
@@ -445,6 +481,10 @@ class Phase4Runner:
             workflow_package_version=workflow_package_version,
             harness_commit_sha=harness_commit_sha,
             execution_timestamp=generated_at,
+            agent_backend=self.config.agent_backend,
+            agent_model=_agent_model(self.config),
+            agent_endpoint=_agent_endpoint(self.config),
+            codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
             objective_rule_results=[],
             post_run_agentic_diagnosis=_diagnose(
                 Outcome.BLOCKED,
@@ -481,6 +521,10 @@ class Phase4Runner:
             workflow_package_version=workflow_package_version,
             harness_commit_sha=harness_commit_sha,
             execution_timestamp=generated_at,
+            agent_backend=self.config.agent_backend,
+            agent_model=_agent_model(self.config),
+            agent_endpoint=_agent_endpoint(self.config),
+            codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
             objective_rule_results=[],
             post_run_agentic_diagnosis=_diagnose(Outcome.ERROR, str(error)),
             prompt_exchange=[],
@@ -502,14 +546,6 @@ def _workflow_version(root: Path) -> str:
         if line.strip().startswith("version"):
             return line.split("=", 1)[1].strip().strip('"')
     return "unknown"
-
-
-def _command_version(command: str, cwd: Path) -> str:
-    try:
-        result = run_command([command, "--version"], cwd=cwd, timeout_seconds=30)
-    except OSError as exc:
-        return f"unavailable: {exc}"
-    return (result.stdout or result.stderr).strip()
 
 
 def _worktree_dirty(root: Path) -> bool:
@@ -670,13 +706,14 @@ def _user_action_prompt(
         f"{prefix}\n"
         "Execute exactly this one fixed USER_ACTION. Do not execute future USER_ACTIONs until they are sent in a later turn.\n"
         "Do not ask what to do next. Stop when the invoked skill stage says STOP.\n"
-        "The harness will perform OBSERVE and ASSERT steps after Codex exits; do not decide PASS or FAIL.\n"
-        "Run in this test project only and use AGENTS.md plus installed .codex skills as workflow truth.\n"
-        "Skill aliases map as follows: @discussion -> .codex/skills/discussion/SKILL.md; "
-        "@issue-draft -> .codex/skills/issue-draft/SKILL.md; "
-        "@start-implement -> .codex/skills/start-implement/SKILL.md; "
-        "@review-triage -> .codex/skills/review-triage/SKILL.md; "
-        "@pr-finalize -> .codex/skills/pr-finalize/SKILL.md.\n"
+        "The harness will perform OBSERVE and ASSERT steps after the agent turn exits; do not decide PASS or FAIL.\n"
+        "Run in this test project only and use AGENTS.md plus installed agent skills as workflow truth.\n"
+        "Skill aliases map as follows: @discussion -> discussion/SKILL.md; "
+        "@issue-draft -> issue-draft/SKILL.md; "
+        "@start-implement -> start-implement/SKILL.md; "
+        "@review-triage -> review-triage/SKILL.md; "
+        "@pr-finalize -> pr-finalize/SKILL.md. "
+        "In the current deployed test layout, these skill files live under .codex/skills/<skill>/SKILL.md.\n"
         f"Use this GitHub CLI executable for GitHub operations: {gh_path}\n"
         f"GitHub test repository: {test_repo}\n"
         f"Scenario ID: {scenario.scenario_id}\n"
@@ -690,6 +727,7 @@ def _dry_run_exchanges(
     *,
     gh_path: str,
     test_repo: str,
+    agent_backend: str = CODEX_BACKEND,
 ) -> list[PromptExchange]:
     exchanges: list[PromptExchange] = []
     first_action = True
@@ -710,7 +748,7 @@ def _dry_run_exchanges(
                 fixture_prompt=compact_fixture_prompt(prompt),
                 response_received=compact_codex_response(
                     "",
-                    "Dry run; Codex was not invoked.",
+                    f"Dry run; {agent_backend} backend was not invoked.",
                     None,
                 ),
             )
@@ -719,54 +757,10 @@ def _dry_run_exchanges(
     return exchanges
 
 
-def _timeout_result(
-    cwd: Path,
-    scenario_id: str,
-    action_ref: str,
-    exc: subprocess.TimeoutExpired,
-) -> CommandResult:
-    stdout = _timeout_stream(exc.stdout)
-    stderr = _timeout_stream(exc.stderr)
-    timeout = exc.timeout if exc.timeout is not None else "configured"
-    timeout_message = f"Codex action {action_ref} timed out after {timeout} seconds; raw command omitted."
-    if stderr:
-        stderr = timeout_message + "\n" + stderr
-    else:
-        stderr = timeout_message
-    return CommandResult(
-        command=("codex-action", scenario_id, action_ref),
-        cwd=str(cwd),
-        exit_code=124,
-        stdout=stdout,
-        stderr=stderr,
-    )
-
-
-def _timeout_stream(value: bytes | str | None) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    return value
-
-
 def _substitute_variables(text: str, variables: dict[str, str]) -> str:
     for name, value in variables.items():
         text = text.replace("{{" + name + "}}", value)
     return text
-
-
-def _extract_thread_id(stdout: str) -> str:
-    for line in stdout.splitlines():
-        if not line.startswith("{"):
-            continue
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if event.get("type") == "thread.started" and event.get("thread_id"):
-            return str(event["thread_id"])
-    return ""
 
 
 def _mechanical_variables(project_path: Path, repo_full_name: str, config: Phase4Config) -> dict[str, str]:
@@ -832,12 +826,22 @@ def _gh_json(command: list[str], cwd: Path) -> list[dict[str, object]]:
     return [item for item in data if isinstance(item, dict)]
 
 
-def _combined_codex_exit_code(results: list[tuple[str, CommandResult]]) -> int:
+def _combined_agent_exit_code(results: list[tuple[str, CommandResult]]) -> int:
     if any(result.exit_code == 124 for _, result in results):
         return 124
     if all(result.exit_code == 0 for _, result in results):
         return 0
     return 1
+
+
+def _combined_codex_exit_code(results: list[tuple[str, CommandResult]]) -> int:
+    return _combined_agent_exit_code(results)
+
+
+def _agent_infrastructure_blocker(result: CommandResult, backend: str) -> str:
+    if backend == LOCAL_OPENAI_BACKEND:
+        return _local_openai_infrastructure_blocker(result)
+    return _codex_infrastructure_blocker(result)
 
 
 def _codex_infrastructure_blocker(result: CommandResult) -> str:
@@ -859,12 +863,46 @@ def _codex_infrastructure_blocker(result: CommandResult) -> str:
     return ""
 
 
+def _local_openai_infrastructure_blocker(result: CommandResult) -> str:
+    if result.exit_code == 0:
+        return ""
+    if result.exit_code == 124:
+        return "Local OpenAI-compatible backend infrastructure blocker: timed out"
+    output = f"{result.stdout}\n{result.stderr}".lower()
+    markers = (
+        "local openai backend error",
+        "local openai-compatible backend unavailable",
+        "connection refused",
+        "timed out",
+        "http 400",
+        "http 401",
+        "http 404",
+        "http 500",
+    )
+    for marker in markers:
+        if marker in output:
+            return "Local OpenAI-compatible backend infrastructure blocker: " + marker
+    return ""
+
+
+def _agent_model(config: Phase4Config) -> str | None:
+    if config.agent_backend == LOCAL_OPENAI_BACKEND:
+        return config.local_llm_model
+    return config.codex_model
+
+
+def _agent_endpoint(config: Phase4Config) -> str:
+    if config.agent_backend == LOCAL_OPENAI_BACKEND:
+        return config.local_llm_url
+    return ""
+
+
 def _diagnose(status: Outcome, failure_reason: str) -> dict[str, str]:
     if status == Outcome.PASS:
         return {}
     if status == Outcome.BLOCKED:
         return {
-            "Likely Cause": "External prerequisite or GitHub/Codex execution blocker.",
+            "Likely Cause": "External prerequisite or GitHub/agent backend execution blocker.",
             "Suspected Source": failure_reason,
             "Recommended Fix": "Resolve the blocker, then rerun the same fixed scenario without changing scenario expectations.",
             "Rerun Recommendation": "Rerun after the external condition changes.",
