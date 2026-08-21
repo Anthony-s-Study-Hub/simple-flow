@@ -59,3 +59,10 @@ def test_documentation_uses_affected_documents_for_scope_and_docs(
     validate_scope_gate(issue, ["docs/phase1-governance.md"])
     validate_documentation_gate(issue, ["docs/phase1-governance.md"])
 
+
+def test_documentation_issue_rejects_broad_scope_pattern(
+    roadmap_targets: set[str],
+) -> None:
+    with pytest.raises(ContractError, match="DOCUMENTATION work may only affect"):
+        IssueContract.parse(documentation_issue_body(docs="- *"), roadmap_targets)
+

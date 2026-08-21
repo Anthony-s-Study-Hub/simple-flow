@@ -57,6 +57,13 @@ pull request history in RED, implementation, GREEN order.
 `FEATURE` scope is read from the issue `Scope` field. `DOCUMENTATION` scope is
 read from `Affected Project Documents`.
 
+`DOCUMENTATION` work is documentation-only. Its affected paths must be normal
+documentation locations such as `docs/`, root documentation files like
+`README.md` or `AGENTS.md`, or Markdown issue templates under
+`.github/ISSUE_TEMPLATE/`. Functioning-code paths such as `simple_flow_gates/`,
+`simple_flow_agent/`, `scripts/`, `skills/`, and `tests/` fail validation even
+if they are listed in `Affected Project Documents`.
+
 `Documentation Impact = None` means no documentation file is required. Any other
 value is treated as a list of required documentation paths or glob patterns.
 

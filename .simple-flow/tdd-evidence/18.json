@@ -1,0 +1,16 @@
+{
+  "issue": 18,
+  "red": {
+    "commit": "8568fb33287079c2ef52366523ee3bf30ded0611",
+    "command": "python -m pytest tests/test_issue_contract.py tests/test_scope_documentation_gates.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "3cc7cada244a3f032fa03330ef71e012e706b9c2"
+  },
+  "green": {
+    "commit": "0da90fc887e0dc86f67055c4ffbcf33c569a4ab8",
+    "command": "python -m pytest tests/test_issue_contract.py tests/test_scope_documentation_gates.py",
+    "exit_code": 0
+  }
+}

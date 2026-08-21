@@ -62,3 +62,21 @@ def test_legacy_project_change_issue_normalizes_to_documentation(
     assert issue.work_type == WorkType.DOCUMENTATION
     assert issue.scope_patterns == ["docs/phase1-governance.md"]
 
+
+def test_documentation_issue_rejects_functioning_code_scope(
+    roadmap_targets: set[str],
+) -> None:
+    body = documentation_issue_body(docs="- simple_flow_gates/")
+
+    with pytest.raises(ContractError, match="DOCUMENTATION work may only affect"):
+        IssueContract.parse(body, roadmap_targets)
+
+
+def test_legacy_project_change_issue_rejects_functioning_code_scope(
+    roadmap_targets: set[str],
+) -> None:
+    body = project_change_issue_body(docs="- scripts/")
+
+    with pytest.raises(ContractError, match="DOCUMENTATION work may only affect"):
+        IssueContract.parse(body, roadmap_targets)
+

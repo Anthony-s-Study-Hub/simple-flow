@@ -33,6 +33,18 @@ DOCUMENTATION_FIELDS = [
     "Affected Project Documents",
     "Source PR / Decision Context",
 ]
+DOCUMENTATION_ROOT_FILES = {
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+}
+DOCUMENTATION_PATH_PREFIXES = (
+    "docs/",
+    ".github/ISSUE_TEMPLATE/",
+)
 
 PR_FIELDS = [
     "Linked Issue",
@@ -78,6 +90,8 @@ class IssueContract:
 
         if work_type == WorkType.FEATURE:
             _validate_roadmap_target(fields["Roadmap Target"], roadmap_targets)
+        elif work_type == WorkType.DOCUMENTATION:
+            _validate_documentation_paths(fields["Affected Project Documents"])
 
         return cls(work_type=work_type, fields=fields)
 
@@ -178,6 +192,25 @@ def _validate_roadmap_target(raw: str, roadmap_targets: Iterable[str]) -> None:
             f"Roadmap Target '{target}' is not configured and is not one of: "
             + ", ".join(sorted(SPECIAL_ROADMAP_TARGETS))
         )
+
+
+def _validate_documentation_paths(raw: str) -> None:
+    paths = _list_items(raw)
+    invalid = [path for path in paths if not _is_documentation_path(path)]
+    if invalid:
+        raise ContractError(
+            "DOCUMENTATION work may only affect documentation paths: "
+            + ", ".join(sorted(invalid))
+        )
+
+
+def _is_documentation_path(raw: str) -> bool:
+    path = raw.replace("\\", "/").strip().lstrip("./")
+    if not path or ".." in path.split("/"):
+        return False
+    if path == "docs" or path.startswith(DOCUMENTATION_PATH_PREFIXES):
+        return True
+    return path in DOCUMENTATION_ROOT_FILES
 
 
 def _extract_issue_number(raw: str) -> int:
