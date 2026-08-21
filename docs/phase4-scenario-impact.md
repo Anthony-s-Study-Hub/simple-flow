@@ -16,7 +16,7 @@ can mutate the dedicated remote test repository.
 | Scenario | Goal | Agent-under-test remote impact |
 | --- | --- | --- |
 | A01 | Prove Discussion can analyze and stop before formal workflow artifacts. | No Issue or PR expected. |
-| A02 | Prove Issue-Draft can create a FEATURE Canonical Draft and stop. | No Issue or PR expected. |
+| A02 | Prove Issue-Draft can create a FEATURE Canonical Draft from a deterministic local JSON fixture and stop. | No Issue or PR expected. |
 | A06 | Prove Review-Triage can classify a review finding without changing artifacts. | No Issue or PR expected. |
 | C01 | Prove an attempt to skip Issue/Draft authority is rejected or blocked. | No Issue or PR expected. |
 | S01 | Prove the live harness can drive a lightweight remote artifact path through `gh` from a harness-seeded approved DOCUMENTATION draft. | GitHub Issue and draft PR expected; merge forbidden. |
@@ -27,7 +27,7 @@ can mutate the dedicated remote test repository.
 | --- | --- | --- |
 | S01 | Smoke-only remote artifact path starts at `@start-implement` from a harness-seeded approved DOCUMENTATION draft, creates a GitHub Issue and draft PR, then stops unmerged. | GitHub Issue and draft PR expected; merge forbidden. |
 | A01 | Discussion allows analysis and stops without formal artifacts. | No Issue or PR expected. |
-| A02 | Issue-Draft creates a FEATURE Canonical Draft and stops. | No Issue or PR expected. |
+| A02 | Issue-Draft creates a FEATURE Canonical Draft from a deterministic local JSON fixture and stops. | No Issue or PR expected. |
 | A03 | Issue-Draft creates a DOCUMENTATION Canonical Draft without TDD or implementation. | No Issue or PR expected. |
 | A04 | Start-Implement FEATURE loads the named draft and starts formal implementation. | GitHub Issue, branch, draft PR, and TDD evidence expected; merge forbidden. |
 | A05 | Start-Implement DOCUMENTATION follows the document-change path without TDD. | GitHub Issue, branch, and PR expected; merge forbidden. |
@@ -59,6 +59,8 @@ internally consistent. It does not prove Codex can follow the workflow.
 
 A PASS on live smoke proves the basic non-mutating skill boundaries and the
 remote Issue/PR artifact path work before the full scenario suite starts.
+The A02 smoke scenario seeds local fixture input so Issue-Draft can exercise the
+draft creation path without spending the turn budget rediscovering field schema.
 S01 seeds the approved documentation draft locally as deterministic harness
 fixture data so the live action focuses on GitHub Issue and PR creation within
 the default 60 second turn budget.

@@ -21,11 +21,12 @@ python -m simple_flow_phase4.cli run `
 ```
 
 The default live run executes the smoke set first: A01, A02, A06, C01, and S01.
-S01 is a smoke-only remote-artifact scenario that should create a GitHub Issue
-and draft PR in the dedicated test repo from a harness-seeded approved
-DOCUMENTATION draft. The full 25-scenario suite runs only when every smoke
-scenario passes. This saves time and tokens when basic skill invocation,
-workflow boundaries, or remote artifact creation are already broken.
+A02 uses a deterministic local JSON input fixture for `@issue-draft`; S01 is a
+smoke-only remote-artifact scenario that should create a GitHub Issue and draft
+PR in the dedicated test repo from a harness-seeded approved DOCUMENTATION
+draft. The full 25-scenario suite runs only when every smoke scenario passes.
+This saves time and tokens when basic skill invocation, workflow boundaries, or
+remote artifact creation are already broken.
 
 Run only the smoke set:
 
@@ -84,9 +85,9 @@ branch creation cannot complete.
   scenario test project.
 - The harness may fill only mechanical variables such as Draft ID, Issue number,
   PR number, and branch name.
-- Scenarios may declare explicit local fixtures, such as S01's approved
-  Canonical Draft, when setup data is needed to keep the live action small and
-  deterministic.
+- Scenarios may declare explicit local fixtures, such as A02's draft input file
+  and S01's approved Canonical Draft, when setup data is needed to keep the live
+  action small and deterministic.
 - Objective PASS / FAIL / BLOCKED / ERROR status is assigned by deterministic
   code after the Codex process exits.
 - Post-run diagnosis is recorded separately and never rewrites objective status.
