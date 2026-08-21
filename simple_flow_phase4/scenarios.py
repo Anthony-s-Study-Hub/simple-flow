@@ -150,7 +150,18 @@ _SCENARIOS = (
         "S - Smoke",
         "Remote artifact smoke path starts from a seeded draft, creates a GitHub Issue and draft PR, then stops unmerged.",
         (
-            _ua("S01-U1", "@start-implement {{draft_id}}"),
+            _ua(
+                "S01-U1",
+                (
+                    "@start-implement {{draft_id}}. For this smoke scenario, execute the minimum "
+                    "DOCUMENTATION_NORMAL path: run the path-selection script, create the GitHub "
+                    "Issue from .simple-flow/drafts/{{draft_id}}.md, create branch "
+                    "phase4-smoke/{{draft_id}}, append 'Phase 4 smoke marker: remote artifact "
+                    "path verified.' to docs/simple-flow/usage-guide.md, commit and push the "
+                    "branch, open a draft PR, then STOP at Human PR Review. Do not inspect "
+                    "unrelated implementation, tests, or helper internals unless one command fails."
+                ),
+            ),
             _obs("S01-O1", "Read GitHub Issue state, branch state, draft PR state, and merge state."),
             _assert("S01-A1", "Issue and draft PR exist in the remote test repo and no merge occurs."),
         ),
@@ -178,7 +189,10 @@ _SCENARIOS = (
         fixture_draft=DraftFixture(
             work_type="DOCUMENTATION",
             fields={
-                "Change": "Add a Phase 4 smoke marker to the usage guide",
+                "Change": (
+                    "Append 'Phase 4 smoke marker: remote artifact path verified.' "
+                    "to docs/simple-flow/usage-guide.md"
+                ),
                 "Reason": "Prove the live harness can drive GitHub Issue and draft PR creation through gh",
                 "Impact": "Smoke validation only",
                 "Supersedes": "None",
