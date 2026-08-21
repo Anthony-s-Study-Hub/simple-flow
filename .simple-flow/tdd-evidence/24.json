@@ -1,15 +1,15 @@
 {
   "issue": 24,
   "red": {
-    "commit": "ceb997fe61a064782623d91a930163afda9e7ebc",
+    "commit": "cb2c2269c89669a8f0e667bbe9897e0997115000",
     "command": "python -m pytest tests/phase4",
     "exit_code": 2
   },
   "implementation": {
-    "commit": "308fe239804178e36af7968148d7b32c266038cf"
+    "commit": "fde5d3e6010f4c19bb7bd95e36b6d0b4f76227ca"
   },
   "green": {
-    "commit": "e6e0f2b4aa7b61c3f036aafcc1f1921d7036ea8a",
+    "commit": "a301172ca16389bae469a6ee24c999ac74a63823",
     "command": "python -m pytest",
     "exit_code": 0
   }
