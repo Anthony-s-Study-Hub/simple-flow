@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import subprocess
 import sys
 
 from simple_flow_phase4.cli import DEFAULT_CODEX_MODEL, _parse_args
-from simple_flow_phase4.models import CommandResult
+from simple_flow_phase4.models import CommandResult, Outcome, ScenarioResult
 from simple_flow_phase4.reports import compact_report_data, render_markdown
 from simple_flow_phase4.runner import (
     Phase4Runner,
@@ -14,7 +15,7 @@ from simple_flow_phase4.runner import (
     _codex_infrastructure_blocker,
     _combined_codex_exit_code,
 )
-from simple_flow_phase4.scenarios import SMOKE_SCENARIO_IDS
+from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS
 from simple_flow_phase4.transcript import compact_codex_response, compact_fixture_prompt
 
 
@@ -164,6 +165,30 @@ def test_phase4_default_run_dry_run_exercises_smoke_only_before_full_suite(tmp_p
     assert [result.scenario_id for result in report.scenarios] == list(SMOKE_SCENARIO_IDS)
 
 
+def test_phase4_passing_smoke_gate_does_not_repeat_smoke_members(tmp_path: Path, monkeypatch) -> None:
+    selected_batches: list[list[str]] = []
+
+    def fake_run_selected(self, selected_scenarios, **kwargs):
+        selected_batches.append([scenario.scenario_id for scenario in selected_scenarios])
+        return [_pass_result(scenario.scenario_id) for scenario in selected_scenarios]
+
+    monkeypatch.setattr(Phase4Runner, "_run_selected", fake_run_selected)
+    config = replace(_dry_config(tmp_path), dry_run=False, codex_command=sys.executable)
+
+    report = Phase4Runner(config).run()
+
+    expected_remaining = [
+        scenario_id
+        for scenario_id in REQUIRED_SCENARIO_IDS
+        if scenario_id not in SMOKE_SCENARIO_IDS
+    ]
+    assert selected_batches == [list(SMOKE_SCENARIO_IDS), expected_remaining]
+    assert report.run_mode == "smoke-gated"
+    assert report.full_suite_skipped_reason == ""
+    for scenario_id in SMOKE_SCENARIO_IDS:
+        assert [result.scenario_id for result in report.scenarios].count(scenario_id) == 1
+
+
 def test_phase4_smoke_only_cli_generates_smoke_report(tmp_path: Path) -> None:
     report_dir = tmp_path / "reports"
     workspace = tmp_path / "workspace"
@@ -241,6 +266,28 @@ def _dry_config(tmp_path: Path):
         allow_remote_reset=False,
         dry_run=True,
         codex_model=DEFAULT_CODEX_MODEL,
+    )
+
+
+def _pass_result(scenario_id: str) -> ScenarioResult:
+    return ScenarioResult(
+        scenario_id=scenario_id,
+        status=Outcome.PASS,
+        prompt_reference=f"phase4-scenario:{scenario_id}",
+        expected_result={},
+        observed_result={},
+        evidence={},
+        failure_reason="",
+        initial_state={},
+        final_state={},
+        github_test_repo="Anthony-s-Study-Hub/simple-flow-test",
+        relevant_issues=[],
+        relevant_prs=[],
+        ci_result={"summary": "stubbed"},
+        codex_cli_version="stubbed",
+        workflow_package_version="stubbed",
+        harness_commit_sha="stubbed",
+        execution_timestamp="2026-08-21T00:00:00+00:00",
     )
 
 

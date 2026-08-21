@@ -25,6 +25,8 @@ A02 uses a deterministic local JSON input fixture for `@issue-draft`; S01 is a
 smoke-only remote-artifact scenario that should create a GitHub Issue and draft
 PR in the dedicated test repo from a harness-seeded approved DOCUMENTATION
 draft. The full 25-scenario suite runs only when every smoke scenario passes.
+Smoke scenarios that are also part of the full suite are not repeated after the
+gate passes; the second phase runs only the remaining full-suite scenarios.
 This saves time and tokens when basic skill invocation, workflow boundaries, or
 remote artifact creation are already broken.
 
