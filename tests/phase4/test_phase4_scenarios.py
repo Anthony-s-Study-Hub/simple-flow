@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from simple_flow_phase4.models import StepType
 from simple_flow_phase4.scenarios import (
+    ALL_SCENARIO_IDS,
     REQUIRED_SCENARIO_IDS,
     SMOKE_SCENARIO_IDS,
+    SMOKE_ONLY_SCENARIO_IDS,
     load_scenarios,
 )
 
@@ -11,8 +13,10 @@ from simple_flow_phase4.scenarios import (
 def test_required_phase4_scenarios_are_defined_once() -> None:
     scenarios = load_scenarios()
 
-    assert tuple(scenarios) == REQUIRED_SCENARIO_IDS
-    assert len(scenarios) == 25
+    assert tuple(scenarios) == ALL_SCENARIO_IDS
+    assert len(REQUIRED_SCENARIO_IDS) == 25
+    assert SMOKE_ONLY_SCENARIO_IDS == ("S01",)
+    assert len(scenarios) == 26
 
 
 def test_scenarios_are_data_driven_with_fixed_steps_and_objective_rules() -> None:
@@ -82,13 +86,14 @@ def test_first_version_covers_required_groups() -> None:
 def test_smoke_scenarios_are_small_representative_subset() -> None:
     scenarios = load_scenarios()
 
-    assert SMOKE_SCENARIO_IDS == ("A01", "A02", "A06", "C01")
-    assert set(SMOKE_SCENARIO_IDS) < set(REQUIRED_SCENARIO_IDS)
+    assert SMOKE_SCENARIO_IDS == ("A01", "A02", "A06", "C01", "S01")
+    assert set(SMOKE_SCENARIO_IDS) < set(ALL_SCENARIO_IDS)
     assert [scenarios[scenario_id].group for scenario_id in SMOKE_SCENARIO_IDS] == [
         "A - Single Skill",
         "A - Single Skill",
         "A - Single Skill",
         "C - Violation And Adversarial",
+        "S - Smoke",
     ]
 
     smoke_actions = "\n".join(
@@ -100,3 +105,22 @@ def test_smoke_scenarios_are_small_representative_subset() -> None:
     assert "@issue-draft" in smoke_actions
     assert "@review-triage" in smoke_actions
     assert "@start-implement" in smoke_actions
+
+    remote_smoke = scenarios["S01"]
+    assert "remote" in remote_smoke.purpose.lower()
+    assert any(rule.metric == "total_issue_count" for rule in remote_smoke.pass_rules)
+    assert any(rule.metric == "total_pr_count" for rule in remote_smoke.pass_rules)
+
+
+def test_scenario_impact_document_covers_every_phase4_scenario() -> None:
+    doc = (
+        __import__("pathlib").Path(__file__).resolve().parents[2]
+        / "docs"
+        / "phase4-scenario-impact.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Local/static commands" in doc
+    assert "Live harness commands" in doc
+    assert "Harness setup can mutate" in doc
+    for scenario_id in ALL_SCENARIO_IDS:
+        assert f"| {scenario_id} |" in doc

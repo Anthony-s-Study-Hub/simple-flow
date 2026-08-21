@@ -31,7 +31,8 @@ def test_phase4_validate_command_is_static() -> None:
         check=True,
     )
 
-    assert "Phase 4 scenario catalog valid: 25 scenarios" in completed.stdout
+    assert "Phase 4 scenario catalog valid: 26 scenarios" in completed.stdout
+    assert "Full suite scenarios: 25" in completed.stdout
 
 
 def test_phase4_dry_run_generates_machine_and_human_reports(tmp_path: Path) -> None:
