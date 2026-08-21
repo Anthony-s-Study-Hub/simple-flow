@@ -9,8 +9,8 @@ from typing import Callable
 from urllib.parse import urlparse
 
 from simple_flow_deploy.installer import install
-from simple_flow_phase4.commands import CommandFailure, run_command
-from simple_flow_phase4.models import CommandResult, Phase4Config
+from simple_flow_test_harness.commands import CommandFailure, run_command
+from simple_flow_test_harness.models import CommandResult, Phase4Config
 
 
 DEFAULT_TEST_REPO_URL = "https://github.com/Anthony-s-Study-Hub/simple-flow-test.git"

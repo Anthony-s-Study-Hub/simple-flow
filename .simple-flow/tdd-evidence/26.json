@@ -1,0 +1,16 @@
+{
+  "issue": 26,
+  "red": {
+    "commit": "9fa34bcb10ccfbc4bb9b2c0dd411aec37001931b",
+    "command": "python -m pytest tests/phase4/test_harness_package_rename.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "28b5f0de387e00065c52f7c88527a90459e8bdee"
+  },
+  "green": {
+    "commit": "ef0a0e13848ca2981aac0d76fd4dec781ffd0f90",
+    "command": "python -m pytest",
+    "exit_code": 0
+  }
+}

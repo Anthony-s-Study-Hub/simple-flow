@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from simple_flow_phase4.models import (
+from simple_flow_test_harness.models import (
     AssertionRule,
     DraftFixture,
     FileFixture,

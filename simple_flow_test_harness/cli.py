@@ -4,16 +4,16 @@ import argparse
 from pathlib import Path
 import sys
 
-from simple_flow_phase4.environment import (
+from simple_flow_test_harness.environment import (
     DEFAULT_TEST_REPO_URL,
     Phase4Environment,
     default_codex_command,
     default_gh_path,
 )
-from simple_flow_phase4.models import Outcome, Phase4Config
-from simple_flow_phase4.reports import write_reports
-from simple_flow_phase4.runner import Phase4Runner
-from simple_flow_phase4.scenarios import (
+from simple_flow_test_harness.models import Outcome, Phase4Config
+from simple_flow_test_harness.reports import write_reports
+from simple_flow_test_harness.runner import Phase4Runner
+from simple_flow_test_harness.scenarios import (
     ALL_SCENARIO_IDS,
     REQUIRED_SCENARIO_IDS,
     SMOKE_ONLY_SCENARIO_IDS,

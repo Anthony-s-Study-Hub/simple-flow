@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from simple_flow_phase4.models import AssertionRule, Outcome, RuleResult, Scenario
+from simple_flow_test_harness.models import AssertionRule, Outcome, RuleResult, Scenario
 
 
 def evaluate_scenario(scenario: Scenario, observed_state: dict[str, Any]) -> tuple[Outcome, list[RuleResult], str]:

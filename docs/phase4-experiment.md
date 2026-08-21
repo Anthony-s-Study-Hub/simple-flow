@@ -8,13 +8,13 @@ workflow. It is executable validation code, not an automatic source CI test.
 Run static validation:
 
 ```powershell
-python -m simple_flow_phase4.cli validate
+python -m simple_flow_test_harness.cli validate
 ```
 
 Run the default smoke-gated live experiment:
 
 ```powershell
-python -m simple_flow_phase4.cli run `
+python -m simple_flow_test_harness.cli run `
   --test-repo-url https://github.com/Anthony-s-Study-Hub/simple-flow-test.git `
   --gh-path "C:\Program Files\GitHub CLI\gh.exe" `
   --allow-remote-reset
@@ -33,19 +33,19 @@ remote artifact creation are already broken.
 Run only the smoke set:
 
 ```powershell
-python -m simple_flow_phase4.cli run --smoke-only --allow-remote-reset
+python -m simple_flow_test_harness.cli run --smoke-only --allow-remote-reset
 ```
 
 Run the full suite without the smoke gate for debugging:
 
 ```powershell
-python -m simple_flow_phase4.cli run --no-smoke-gate --allow-remote-reset
+python -m simple_flow_test_harness.cli run --no-smoke-gate --allow-remote-reset
 ```
 
 Run one scenario:
 
 ```powershell
-python -m simple_flow_phase4.cli run --scenario A01 --allow-remote-reset
+python -m simple_flow_test_harness.cli run --scenario A01 --allow-remote-reset
 ```
 
 Selected scenarios run directly and do not trigger the default smoke gate.
@@ -53,7 +53,7 @@ Selected scenarios run directly and do not trigger the default smoke gate.
 Generate a CI-safe report without launching Codex:
 
 ```powershell
-python -m simple_flow_phase4.cli run --scenario A01 --dry-run
+python -m simple_flow_test_harness.cli run --scenario A01 --dry-run
 ```
 
 Live runs default to a 60 second per-turn timeout and `gpt-5.4-mini` to keep the
@@ -61,7 +61,7 @@ experiment small. Override these when the local Codex installation does not have
 that model or a scenario needs more room:
 
 ```powershell
-python -m simple_flow_phase4.cli run `
+python -m simple_flow_test_harness.cli run `
   --codex-model gpt-5.4 `
   --timeout-seconds 180 `
   --allow-remote-reset
@@ -112,7 +112,7 @@ The Markdown report is intentionally compact. For each USER_ACTION, fixed
 harness code records the processed fixture prompt fields, especially the action
 sent to Codex, and the processed response received from Codex. Raw JSON event
 streams and long command output are summarized deterministically in
-`simple_flow_phase4.transcript` before they enter the human-readable report.
+`simple_flow_test_harness.transcript` before they enter the human-readable report.
 
 ## Scenario Impact
 

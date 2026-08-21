@@ -6,17 +6,17 @@ from pathlib import Path
 import subprocess
 import sys
 
-from simple_flow_phase4.cli import DEFAULT_CODEX_MODEL, _parse_args
-from simple_flow_phase4.models import CommandResult, Outcome, ScenarioResult
-from simple_flow_phase4.reports import compact_report_data, render_markdown
-from simple_flow_phase4.runner import (
+from simple_flow_test_harness.cli import DEFAULT_CODEX_MODEL, _parse_args
+from simple_flow_test_harness.models import CommandResult, Outcome, ScenarioResult
+from simple_flow_test_harness.reports import compact_report_data, render_markdown
+from simple_flow_test_harness.runner import (
     Phase4Runner,
     _add_delta_metrics,
     _codex_infrastructure_blocker,
     _combined_codex_exit_code,
 )
-from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS
-from simple_flow_phase4.transcript import compact_codex_response, compact_fixture_prompt
+from simple_flow_test_harness.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS
+from simple_flow_test_harness.transcript import compact_codex_response, compact_fixture_prompt
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,7 +27,7 @@ def test_phase4_validate_command_is_static() -> None:
         [
             sys.executable,
             "-m",
-            "simple_flow_phase4.cli",
+            "simple_flow_test_harness.cli",
             "validate",
             "--source-root",
             str(ROOT),
@@ -50,7 +50,7 @@ def test_phase4_dry_run_generates_machine_and_human_reports(tmp_path: Path) -> N
         [
             sys.executable,
             "-m",
-            "simple_flow_phase4.cli",
+            "simple_flow_test_harness.cli",
             "run",
             "--scenario",
             "A01",
@@ -197,7 +197,7 @@ def test_phase4_smoke_only_cli_generates_smoke_report(tmp_path: Path) -> None:
         [
             sys.executable,
             "-m",
-            "simple_flow_phase4.cli",
+            "simple_flow_test_harness.cli",
             "run",
             "--smoke-only",
             "--dry-run",
@@ -252,8 +252,8 @@ def test_compact_report_documents_processed_prompt_and_response() -> None:
 
 
 def _dry_config(tmp_path: Path):
-    from simple_flow_phase4.environment import DEFAULT_TEST_REPO_URL, default_gh_path
-    from simple_flow_phase4.models import Phase4Config
+    from simple_flow_test_harness.environment import DEFAULT_TEST_REPO_URL, default_gh_path
+    from simple_flow_test_harness.models import Phase4Config
 
     return Phase4Config(
         source_root=ROOT,
