@@ -31,12 +31,19 @@ REQUIRED_SCENARIO_IDS = (
     "D03",
 )
 
+SMOKE_ONLY_SCENARIO_IDS = (
+    "S01",
+)
+
 SMOKE_SCENARIO_IDS = (
     "A01",
     "A02",
     "A06",
     "C01",
+    "S01",
 )
+
+ALL_SCENARIO_IDS = SMOKE_ONLY_SCENARIO_IDS + REQUIRED_SCENARIO_IDS
 
 COMMON_EVIDENCE = (
     "Test Project file state",
@@ -62,8 +69,8 @@ CLEANUP = (
 
 def load_scenarios() -> dict[str, Scenario]:
     scenarios = {scenario.scenario_id: scenario for scenario in _SCENARIOS}
-    missing = set(REQUIRED_SCENARIO_IDS) - set(scenarios)
-    extra = set(scenarios) - set(REQUIRED_SCENARIO_IDS)
+    missing = set(ALL_SCENARIO_IDS) - set(scenarios)
+    extra = set(scenarios) - set(ALL_SCENARIO_IDS)
     if missing or extra:
         raise RuntimeError(f"Invalid Phase 4 scenario catalog. missing={missing} extra={extra}")
     return scenarios
@@ -130,6 +137,37 @@ NO_MERGE = (
 
 
 _SCENARIOS = (
+    _s(
+        "S01",
+        "S - Smoke",
+        "Remote artifact smoke path creates a GitHub Issue and draft PR, then stops unmerged.",
+        (
+            _ua(
+                "S01-U1",
+                "@issue-draft DOCUMENTATION with Change='Add a Phase 4 smoke marker to the usage guide'; Reason='Prove the live harness can drive GitHub Issue and draft PR creation through gh'; Impact='Smoke validation only'; Supersedes='None'; Affected Project Documents='docs/simple-flow/usage-guide.md'; Source PR / Decision Context='Phase 4 remote artifact smoke test'",
+            ),
+            _ua("S01-U2", "@start-implement {{draft_id}}"),
+            _obs("S01-O1", "Read GitHub Issue state, branch state, draft PR state, and merge state."),
+            _assert("S01-A1", "Issue and draft PR exist in the remote test repo and no merge occurs."),
+        ),
+        (
+            "A DOCUMENTATION Canonical Draft exists.",
+            "A GitHub Issue exists in the test repo.",
+            "A branch-bound draft PR exists in the test repo.",
+            "The PR is not merged.",
+        ),
+        (
+            "No GitHub Issue created",
+            "No pull request created",
+            "PR merged during smoke",
+        ),
+        (
+            _rule("documentation draft created", "documentation_draft_count", ">=", 1),
+            _rule("issue opened", "total_issue_count", ">=", 1),
+            _rule("pull request opened", "total_pr_count", ">=", 1),
+            _rule("no merge", "merged_pr_count", "==", 0),
+        ),
+    ),
     _s(
         "A01",
         "A - Single Skill",

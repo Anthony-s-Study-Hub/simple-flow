@@ -20,10 +20,11 @@ python -m simple_flow_phase4.cli run `
   --allow-remote-reset
 ```
 
-The default live run executes the smoke set first: A01, A02, A06, and C01. The
-full 25-scenario suite runs only when every smoke scenario passes. This saves
-time and tokens when basic skill invocation or workflow boundaries are already
-broken.
+The default live run executes the smoke set first: A01, A02, A06, C01, and S01.
+S01 is a smoke-only remote-artifact scenario that should create a GitHub Issue
+and draft PR in the dedicated test repo. The full 25-scenario suite runs only
+when every smoke scenario passes. This saves time and tokens when basic skill
+invocation, workflow boundaries, or remote artifact creation are already broken.
 
 Run only the smoke set:
 
@@ -66,8 +67,12 @@ python -m simple_flow_phase4.cli run `
 
 - Source CI may run `validate` and dry-run schema checks.
 - Source CI must not run the live Codex experiment.
+- Local `pytest` and `--dry-run` commands do not mutate the remote test repo.
 - The harness resets the dedicated test repository before each scenario when
   `--allow-remote-reset` is supplied.
+- Live harness setup can mutate the remote test repo before any scenario action
+  by force-pushing the baseline, closing open test issues and PRs, and deleting
+  non-baseline branches.
 - The Agent Under Test runs through isolated `codex exec` sessions in the
   scenario test project.
 - The harness may fill only mechanical variables such as Draft ID, Issue number,
@@ -95,3 +100,11 @@ harness code records the processed fixture prompt fields, especially the action
 sent to Codex, and the processed response received from Codex. Raw JSON event
 streams and long command output are summarized deterministically in
 `simple_flow_phase4.transcript` before they enter the human-readable report.
+
+## Scenario Impact
+
+The per-scenario goal and mutation matrix lives in
+[`docs/phase4-scenario-impact.md`](phase4-scenario-impact.md). It documents
+which commands are local-only, which live runs can mutate the remote test repo,
+and whether each scenario expects the Agent Under Test to create or merge remote
+GitHub artifacts.

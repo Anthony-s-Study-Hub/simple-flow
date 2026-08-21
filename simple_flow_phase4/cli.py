@@ -13,7 +13,13 @@ from simple_flow_phase4.environment import (
 from simple_flow_phase4.models import Outcome, Phase4Config
 from simple_flow_phase4.reports import write_reports
 from simple_flow_phase4.runner import Phase4Runner
-from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
+from simple_flow_phase4.scenarios import (
+    ALL_SCENARIO_IDS,
+    REQUIRED_SCENARIO_IDS,
+    SMOKE_ONLY_SCENARIO_IDS,
+    SMOKE_SCENARIO_IDS,
+    load_scenarios,
+)
 
 
 DEFAULT_CODEX_MODEL = "gpt-5.4-mini"
@@ -48,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate":
         scenarios = load_scenarios()
         print(f"Phase 4 scenario catalog valid: {len(scenarios)} scenarios")
+        print(f"Full suite scenarios: {len(REQUIRED_SCENARIO_IDS)}")
+        print(f"Smoke-only scenarios: {len(SMOKE_ONLY_SCENARIO_IDS)}")
         print("Required scenarios: " + ", ".join(REQUIRED_SCENARIO_IDS))
         print("Smoke scenarios: " + ", ".join(SMOKE_SCENARIO_IDS))
         return 0
@@ -92,7 +100,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run", parents=[parent])
-    run_parser.add_argument("--scenario", action="append", choices=REQUIRED_SCENARIO_IDS)
+    run_parser.add_argument("--scenario", action="append", choices=ALL_SCENARIO_IDS)
     run_parser.add_argument("--dry-run", action="store_true")
     run_parser.add_argument("--keep-workspace", action="store_true")
     run_parser.add_argument("--codex-bypass-sandbox", action="store_true")

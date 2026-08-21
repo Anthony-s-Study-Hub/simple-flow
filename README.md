@@ -52,4 +52,7 @@ python -m simple_flow_phase4.cli run --allow-remote-reset
 ```
 
 The default run uses the smoke set first, a 60 second per-turn timeout, and the
-mini Codex model preference. The full scenario set runs only after smoke passes.
+mini Codex model preference. The smoke set includes a remote Issue/PR artifact
+scenario. The full scenario set runs only after smoke passes. See
+`docs/phase4-scenario-impact.md` for each scenario goal and remote mutation
+impact.
