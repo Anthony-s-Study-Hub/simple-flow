@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from simple_flow_phase4.models import StepType
-from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, load_scenarios
+from simple_flow_phase4.scenarios import (
+    REQUIRED_SCENARIO_IDS,
+    SMOKE_SCENARIO_IDS,
+    load_scenarios,
+)
 
 
 def test_required_phase4_scenarios_are_defined_once() -> None:
@@ -73,3 +77,26 @@ def test_first_version_covers_required_groups() -> None:
         "D02",
         "D03",
     ]
+
+
+def test_smoke_scenarios_are_small_representative_subset() -> None:
+    scenarios = load_scenarios()
+
+    assert SMOKE_SCENARIO_IDS == ("A01", "A02", "A06", "C01")
+    assert set(SMOKE_SCENARIO_IDS) < set(REQUIRED_SCENARIO_IDS)
+    assert [scenarios[scenario_id].group for scenario_id in SMOKE_SCENARIO_IDS] == [
+        "A - Single Skill",
+        "A - Single Skill",
+        "A - Single Skill",
+        "C - Violation And Adversarial",
+    ]
+
+    smoke_actions = "\n".join(
+        step.text
+        for scenario_id in SMOKE_SCENARIO_IDS
+        for step in scenarios[scenario_id].ordered_steps
+    )
+    assert "@discussion" in smoke_actions
+    assert "@issue-draft" in smoke_actions
+    assert "@review-triage" in smoke_actions
+    assert "@start-implement" in smoke_actions
