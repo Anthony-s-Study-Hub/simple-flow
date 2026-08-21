@@ -20,6 +20,7 @@ The invocation means the named draft passed human review.
 ## Responsibilities
 
 - Read exactly the specified Canonical Draft.
+- Load the draft from `.simple-flow/drafts/<Draft ID>.json`.
 - Read the draft Work Type.
 - Check whether current conversation context contains one clearly matching
   Review-Triage result.

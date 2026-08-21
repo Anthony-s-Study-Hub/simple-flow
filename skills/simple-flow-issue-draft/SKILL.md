@@ -17,7 +17,8 @@ change.
 - Build one structured Canonical Draft for either FEATURE or PROJECT_CHANGE.
 - Validate the draft with deterministic draft and issue-contract logic.
 - Assign a unique Draft ID.
-- Save structured JSON and render human-readable Markdown from the same data.
+- Save structured JSON and render human-readable Markdown from the same data
+  under `.simple-flow/drafts/`.
 - Output the Draft ID and STOP.
 
 ## FEATURE Contract
@@ -51,6 +52,6 @@ PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
 - Do not modify implementation code.
 - Do not invoke or simulate Start-Implement.
 
-Mechanics should use `simple_flow_agent.drafts.DraftStore` or an equivalent
-deterministic helper. After reporting the Draft ID, STOP.
+Mechanics should use `simple_flow_agent.drafts.DraftStore(".simple-flow/drafts")`
+or an equivalent deterministic helper. After reporting the Draft ID, STOP.
 
