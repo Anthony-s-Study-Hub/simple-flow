@@ -120,9 +120,13 @@ def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:
         if step.step_type == StepType.USER_ACTION
     ]
 
-    assert [step.text for step in user_actions] == ["@start-implement {{draft_id}}"]
+    assert len(user_actions) == 1
+    assert user_actions[0].text.startswith("@start-implement {{draft_id}}")
+    assert "minimum DOCUMENTATION_NORMAL path" in user_actions[0].text
+    assert "open a draft PR" in user_actions[0].text
     assert remote_smoke.fixture_draft is not None
     assert remote_smoke.fixture_draft.work_type == "DOCUMENTATION"
+    assert remote_smoke.fixture_draft.fields["Change"].startswith("Append")
     assert remote_smoke.fixture_draft.fields["Affected Project Documents"] == [
         "docs/simple-flow/usage-guide.md"
     ]
