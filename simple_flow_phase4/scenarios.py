@@ -3,6 +3,7 @@ from __future__ import annotations
 from simple_flow_phase4.models import (
     AssertionRule,
     DraftFixture,
+    FileFixture,
     Scenario,
     ScenarioStep,
     StepType,
@@ -115,6 +116,7 @@ def _s(
     rules: tuple[AssertionRule, ...],
     initial_state: str = "Clean Phase 4 baseline test project with deployed Simple Flow workflow.",
     fixture_draft: DraftFixture | None = None,
+    fixture_files: tuple[FileFixture, ...] = (),
 ) -> Scenario:
     return Scenario(
         scenario_id=scenario_id,
@@ -128,6 +130,7 @@ def _s(
         pass_rules=rules,
         cleanup_requirements=CLEANUP,
         fixture_draft=fixture_draft,
+        fixture_files=fixture_files,
     )
 
 
@@ -237,7 +240,7 @@ _SCENARIOS = (
         (
             _ua(
                 "A02-U1",
-                "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'; Requirements='Return HTTP 200 and JSON status ok from the health endpoint'; Acceptance Criteria='Automated test proves the health response returns status ok'; Scope='src/simple_flow_test_app/'; Out of Scope='Authentication, routing framework changes, deployment changes'; Documentation Impact='None'; Roadmap Target='UNMAPPED'",
+                "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'. For this smoke scenario, run: python .codex/skills/issue-draft/scripts/create_draft.py --input .simple-flow/phase4-fixtures/A02-draft.json --drafts-dir .simple-flow/drafts --roadmap-targets .simple-flow/roadmap-targets.txt. Then report the Draft ID and STOP.",
             ),
             _obs("A02-O1", "Read Canonical Draft JSON and Markdown."),
             _assert("A02-A1", "FEATURE draft exists with fixed issue contract fields and no GitHub artifacts."),
@@ -256,6 +259,31 @@ _SCENARIOS = (
             _rule("no open issue", "open_issue_count", "==", 0),
             _rule("no open pull request", "open_pr_count", "==", 0),
             _rule("no development branch", "local_development_branch_count", "==", 0),
+        ),
+        fixture_files=(
+            FileFixture(
+                relative_path=".simple-flow/phase4-fixtures/A02-draft.json",
+                content=(
+                    "{\n"
+                    '  "work_type": "FEATURE",\n'
+                    '  "summary": "Add a lightweight health endpoint",\n'
+                    '  "requirements": [\n'
+                    '    "Return HTTP 200 and JSON status ok from the health endpoint"\n'
+                    "  ],\n"
+                    '  "acceptance_criteria": [\n'
+                    '    "Automated test proves the health response returns status ok"\n'
+                    "  ],\n"
+                    '  "scope": [\n'
+                    '    "src/simple_flow_test_app/"\n'
+                    "  ],\n"
+                    '  "out_of_scope": [\n'
+                    '    "Authentication, routing framework changes, deployment changes"\n'
+                    "  ],\n"
+                    '  "documentation_impact": [],\n'
+                    '  "roadmap_target": "UNMAPPED"\n'
+                    "}\n"
+                ),
+            ),
         ),
     ),
     _s(

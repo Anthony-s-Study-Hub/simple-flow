@@ -593,8 +593,23 @@ def _item_number(item: object) -> int | None:
 
 
 def _apply_scenario_fixtures(project_path: Path, scenario: Scenario) -> list[dict[str, object]]:
+    applied: list[dict[str, object]] = []
+    for fixture in scenario.fixture_files:
+        relative_path = Path(fixture.relative_path)
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise ValueError(f"Unsafe Phase 4 file fixture path: {fixture.relative_path}")
+        fixture_path = project_path / relative_path
+        fixture_path.parent.mkdir(parents=True, exist_ok=True)
+        fixture_path.write_text(fixture.content, encoding="utf-8")
+        applied.append(
+            {
+                "type": "file",
+                "relative_path": fixture.relative_path,
+            }
+        )
+
     if not scenario.fixture_draft:
-        return []
+        return applied
 
     from simple_flow_agent.drafts import DraftStore
 
@@ -614,14 +629,15 @@ def _apply_scenario_fixtures(project_path: Path, scenario: Scenario) -> list[dic
         source_issue=fixture.source_issue,
         source_pr=fixture.source_pr,
     )
-    return [
+    applied.append(
         {
             "type": "canonical_draft",
             "draft_id": draft.draft_id,
             "work_type": draft.work_type,
             "fields": draft.fields,
         }
-    ]
+    )
+    return applied
 
 
 def _fixture_list(value: object) -> list[str]:

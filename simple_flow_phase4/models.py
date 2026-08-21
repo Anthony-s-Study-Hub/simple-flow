@@ -72,6 +72,18 @@ class DraftFixture:
 
 
 @dataclass(frozen=True)
+class FileFixture:
+    relative_path: str
+    content: str
+
+    def to_json_data(self) -> dict[str, str]:
+        return {
+            "relative_path": self.relative_path,
+            "content": self.content,
+        }
+
+
+@dataclass(frozen=True)
 class Scenario:
     scenario_id: str
     group: str
@@ -84,6 +96,7 @@ class Scenario:
     pass_rules: tuple[AssertionRule, ...]
     cleanup_requirements: tuple[str, ...]
     fixture_draft: DraftFixture | None = None
+    fixture_files: tuple[FileFixture, ...] = ()
 
     @property
     def prompt_reference(self) -> str:
@@ -138,6 +151,7 @@ class Scenario:
             "pass_rules": [rule.to_json_data() for rule in self.pass_rules],
             "cleanup_requirements": list(self.cleanup_requirements),
             "fixture_draft": self.fixture_draft.to_json_data() if self.fixture_draft else None,
+            "fixture_files": [fixture.to_json_data() for fixture in self.fixture_files],
             "prompt_reference": self.prompt_reference,
         }
 
