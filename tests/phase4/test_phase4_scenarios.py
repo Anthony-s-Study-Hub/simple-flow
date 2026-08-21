@@ -146,8 +146,10 @@ def test_smoke_members_keep_fast_single_skill_actions() -> None:
     assert len(a01_actions) == 1
     assert "Do not inspect repository files" in a01_actions[0]
     assert a02_actions == [
-        "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'; Requirements='Return HTTP 200 and JSON status ok from the health endpoint'; Acceptance Criteria='Automated test proves the health response returns status ok'; Scope='src/simple_flow_test_app/'; Out of Scope='Authentication, routing framework changes, deployment changes'; Documentation Impact='None'; Roadmap Target='UNMAPPED'"
+        "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'. For this smoke scenario, run: python .codex/skills/issue-draft/scripts/create_draft.py --input .simple-flow/phase4-fixtures/A02-draft.json --drafts-dir .simple-flow/drafts --roadmap-targets .simple-flow/roadmap-targets.txt. Then report the Draft ID and STOP."
     ]
+    assert scenarios["A02"].fixture_files
+    assert scenarios["A02"].fixture_files[0].relative_path == ".simple-flow/phase4-fixtures/A02-draft.json"
     assert a06_actions == [
         "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=1 source-pr=1 reason='Endpoint omits error case.'"
     ]
