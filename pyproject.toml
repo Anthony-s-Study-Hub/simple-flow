@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simple-flow"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deterministic GitHub and CI gates for the Simple Flow workflow study."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,6 +14,7 @@ dependencies = []
 test = ["pytest>=8"]
 
 [project.scripts]
+simple-flow = "simple_flow_deploy.cli:main"
 simple-flow-gates = "simple_flow_gates.cli:main"
 phase4-run = "simple_flow_test_harness.cli:main"
 
@@ -24,3 +25,18 @@ pythonpath = ["."]
 [tool.setuptools.packages.find]
 include = ["simple_flow_gates*", "simple_flow_agent*", "simple_flow_deploy*", "simple_flow_documentation_curation*", "simple_flow_test_harness*"]
 exclude = ["skills*", "tests*", "scripts*"]
+
+[tool.setuptools.package-data]
+simple_flow_deploy = [
+  "assets/AGENTS.md",
+  "assets/.github/ISSUE_TEMPLATE/*.md",
+  "assets/.github/workflows/*.yml",
+  "assets/.github/pull_request_template.md",
+  "assets/.simple-flow/roadmap-targets.txt",
+  "assets/docs/deployment/*.md",
+  "assets/skills/*/SKILL.md",
+  "assets/scripts/*.py",
+  "assets/scripts/*.ps1",
+  "baseline_templates/*.md",
+  "skill_resources/*/scripts/*.py",
+]

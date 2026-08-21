@@ -44,7 +44,7 @@ def _add_repo_root_to_path() -> None:
         if (parent / "simple_flow_agent").is_dir():
             sys.path.insert(0, str(parent))
             return
-    raise RuntimeError("Could not find repository root containing simple_flow_agent.")
+    return
 
 
 if __name__ == "__main__":

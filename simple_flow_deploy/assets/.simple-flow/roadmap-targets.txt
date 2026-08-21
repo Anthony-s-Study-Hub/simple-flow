@@ -1,0 +1,5 @@
+# One roadmap target per line. The issue gate also accepts:
+# UNMAPPED
+# DOCUMENTATION_REQUIRED
+PHASE_1_GOVERNANCE
+
