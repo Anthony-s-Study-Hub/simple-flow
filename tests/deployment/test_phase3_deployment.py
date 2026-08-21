@@ -32,8 +32,10 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
 
     assert report["status"] == "success"
     assert (target / "AGENTS.md").exists()
-    assert (target / ".github" / "workflows" / "phase1-gates.yml").exists()
+    assert (target / ".github" / "workflows" / "issue-governance.yml").exists()
+    assert (target / ".github" / "workflows" / "pr-governance.yml").exists()
     assert (target / ".github" / "workflows" / "phase1-tests.yml").exists()
+    assert not (target / ".github" / "workflows" / "phase1-gates.yml").exists()
     assert (target / ".github" / "ISSUE_TEMPLATE" / "feature.md").exists()
     assert (target / ".github" / "ISSUE_TEMPLATE" / "documentation.md").exists()
     assert not (target / ".github" / "ISSUE_TEMPLATE" / "project_change.md").exists()
@@ -136,22 +138,47 @@ def test_reference_integrity_and_required_check_names(tmp_path: Path) -> None:
     target = tmp_path / "target-project"
     _install(target)
 
-    phase1_gates = (target / ".github" / "workflows" / "phase1-gates.yml").read_text(
+    pr_governance = (target / ".github" / "workflows" / "pr-governance.yml").read_text(
+        encoding="utf-8"
+    )
+    issue_governance = (target / ".github" / "workflows" / "issue-governance.yml").read_text(
+        encoding="utf-8"
+    )
+    phase1_tests = (target / ".github" / "workflows" / "phase1-tests.yml").read_text(
         encoding="utf-8"
     )
     repo_rules = (target / "simple_flow_gates" / "repository_rules.py").read_text(
         encoding="utf-8"
     )
 
-    assert "python -m simple_flow_gates.cli validate-pr" in phase1_gates
+    assert "python -m simple_flow_gates.cli validate-issue" in issue_governance
+    assert "python -m simple_flow_gates.cli validate-pr-contract" in pr_governance
+    assert "python -m simple_flow_gates.cli validate-linked-issue" in pr_governance
+    assert "python -m simple_flow_gates.cli validate-scope" in pr_governance
+    assert "python -m simple_flow_gates.cli validate-documentation-impact" in pr_governance
+    assert "python -m simple_flow_gates.cli validate-tdd-evidence" in pr_governance
+    assert "python -m simple_flow_gates.cli verify-tdd-red" in pr_governance
+    assert "python -m simple_flow_gates.cli verify-tdd-green" in pr_governance
+    assert "current-head-tests" in phase1_tests
     assert "scripts.orphan_branch_watch" in (
         target / ".github" / "workflows" / "orphan-branch-watch.yml"
     ).read_text(encoding="utf-8")
-    assert '"phase1-gates"' in repo_rules
-    assert '"phase1-tests"' in repo_rules
-    assert str(ROOT) not in phase1_gates
-    assert "C:\\\\" not in phase1_gates
-    assert "Anthony-s-Study-Hub/simple-flow" not in phase1_gates
+    for check in [
+        "pr-contract",
+        "linked-issue-contract",
+        "scope-governance",
+        "documentation-impact",
+        "tdd-evidence-order",
+        "tdd-red-replay",
+        "tdd-green-replay",
+        "current-head-tests",
+    ]:
+        assert f'"{check}"' in repo_rules
+    assert '"phase1-gates"' not in repo_rules
+    assert '"phase1-tests"' not in repo_rules
+    assert str(ROOT) not in pr_governance
+    assert "C:\\\\" not in pr_governance
+    assert "Anthony-s-Study-Hub/simple-flow" not in pr_governance
     _assert_deployed_skill_script_references_exist(target)
 
 
@@ -236,7 +263,8 @@ def _hash_core_files(project: Path) -> dict[str, str]:
     files = {}
     for relative in [
         "AGENTS.md",
-        ".github/workflows/phase1-gates.yml",
+        ".github/workflows/issue-governance.yml",
+        ".github/workflows/pr-governance.yml",
         ".github/workflows/phase1-tests.yml",
         ".codex/skills/discussion/SKILL.md",
         ".codex/skills/issue-draft/SKILL.md",

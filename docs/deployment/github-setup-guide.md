@@ -3,7 +3,9 @@
 For a public repository, configure:
 
 - Pull requests required for `main`.
-- Required status checks: `phase1-gates` and `phase1-tests`.
+- Required status checks: `pr-contract`, `linked-issue-contract`,
+  `scope-governance`, `documentation-impact`, `tdd-evidence-order`,
+  `tdd-red-replay`, `tdd-green-replay`, and `current-head-tests`.
 - Strict required checks.
 - Review conversation resolution required.
 - Force pushes disabled.

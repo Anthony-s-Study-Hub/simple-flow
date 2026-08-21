@@ -49,8 +49,10 @@ The evidence format is:
 }
 ```
 
-The gate verifies that RED failed, GREEN passed, and the commits appear in the
-pull request history in RED, implementation, GREEN order.
+The TDD governance checks verify that RED failed, GREEN passed, and the commits
+appear in the pull request history in RED, implementation, GREEN order. CI
+reports this as separate TDD evidence, RED replay, and GREEN replay checks so
+the failing and passing phases remain visible without weakening the merge gate.
 
 ## Scope And Docs
 
@@ -79,9 +81,23 @@ The desired repository settings are:
 ```
 
 The desired main branch policy includes admins in enforcement and requires pull
-requests, required status checks, resolved review conversations, no force
-pushes, no branch deletion, and zero required approving reviews while the agent
-and human share one GitHub identity.
+requests, resolved review conversations, no force pushes, no branch deletion,
+and zero required approving reviews while the agent and human share one GitHub
+identity.
+
+Required PR checks are intentionally granular:
+
+- `pr-contract`
+- `linked-issue-contract`
+- `scope-governance`
+- `documentation-impact`
+- `tdd-evidence-order`
+- `tdd-red-replay`
+- `tdd-green-replay`
+- `current-head-tests`
+
+Issue contract validation runs from the issue-only `issue-contract` check and
+is revalidated on PRs through `linked-issue-contract`.
 
 Apply the policy from a local workstation with the full GitHub CLI path:
 

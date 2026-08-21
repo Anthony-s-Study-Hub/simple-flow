@@ -12,6 +12,7 @@ from simple_flow_gates.tdd import (
     validate_tdd_gate,
     verify_tdd_commands,
 )
+import simple_flow_gates.tdd as tdd
 from tests.conftest import documentation_issue_body, feature_issue_body
 
 
@@ -61,6 +62,13 @@ def test_tdd_command_replay_passes_for_real_red_green_commits(tmp_path: Path) ->
         history,
     )
     verify_tdd_commands(evidence, repo_path=tmp_path)
+
+
+def test_tdd_command_replay_can_verify_red_and_green_separately(tmp_path: Path) -> None:
+    evidence, _history = _make_tdd_repo(tmp_path, red_has_implementation=False)
+
+    tdd.verify_tdd_command(evidence, "red", repo_path=tmp_path)
+    tdd.verify_tdd_command(evidence, "green", repo_path=tmp_path)
 
 
 def test_tdd_command_replay_fails_when_red_commit_actually_passes(tmp_path: Path) -> None:
