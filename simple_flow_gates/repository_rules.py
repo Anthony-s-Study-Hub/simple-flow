@@ -17,6 +17,7 @@ def desired_repository_settings() -> dict[str, bool]:
 def desired_main_branch_policy() -> dict[str, object]:
     return {
         "require_pull_request": True,
+        "enforce_admins": True,
         "required_approving_review_count": 0,
         "required_status_checks": REQUIRED_STATUS_CHECKS,
         "required_conversation_resolution": True,
