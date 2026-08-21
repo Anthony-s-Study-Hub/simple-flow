@@ -1,0 +1,16 @@
+{
+  "issue": 32,
+  "red": {
+    "commit": "8e5a3f873908e385275088431436441e9fda61d8",
+    "command": "python -m pytest tests/deployment/test_release_installer_cli.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "2e5aa0a34e6b0bdfd033fa0671d98813b3bfe09b"
+  },
+  "green": {
+    "commit": "2856f144231d8787c79fb8a36a70f06fd2715a38",
+    "command": "python -m pytest tests/deployment/test_release_installer_cli.py",
+    "exit_code": 0
+  }
+}

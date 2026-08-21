@@ -20,6 +20,9 @@ def main() -> int:
     parser.add_argument("--scope", action="append", default=[])
     parser.add_argument("--documentation", action="append", default=[])
     parser.add_argument("--clean-target", action="store_true")
+    parser.add_argument("--mode", choices=["thin", "vendored"], default="vendored")
+    parser.add_argument("--release-source")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     report = install(
@@ -30,6 +33,9 @@ def main() -> int:
         scope=args.scope or ["src/"],
         documentation=args.documentation or ["docs/"],
         clean_target=args.clean_target,
+        mode=args.mode,
+        release_source=args.release_source,
+        dry_run=args.dry_run,
     )
     print(report.to_json())
     return 0 if report.status == "success" else 1

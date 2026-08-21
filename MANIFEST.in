@@ -1,0 +1,3 @@
+recursive-include simple_flow_deploy/assets *
+recursive-include simple_flow_deploy/baseline_templates *.md
+recursive-include simple_flow_deploy/skill_resources *.py

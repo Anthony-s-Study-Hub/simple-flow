@@ -17,8 +17,18 @@ skill-local scripts for executable stage handoffs, and deterministic helpers in
 `simple_flow_agent` for draft handoff, review triage, start-implement path
 selection, and PR-finalize prechecks.
 
-Phase 3 adds a deterministic installer in `scripts/install_simple_flow.py` for
-deploying the portable workflow into another project.
+Phase 3 adds a deterministic release installer for deploying the portable
+workflow into another project. From a new project root:
+
+```powershell
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow doctor .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow install .
+```
+
+The default release install is package-backed and writes
+`.simple-flow/install-manifest.json` instead of copying the full source tree.
+The legacy `scripts/install_simple_flow.py` path remains available for
+self-contained vendored deployments.
 
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated
