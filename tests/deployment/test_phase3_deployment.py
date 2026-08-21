@@ -9,6 +9,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SSOT_SCRIPT_ROOT = ROOT / "simple_flow_deploy" / "skill_resources"
 UNPREFIXED_SKILLS = [
     "discussion",
     "issue-draft",
@@ -53,7 +54,13 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
         assert "simple-flow-" not in str(skill_file)
         assert "name: simple-flow-" not in text
         for script in SKILL_SCRIPTS[skill_name]:
-            assert (target / ".codex" / "skills" / skill_name / script).exists()
+            deployed_script = target / ".codex" / "skills" / skill_name / script
+            ssot_script = SSOT_SCRIPT_ROOT / skill_name / script
+            assert ssot_script.exists()
+            assert deployed_script.exists()
+            assert deployed_script.read_text(encoding="utf-8") == ssot_script.read_text(
+                encoding="utf-8"
+            )
             assert script in text
 
 
@@ -246,5 +253,11 @@ def _assert_deployed_skill_script_references_exist(target: Path) -> None:
         skill_dir = target / ".codex" / "skills" / skill
         skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
         for script in scripts:
+            ssot_script = SSOT_SCRIPT_ROOT / skill / script
+            deployed_script = skill_dir / script
             assert script in skill_text
-            assert (skill_dir / script).exists()
+            assert ssot_script.exists()
+            assert deployed_script.exists()
+            assert deployed_script.read_text(encoding="utf-8") == ssot_script.read_text(
+                encoding="utf-8"
+            )

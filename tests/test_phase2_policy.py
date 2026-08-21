@@ -45,7 +45,7 @@ def test_all_five_phase2_skills_exist_with_unique_ownership_markers() -> None:
         assert "STOP" in text
 
 
-def test_phase2_skills_define_required_local_script_entrypoints() -> None:
+def test_phase2_skills_define_required_deployed_script_entrypoints() -> None:
     expected_scripts = {
         "simple-flow-discussion": [],
         "simple-flow-issue-draft": ["scripts/create_draft.py"],
@@ -57,8 +57,8 @@ def test_phase2_skills_define_required_local_script_entrypoints() -> None:
     for folder, scripts in expected_scripts.items():
         skill_dir = ROOT / "skills" / folder
         text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        assert not (skill_dir / "scripts").exists()
         for script in scripts:
-            assert (skill_dir / script).exists()
             assert script in text
 
     discussion = (ROOT / "skills" / "simple-flow-discussion" / "SKILL.md").read_text(
