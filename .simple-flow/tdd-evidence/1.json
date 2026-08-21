@@ -1,0 +1,16 @@
+{
+  "issue": 1,
+  "red": {
+    "commit": "bc36775f1a5177683f50269486284eaff1c9cee0",
+    "command": "python -m pytest tests/test_orphan_and_repository_rules.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "f57b73279129f93f23c16a94cbba3245b079b522"
+  },
+  "green": {
+    "commit": "0dc9c6557e9f538d79747aeae5f97bfd284c48ee",
+    "command": "python -m pytest tests/test_orphan_and_repository_rules.py",
+    "exit_code": 0
+  }
+}
