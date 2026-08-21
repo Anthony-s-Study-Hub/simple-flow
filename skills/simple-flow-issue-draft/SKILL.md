@@ -17,7 +17,8 @@ change.
 - Build one structured Canonical Draft for either FEATURE or DOCUMENTATION.
 - Validate the draft with deterministic draft and issue-contract logic.
 - Assign a unique Draft ID.
-- Save structured JSON and render human-readable Markdown from the same data.
+- Save structured JSON and render human-readable Markdown from the same data
+  under `.simple-flow/drafts/`.
 - Output the Draft ID and STOP.
 
 ## Execution
@@ -72,5 +73,6 @@ during migration. New drafts must use DOCUMENTATION.
 - Do not invoke or simulate Start-Implement.
 
 Mechanics must use the bundled `scripts/create_draft.py` entrypoint. After
-reporting the Draft ID, STOP.
+reporting the Draft ID, STOP. The entrypoint writes the Canonical Draft JSON
+and Markdown under `.simple-flow/drafts/`.
 

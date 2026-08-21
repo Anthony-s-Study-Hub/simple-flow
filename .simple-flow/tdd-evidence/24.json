@@ -1,0 +1,25 @@
+{
+  "issue": 24,
+  "red": {
+    "commit": "bf3cdf8b639520d36203db9508a138708b89c1a6",
+    "command": "python -m pytest tests/phase4",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "61ff21b386d78d93e0f0bd0e51ea2c97c1dbcd0a"
+  },
+  "green": {
+    "commit": "b797e9e9fe9eb7388459cfb42841625bd1dbecec",
+    "command": "python -m pytest",
+    "exit_code": 0
+  },
+  "verification": {
+    "validate_command": "python -m simple_flow_phase4.cli validate",
+    "validate_exit_code": 0,
+    "smoke_command": "python -m simple_flow_phase4.cli run --smoke-only --allow-remote-reset",
+    "smoke_report": ".simple-flow/phase4-reports/phase4-20260821T185804z0000.md",
+    "smoke_status": "PASS",
+    "remote_issue": 16,
+    "remote_pr": 17
+  }
+}

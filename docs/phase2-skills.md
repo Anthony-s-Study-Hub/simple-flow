@@ -21,9 +21,10 @@ evidence checks.
 
 ## Deterministic Handoff
 
-Issue-Draft stores each Canonical Draft as JSON and Markdown with a unique Draft
-ID. Start-Implement must read the human-specified Draft ID and must not use the
-latest draft as a substitute.
+Issue-Draft stores each Canonical Draft as JSON and Markdown under
+`.simple-flow/drafts/` with a unique Draft ID. Start-Implement must read the
+human-specified Draft ID from that location and must not use the latest draft as
+a substitute.
 
 The stage scripts are the deterministic handoff points:
 

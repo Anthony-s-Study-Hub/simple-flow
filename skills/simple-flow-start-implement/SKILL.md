@@ -20,6 +20,7 @@ The invocation means the named draft passed human review.
 ## Responsibilities
 
 - Read exactly the specified Canonical Draft.
+- Load the draft from `.simple-flow/drafts/<Draft ID>.json`.
 - Read the draft Work Type.
 - Check whether current conversation context contains one clearly matching
   Review-Triage result.
@@ -45,12 +46,23 @@ python .codex/skills/start-implement/scripts/select_path.py --draft-id <Draft ID
    and pass it with `--triage-file <triage.json>`. Repeat `--triage-file` for
    multiple candidate triage results.
 4. Follow only the returned `path`, `tdd_required`, and `actions`.
-5. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`.
+5. For a `DOCUMENTATION_NORMAL` path where the approved draft Change is an
+   append-only documentation instruction, use the bundled documentation helper
+   instead of manually recreating the GitHub Issue, branch, commit, push, and
+   draft PR steps:
+
+```powershell
+python .codex/skills/start-implement/scripts/start_documentation.py --draft-id <Draft ID> --drafts-dir .simple-flow/drafts --repo <owner/repo-or-url> --gh-path <gh executable>
+```
+
+6. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`.
 
 In this source repository, the deploy-time script source of truth is
 `simple_flow_deploy/skill_resources/start-implement/scripts/select_path.py`.
 Installed projects use the `.codex/skills/start-implement/scripts/select_path.py`
 path shown above.
+The deploy-time source of truth for the documentation helper is
+`simple_flow_deploy/skill_resources/start-implement/scripts/start_documentation.py`.
 
 ## Boundaries
 
