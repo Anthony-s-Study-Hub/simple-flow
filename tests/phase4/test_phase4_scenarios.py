@@ -110,8 +110,8 @@ def test_smoke_scenarios_are_small_representative_subset() -> None:
 
     remote_smoke = scenarios["S01"]
     assert "remote" in remote_smoke.purpose.lower()
-    assert any(rule.metric == "total_issue_count" for rule in remote_smoke.pass_rules)
-    assert any(rule.metric == "total_pr_count" for rule in remote_smoke.pass_rules)
+    assert any(rule.metric == "new_open_issue_count" for rule in remote_smoke.pass_rules)
+    assert any(rule.metric == "new_draft_pr_count" for rule in remote_smoke.pass_rules)
 
 
 def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:

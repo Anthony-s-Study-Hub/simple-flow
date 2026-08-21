@@ -10,6 +10,7 @@ from simple_flow_phase4.models import CommandResult
 from simple_flow_phase4.reports import compact_report_data, render_markdown
 from simple_flow_phase4.runner import (
     Phase4Runner,
+    _add_delta_metrics,
     _codex_infrastructure_blocker,
     _combined_codex_exit_code,
 )
@@ -121,6 +122,34 @@ def test_phase4_combined_codex_result_preserves_timeout_exit_code() -> None:
     )
 
     assert _combined_codex_exit_code([("S01-U1", timeout), ("S01-U2", later)]) == 124
+
+
+def test_phase4_delta_metrics_ignore_historical_closed_artifacts() -> None:
+    historical_issue = {"number": 1, "state": "CLOSED"}
+    historical_pr = {"number": 1, "state": "CLOSED", "isDraft": False, "mergedAt": None}
+    initial_state = {
+        "github": {
+            "issues": [historical_issue],
+            "pull_requests": [historical_pr],
+        }
+    }
+    final_state = {
+        "github": {
+            "issues": [historical_issue, {"number": 2, "state": "OPEN"}],
+            "pull_requests": [
+                historical_pr,
+                {"number": 2, "state": "OPEN", "isDraft": True, "mergedAt": None},
+            ],
+        },
+        "metrics": {},
+    }
+
+    _add_delta_metrics(initial_state, final_state)
+
+    assert final_state["metrics"]["new_issue_count"] == 1
+    assert final_state["metrics"]["new_open_issue_count"] == 1
+    assert final_state["metrics"]["new_pr_count"] == 1
+    assert final_state["metrics"]["new_draft_pr_count"] == 1
 
 
 def test_phase4_default_run_dry_run_exercises_smoke_only_before_full_suite(tmp_path: Path) -> None:
