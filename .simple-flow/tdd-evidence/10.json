@@ -3,7 +3,7 @@
   "red": {
     "commit": "120af32267bba3af9917e9a00469a5973ebb478d",
     "command": "python -m pytest tests/test_phase2_policy.py tests/test_phase2_workflow.py",
-    "exit_code": 2
+    "exit_code": 1
   },
   "implementation": {
     "commit": "7f1fd62c9d8d41acc46d55f9917c198b535d91ee"
