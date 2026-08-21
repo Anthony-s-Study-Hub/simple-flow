@@ -8,7 +8,11 @@ import sys
 from simple_flow_phase4.cli import DEFAULT_CODEX_MODEL, _parse_args
 from simple_flow_phase4.models import CommandResult
 from simple_flow_phase4.reports import compact_report_data, render_markdown
-from simple_flow_phase4.runner import Phase4Runner, _codex_infrastructure_blocker
+from simple_flow_phase4.runner import (
+    Phase4Runner,
+    _codex_infrastructure_blocker,
+    _combined_codex_exit_code,
+)
 from simple_flow_phase4.scenarios import SMOKE_SCENARIO_IDS
 from simple_flow_phase4.transcript import compact_codex_response, compact_fixture_prompt
 
@@ -98,6 +102,25 @@ def test_phase4_timeout_blocker_takes_precedence_over_noisy_model_cache_output()
     )
 
     assert _codex_infrastructure_blocker(result) == "Codex CLI infrastructure blocker: timed out"
+
+
+def test_phase4_combined_codex_result_preserves_timeout_exit_code() -> None:
+    timeout = CommandResult(
+        command=("codex-action", "S01", "S01-U1"),
+        cwd=str(ROOT),
+        exit_code=124,
+        stdout="",
+        stderr="timed out",
+    )
+    later = CommandResult(
+        command=("codex-action", "S01", "S01-U2"),
+        cwd=str(ROOT),
+        exit_code=0,
+        stdout="",
+        stderr="",
+    )
+
+    assert _combined_codex_exit_code([("S01-U1", timeout), ("S01-U2", later)]) == 124
 
 
 def test_phase4_default_run_dry_run_exercises_smoke_only_before_full_suite(tmp_path: Path) -> None:
