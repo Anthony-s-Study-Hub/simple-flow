@@ -32,9 +32,10 @@ python .codex/skills/issue-draft/scripts/create_draft.py --input <draft-input.js
 3. Use only the script output as the Canonical Draft handoff.
 4. Report the returned `draft_id`, `json_path`, and `markdown_path`, then STOP.
 
-In this source repository, the same bundled script lives at
-`skills/simple-flow-issue-draft/scripts/create_draft.py`. Installed projects use
-the `.codex/skills/issue-draft/scripts/create_draft.py` path shown above.
+In this source repository, the deploy-time script source of truth is
+`simple_flow_deploy/skill_resources/issue-draft/scripts/create_draft.py`.
+Installed projects use the `.codex/skills/issue-draft/scripts/create_draft.py`
+path shown above.
 
 ## FEATURE Contract
 

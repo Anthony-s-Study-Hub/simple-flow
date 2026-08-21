@@ -44,13 +44,11 @@ def test_issue_draft_creates_structured_and_rendered_feature_draft(tmp_path: Pat
     )
 
 
-def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
+def test_issue_draft_feature_script_creates_draft(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[1]
     draft_input = tmp_path / "draft-input.json"
     draft_dir = tmp_path / "drafts"
     roadmap = tmp_path / "roadmap-targets.txt"
-    triage_output = tmp_path / "triage.json"
-    pr_state = tmp_path / "pr-state.json"
     roadmap.write_text("PHASE_1_GOVERNANCE\n", encoding="utf-8")
     draft_input.write_text(
         json.dumps(
@@ -74,7 +72,7 @@ def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
     created = _run_json(
         [
             sys.executable,
-            str(_skill_script(root, "simple-flow-issue-draft", "issue-draft", "create_draft.py")),
+            str(_skill_script(root, "issue-draft", "create_draft.py")),
             "--input",
             str(draft_input),
             "--drafts-dir",
@@ -87,17 +85,14 @@ def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
     assert created["draft_id"] == "DRAFT-0001"
     assert (draft_dir / "DRAFT-0001.json").exists()
 
+
+def test_review_triage_script_classifies_blocking_current_finding() -> None:
+    root = Path(__file__).resolve().parents[1]
+
     triage = _run_json(
         [
             sys.executable,
-            str(
-                _skill_script(
-                    root,
-                    "simple-flow-review-triage",
-                    "review-triage",
-                    "classify_finding.py",
-                )
-            ),
+            str(_skill_script(root, "review-triage", "classify_finding.py")),
             "--relationship",
             "CURRENT",
             "--merge-impact",
@@ -111,12 +106,46 @@ def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
         ],
         cwd=root,
     )
-    triage_output.write_text(json.dumps(triage) + "\n", encoding="utf-8")
+    assert triage["relationship"] == "CURRENT"
+    assert triage["merge_impact"] == "BLOCKING"
+    assert triage["source_issue"] == 14
+    assert triage["source_pr"] == 15
+
+
+def test_start_implement_script_selects_review_blocking_path(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    draft_dir = tmp_path / "drafts"
+    triage_output = tmp_path / "triage.json"
+    store = DraftStore(draft_dir)
+    store.create_feature(
+        summary="Executable skill pipeline.",
+        requirements=["Create the draft through a skill script"],
+        acceptance_criteria=["Start-Implement reads the script output"],
+        scope=["skills/"],
+        out_of_scope=["Phase 4"],
+        documentation_impact=["docs/phase2-skills.md"],
+        roadmap_target="UNMAPPED",
+        source_issue=14,
+        source_pr=15,
+    )
+    triage_output.write_text(
+        json.dumps(
+            {
+                "relationship": "CURRENT",
+                "merge_impact": "BLOCKING",
+                "source_issue": 14,
+                "source_pr": 15,
+                "reason": "Review found a blocking current-work issue.",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
     plan = _run_json(
         [
             sys.executable,
-            str(_skill_script(root, "simple-flow-start-implement", "start-implement", "select_path.py")),
+            str(_skill_script(root, "start-implement", "select_path.py")),
             "--draft-id",
             "DRAFT-0001",
             "--drafts-dir",
@@ -130,6 +159,10 @@ def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
     assert plan["stop_point"] == "HUMAN_PR_REVIEW"
     assert "merge_pull_request" not in plan["actions"]
 
+
+def test_pr_finalize_script_allows_ready_authorized_merge(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    pr_state = tmp_path / "pr-state.json"
     pr_state.write_text(
         json.dumps(
             {
@@ -150,7 +183,7 @@ def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
     finalize = _run_json(
         [
             sys.executable,
-            str(_skill_script(root, "simple-flow-pr-finalize", "pr-finalize", "check_pre_merge.py")),
+            str(_skill_script(root, "pr-finalize", "check_pre_merge.py")),
             "--state",
             str(pr_state),
             "--authorized",
@@ -183,7 +216,7 @@ def test_issue_draft_script_creates_documentation_draft(tmp_path: Path) -> None:
     created = _run_json(
         [
             sys.executable,
-            str(_skill_script(root, "simple-flow-issue-draft", "issue-draft", "create_draft.py")),
+            str(_skill_script(root, "issue-draft", "create_draft.py")),
             "--input",
             str(draft_input),
             "--drafts-dir",
@@ -398,14 +431,23 @@ def test_phase2_acceptance_script_covers_runnable_scenarios(tmp_path: Path) -> N
 
 def _skill_script(
     root: Path,
-    source_skill: str,
     installed_skill: str,
     script_name: str,
 ) -> Path:
-    source_path = root / "skills" / source_skill / "scripts" / script_name
-    if source_path.exists():
-        return source_path
-    return root / ".codex" / "skills" / installed_skill / "scripts" / script_name
+    script_path = (
+        root
+        / "simple_flow_deploy"
+        / "skill_resources"
+        / installed_skill
+        / "scripts"
+        / script_name
+    )
+    if script_path.exists():
+        return script_path
+
+    deployed_path = root / ".codex" / "skills" / installed_skill / "scripts" / script_name
+    assert deployed_path.exists()
+    return deployed_path
 
 
 def _run_json(command: list[str], *, cwd: Path) -> dict[str, object]:

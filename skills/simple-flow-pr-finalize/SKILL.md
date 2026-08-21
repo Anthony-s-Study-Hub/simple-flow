@@ -50,9 +50,10 @@ python .codex/skills/pr-finalize/scripts/check_pre_merge.py --state <pr-state.js
 5. Only after a successful script result, perform the merge and required cleanup
    confirmations, then output the result and STOP.
 
-In this source repository, the same bundled script lives at
-`skills/simple-flow-pr-finalize/scripts/check_pre_merge.py`. Installed projects
-use the `.codex/skills/pr-finalize/scripts/check_pre_merge.py` path shown above.
+In this source repository, the deploy-time script source of truth is
+`simple_flow_deploy/skill_resources/pr-finalize/scripts/check_pre_merge.py`.
+Installed projects use the `.codex/skills/pr-finalize/scripts/check_pre_merge.py`
+path shown above.
 
 ## Boundaries
 
