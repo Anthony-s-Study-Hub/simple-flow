@@ -217,6 +217,7 @@ class Phase4Runner:
                 config=self.config,
                 codex_result=codex_result,
             )
+            _add_delta_metrics(initial_state, final_state)
             infrastructure_blocker = _codex_infrastructure_blocker(codex_result)
             if infrastructure_blocker:
                 evidence = {
@@ -532,6 +533,63 @@ def _ci_summary(state: dict[str, object]) -> dict[str, object]:
         "summary": "observed" if rollups else "not observed",
         "pull_request_checks": rollups,
     }
+
+
+def _add_delta_metrics(initial_state: dict[str, object], final_state: dict[str, object]) -> None:
+    initial_github = initial_state.get("github", {})
+    final_github = final_state.get("github", {})
+    if not isinstance(initial_github, dict) or not isinstance(final_github, dict):
+        return
+
+    initial_issue_numbers = _number_set(initial_github.get("issues", []))
+    initial_pr_numbers = _number_set(initial_github.get("pull_requests", []))
+    new_issues = [
+        issue
+        for issue in _dict_items(final_github.get("issues", []))
+        if _item_number(issue) not in initial_issue_numbers
+    ]
+    new_prs = [
+        pr
+        for pr in _dict_items(final_github.get("pull_requests", []))
+        if _item_number(pr) not in initial_pr_numbers
+    ]
+    metrics = final_state.setdefault("metrics", {})
+    if not isinstance(metrics, dict):
+        return
+    metrics.update(
+        {
+            "new_issue_count": len(new_issues),
+            "new_open_issue_count": len([issue for issue in new_issues if issue.get("state") == "OPEN"]),
+            "new_closed_issue_count": len([issue for issue in new_issues if issue.get("state") == "CLOSED"]),
+            "new_pr_count": len(new_prs),
+            "new_open_pr_count": len([pr for pr in new_prs if pr.get("state") == "OPEN"]),
+            "new_draft_pr_count": len([pr for pr in new_prs if pr.get("isDraft")]),
+            "new_merged_pr_count": len(
+                [pr for pr in new_prs if pr.get("state") == "MERGED" or pr.get("mergedAt")]
+            ),
+        }
+    )
+    final_github["new_issues"] = new_issues
+    final_github["new_pull_requests"] = new_prs
+
+
+def _number_set(items: object) -> set[int]:
+    return {number for number in (_item_number(item) for item in _dict_items(items)) if number is not None}
+
+
+def _dict_items(items: object) -> list[dict[str, object]]:
+    if not isinstance(items, list):
+        return []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def _item_number(item: object) -> int | None:
+    if not isinstance(item, dict) or "number" not in item:
+        return None
+    try:
+        return int(item["number"])
+    except (TypeError, ValueError):
+        return None
 
 
 def _apply_scenario_fixtures(project_path: Path, scenario: Scenario) -> list[dict[str, object]]:

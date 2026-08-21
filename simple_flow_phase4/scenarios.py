@@ -179,8 +179,8 @@ _SCENARIOS = (
         ),
         (
             _rule("documentation draft created", "documentation_draft_count", ">=", 1),
-            _rule("issue opened", "total_issue_count", ">=", 1),
-            _rule("pull request opened", "total_pr_count", ">=", 1),
+            _rule("issue opened", "new_open_issue_count", ">=", 1),
+            _rule("draft pull request opened", "new_draft_pr_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
         initial_state=(
@@ -303,8 +303,8 @@ _SCENARIOS = (
             "RED evidence skipped",
         ),
         (
-            _rule("issue opened", "total_issue_count", ">=", 1),
-            _rule("pull request opened", "total_pr_count", ">=", 1),
+            _rule("issue opened", "new_issue_count", ">=", 1),
+            _rule("pull request opened", "new_pr_count", ">=", 1),
             _rule("tdd evidence created", "tdd_evidence_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
@@ -330,8 +330,8 @@ _SCENARIOS = (
             "PR merged by Start-Implement",
         ),
         (
-            _rule("issue opened", "total_issue_count", ">=", 1),
-            _rule("pull request opened", "total_pr_count", ">=", 1),
+            _rule("issue opened", "new_issue_count", ">=", 1),
+            _rule("pull request opened", "new_pr_count", ">=", 1),
             _rule("no tdd evidence", "tdd_evidence_count", "==", 0),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
@@ -381,8 +381,8 @@ _SCENARIOS = (
             "Unresolved conversations bypassed",
         ),
         (
-            _rule("merged pull request", "merged_pr_count", ">=", 1),
-            _rule("closed issue", "closed_issue_count", ">=", 1),
+            _rule("merged pull request", "new_merged_pr_count", ">=", 1),
+            _rule("closed issue", "new_closed_issue_count", ">=", 1),
         ),
     ),
     _s(
@@ -408,7 +408,7 @@ _SCENARIOS = (
         (
             _rule("feature draft created", "feature_draft_count", ">=", 1),
             _rule("tdd evidence created", "tdd_evidence_count", ">=", 1),
-            _rule("merged pull request", "merged_pr_count", ">=", 1),
+            _rule("merged pull request", "new_merged_pr_count", ">=", 1),
         ),
     ),
     _s(
@@ -435,8 +435,8 @@ _SCENARIOS = (
             "Merge occurs",
         ),
         (
-            _rule("at least one issue", "total_issue_count", ">=", 1),
-            _rule("at least one pr", "total_pr_count", ">=", 1),
+            _rule("at least one issue", "new_issue_count", ">=", 1),
+            _rule("at least one pr", "new_pr_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
     ),
@@ -463,7 +463,7 @@ _SCENARIOS = (
         ),
         (
             _rule("multiple drafts expected", "draft_count", ">=", 2),
-            _rule("at least one pr", "total_pr_count", ">=", 1),
+            _rule("at least one pr", "new_pr_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
     ),
@@ -515,7 +515,7 @@ _SCENARIOS = (
             "Current PR force-blocked by non-blocking finding",
         ),
         (
-            _rule("at least one pr", "total_pr_count", ">=", 1),
+            _rule("at least one pr", "new_pr_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
     ),
@@ -747,7 +747,7 @@ _SCENARIOS = (
         ),
         (
             _rule("multiple drafts expected", "draft_count", ">=", 2),
-            _rule("at least one pr", "total_pr_count", ">=", 1),
+            _rule("at least one pr", "new_pr_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
         ),
     ),
