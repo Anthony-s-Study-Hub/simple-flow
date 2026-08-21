@@ -112,6 +112,23 @@ def test_smoke_scenarios_are_small_representative_subset() -> None:
     assert any(rule.metric == "total_pr_count" for rule in remote_smoke.pass_rules)
 
 
+def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:
+    remote_smoke = load_scenarios()["S01"]
+    user_actions = [
+        step
+        for step in remote_smoke.ordered_steps
+        if step.step_type == StepType.USER_ACTION
+    ]
+
+    assert [step.text for step in user_actions] == ["@start-implement {{draft_id}}"]
+    assert remote_smoke.fixture_draft is not None
+    assert remote_smoke.fixture_draft.work_type == "DOCUMENTATION"
+    assert remote_smoke.fixture_draft.fields["Affected Project Documents"] == [
+        "docs/deployment/usage-guide.md"
+    ]
+    assert "harness-seeded" in remote_smoke.initial_state.lower()
+
+
 def test_scenario_impact_document_covers_every_phase4_scenario() -> None:
     doc = (
         __import__("pathlib").Path(__file__).resolve().parents[2]
