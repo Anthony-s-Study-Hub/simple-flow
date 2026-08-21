@@ -35,6 +35,7 @@ def test_review_merge_policy_matches_phase1_identity_constraints() -> None:
     assert repository_settings["delete_branch_on_merge"] is True
     assert repository_settings["allow_auto_merge"] is False
     assert branch_policy["require_pull_request"] is True
+    assert branch_policy["enforce_admins"] is True
     assert branch_policy["required_conversation_resolution"] is True
     assert branch_policy["allow_force_pushes"] is False
     assert branch_policy["required_approving_review_count"] == 0
