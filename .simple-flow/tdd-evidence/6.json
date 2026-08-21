@@ -1,0 +1,16 @@
+{
+  "issue": 6,
+  "red": {
+    "commit": "a902734fdbe815c4534f10fa01838aea4a4508a3",
+    "command": "python -m pytest tests/test_orphan_branch_watch_script.py",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "2b7e7948e1cfa999224047a10f6360467e7087d9"
+  },
+  "green": {
+    "commit": "fe0d96be75272991c69c70c849c998895780aacb",
+    "command": "python -m pytest tests/test_orphan_branch_watch_script.py",
+    "exit_code": 0
+  }
+}
