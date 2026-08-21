@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from simple_flow_phase4.models import RunReport, ScenarioResult
-from simple_flow_phase4.transcript import compact_codex_response, compact_text
+from simple_flow_test_harness.models import RunReport, ScenarioResult
+from simple_flow_test_harness.transcript import compact_codex_response, compact_text
 
 
 def write_reports(report: RunReport, report_dir: Path) -> tuple[Path, Path]:

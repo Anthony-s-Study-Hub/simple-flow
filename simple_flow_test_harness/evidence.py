@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from simple_flow_phase4.commands import run_command
-from simple_flow_phase4.models import CommandResult, Phase4Config
+from simple_flow_test_harness.commands import run_command
+from simple_flow_test_harness.models import CommandResult, Phase4Config
 
 
 def collect_state(

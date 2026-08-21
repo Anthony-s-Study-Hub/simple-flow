@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from simple_flow_phase4.commands import run_command
+from simple_flow_test_harness.commands import run_command
 
 
 def test_run_command_timeout_terminates_child_process_tree(tmp_path: Path) -> None:

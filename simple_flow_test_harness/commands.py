@@ -5,7 +5,7 @@ from pathlib import Path
 import signal
 import subprocess
 
-from simple_flow_phase4.models import CommandResult
+from simple_flow_test_harness.models import CommandResult
 
 
 def run_command(

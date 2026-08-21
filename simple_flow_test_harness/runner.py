@@ -6,11 +6,11 @@ from pathlib import Path
 import subprocess
 from typing import Iterable
 
-from simple_flow_phase4.assertions import evaluate_scenario
-from simple_flow_phase4.commands import CommandFailure, run_command
-from simple_flow_phase4.environment import Phase4Environment
-from simple_flow_phase4.evidence import collect_state
-from simple_flow_phase4.models import (
+from simple_flow_test_harness.assertions import evaluate_scenario
+from simple_flow_test_harness.commands import CommandFailure, run_command
+from simple_flow_test_harness.environment import Phase4Environment
+from simple_flow_test_harness.evidence import collect_state
+from simple_flow_test_harness.models import (
     CommandResult,
     Outcome,
     Phase4Config,
@@ -19,8 +19,8 @@ from simple_flow_phase4.models import (
     Scenario,
     ScenarioResult,
 )
-from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
-from simple_flow_phase4.transcript import compact_codex_response, compact_fixture_prompt, compact_text
+from simple_flow_test_harness.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
+from simple_flow_test_harness.transcript import compact_codex_response, compact_fixture_prompt, compact_text
 
 
 class Phase4Runner:

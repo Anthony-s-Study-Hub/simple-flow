@@ -15,12 +15,12 @@ test = ["pytest>=8"]
 
 [project.scripts]
 simple-flow-gates = "simple_flow_gates.cli:main"
-phase4-run = "simple_flow_phase4.cli:main"
+phase4-run = "simple_flow_test_harness.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.setuptools.packages.find]
-include = ["simple_flow_gates*", "simple_flow_agent*", "simple_flow_deploy*", "simple_flow_phase4*"]
+include = ["simple_flow_gates*", "simple_flow_agent*", "simple_flow_deploy*", "simple_flow_test_harness*"]
 exclude = ["skills*", "tests*", "scripts*"]

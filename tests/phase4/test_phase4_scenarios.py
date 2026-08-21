@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from simple_flow_phase4.models import StepType
-from simple_flow_phase4.scenarios import (
+from simple_flow_test_harness.models import StepType
+from simple_flow_test_harness.scenarios import (
     ALL_SCENARIO_IDS,
     REQUIRED_SCENARIO_IDS,
     SMOKE_SCENARIO_IDS,
