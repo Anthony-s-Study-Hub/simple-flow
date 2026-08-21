@@ -758,6 +758,8 @@ def _gh_json(command: list[str], cwd: Path) -> list[dict[str, object]]:
 def _codex_infrastructure_blocker(result: CommandResult) -> str:
     if result.exit_code == 0:
         return ""
+    if result.exit_code == 124:
+        return "Codex CLI infrastructure blocker: timed out"
     output = f"{result.stdout}\n{result.stderr}".lower()
     markers = (
         "requires a newer version of codex",

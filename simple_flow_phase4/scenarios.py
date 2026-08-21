@@ -182,7 +182,7 @@ _SCENARIOS = (
                 "Reason": "Prove the live harness can drive GitHub Issue and draft PR creation through gh",
                 "Impact": "Smoke validation only",
                 "Supersedes": "None",
-                "Affected Project Documents": ["docs/deployment/usage-guide.md"],
+                "Affected Project Documents": ["docs/simple-flow/usage-guide.md"],
                 "Source PR / Decision Context": "Phase 4 remote artifact smoke test",
             },
         ),
