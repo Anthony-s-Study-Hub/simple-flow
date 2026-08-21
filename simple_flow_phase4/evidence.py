@@ -89,7 +89,7 @@ def collect_state(
         "changed_file_count": len([line for line in changed_files.stdout.splitlines() if line.strip()]),
         "draft_count": len(draft_data),
         "feature_draft_count": _count_drafts(draft_data, "FEATURE"),
-        "project_change_draft_count": _count_drafts(draft_data, "PROJECT_CHANGE"),
+        "documentation_draft_count": _count_drafts(draft_data, "DOCUMENTATION"),
         "draft_text": draft_text,
         "tdd_evidence_count": len(tdd_evidence),
         "open_issue_count": len(open_issues),

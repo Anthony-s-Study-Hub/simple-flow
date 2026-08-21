@@ -164,6 +164,20 @@ class RuleResult:
         }
 
 
+@dataclass(frozen=True)
+class PromptExchange:
+    action_ref: str
+    fixture_prompt: dict[str, str]
+    response_received: dict[str, Any]
+
+    def to_json_data(self) -> dict[str, Any]:
+        return {
+            "action_ref": self.action_ref,
+            "fixture_prompt": self.fixture_prompt,
+            "response_received": self.response_received,
+        }
+
+
 @dataclass
 class ScenarioResult:
     scenario_id: str
@@ -185,6 +199,7 @@ class ScenarioResult:
     execution_timestamp: str
     objective_rule_results: list[RuleResult] = field(default_factory=list)
     post_run_agentic_diagnosis: dict[str, Any] = field(default_factory=dict)
+    prompt_exchange: list[PromptExchange] = field(default_factory=list)
 
     def to_json_data(self) -> dict[str, Any]:
         return {
@@ -209,6 +224,7 @@ class ScenarioResult:
                 result.to_json_data() for result in self.objective_rule_results
             ],
             "post_run_agentic_diagnosis": self.post_run_agentic_diagnosis,
+            "prompt_exchange": [exchange.to_json_data() for exchange in self.prompt_exchange],
         }
 
 
@@ -226,6 +242,8 @@ class Phase4Config:
     keep_workspace: bool = False
     codex_bypass_sandbox: bool = False
     codex_model: str | None = None
+    smoke_gate: bool = True
+    smoke_only: bool = False
 
 
 @dataclass
@@ -237,6 +255,11 @@ class RunReport:
     test_repo_url: str
     codex_cli_version: str
     scenarios: list[ScenarioResult]
+    run_mode: str = "direct"
+    smoke_scenario_ids: list[str] = field(default_factory=list)
+    full_suite_skipped_reason: str = ""
+    timeout_seconds: int = 0
+    codex_model: str | None = None
 
     def status_counts(self) -> dict[str, int]:
         counts = {outcome.value: 0 for outcome in Outcome}
@@ -265,6 +288,11 @@ class RunReport:
             "workflow_package_version": self.workflow_package_version,
             "test_repo_url": self.test_repo_url,
             "codex_cli_version": self.codex_cli_version,
+            "run_mode": self.run_mode,
+            "smoke_scenario_ids": self.smoke_scenario_ids,
+            "full_suite_skipped_reason": self.full_suite_skipped_reason,
+            "timeout_seconds": self.timeout_seconds,
+            "codex_model": self.codex_model,
             "overall_status": self.overall_status.value,
             "status_counts": self.status_counts(),
             "scenarios": [result.to_json_data() for result in self.scenarios],

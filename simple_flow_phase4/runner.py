@@ -14,11 +14,13 @@ from simple_flow_phase4.models import (
     CommandResult,
     Outcome,
     Phase4Config,
+    PromptExchange,
     RunReport,
     Scenario,
     ScenarioResult,
 )
-from simple_flow_phase4.scenarios import load_scenarios
+from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
+from simple_flow_phase4.transcript import compact_codex_response, compact_fixture_prompt, compact_text
 
 
 class Phase4Runner:
@@ -28,8 +30,8 @@ class Phase4Runner:
 
     def run(self, scenario_ids: Iterable[str] | None = None) -> RunReport:
         scenarios = load_scenarios()
-        selected_ids = list(scenario_ids or scenarios)
-        unknown = [scenario_id for scenario_id in selected_ids if scenario_id not in scenarios]
+        requested_ids = list(scenario_ids or scenarios)
+        unknown = [scenario_id for scenario_id in requested_ids if scenario_id not in scenarios]
         if unknown:
             raise ValueError(f"Unknown Phase 4 scenario IDs: {', '.join(unknown)}")
 
@@ -43,32 +45,104 @@ class Phase4Runner:
             else _command_version(self.config.codex_command, self.config.source_root)
         )
 
+        if scenario_ids is None and self.config.smoke_only:
+            return self._new_report(
+                run_id=run_id,
+                generated_at=generated_at,
+                harness_commit_sha=harness_commit_sha,
+                workflow_package_version=workflow_package_version,
+                codex_cli_version=codex_cli_version,
+                scenarios=self._run_selected(
+                    [scenarios[scenario_id] for scenario_id in SMOKE_SCENARIO_IDS],
+                    generated_at=generated_at,
+                    harness_commit_sha=harness_commit_sha,
+                    workflow_package_version=workflow_package_version,
+                    codex_cli_version=codex_cli_version,
+                ),
+                run_mode="smoke-only",
+            )
+
+        if scenario_ids is None and self.config.smoke_gate:
+            smoke_results = self._run_selected(
+                [scenarios[scenario_id] for scenario_id in SMOKE_SCENARIO_IDS],
+                generated_at=generated_at,
+                harness_commit_sha=harness_commit_sha,
+                workflow_package_version=workflow_package_version,
+                codex_cli_version=codex_cli_version,
+            )
+            skipped_reason = ""
+            all_results = list(smoke_results)
+            if all(result.status == Outcome.PASS for result in smoke_results):
+                remaining_ids = [
+                    scenario_id
+                    for scenario_id in REQUIRED_SCENARIO_IDS
+                    if scenario_id not in SMOKE_SCENARIO_IDS
+                ]
+                all_results.extend(
+                    self._run_selected(
+                        [scenarios[scenario_id] for scenario_id in remaining_ids],
+                        generated_at=generated_at,
+                        harness_commit_sha=harness_commit_sha,
+                        workflow_package_version=workflow_package_version,
+                        codex_cli_version=codex_cli_version,
+                    )
+                )
+            else:
+                skipped_reason = "Smoke gate did not pass; full Phase 4 suite was not run."
+            return self._new_report(
+                run_id=run_id,
+                generated_at=generated_at,
+                harness_commit_sha=harness_commit_sha,
+                workflow_package_version=workflow_package_version,
+                codex_cli_version=codex_cli_version,
+                scenarios=all_results,
+                run_mode="smoke-gated",
+                full_suite_skipped_reason=skipped_reason,
+            )
+
+        run_mode = "selected" if scenario_ids is not None else "full"
+        return self._new_report(
+            run_id=run_id,
+            generated_at=generated_at,
+            harness_commit_sha=harness_commit_sha,
+            workflow_package_version=workflow_package_version,
+            codex_cli_version=codex_cli_version,
+            scenarios=self._run_selected(
+                [scenarios[scenario_id] for scenario_id in requested_ids],
+                generated_at=generated_at,
+                harness_commit_sha=harness_commit_sha,
+                workflow_package_version=workflow_package_version,
+                codex_cli_version=codex_cli_version,
+            ),
+            run_mode=run_mode,
+        )
+
+    def _run_selected(
+        self,
+        selected_scenarios: list[Scenario],
+        *,
+        generated_at: str,
+        harness_commit_sha: str,
+        workflow_package_version: str,
+        codex_cli_version: str,
+    ) -> list[ScenarioResult]:
         if self.config.dry_run:
-            results = [
+            return [
                 self._dry_run_result(
-                    scenarios[scenario_id],
+                    scenario,
                     generated_at=generated_at,
                     harness_commit_sha=harness_commit_sha,
                     workflow_package_version=workflow_package_version,
                     codex_cli_version=codex_cli_version,
                 )
-                for scenario_id in selected_ids
+                for scenario in selected_scenarios
             ]
-            return RunReport(
-                run_id=run_id,
-                generated_at=generated_at,
-                harness_commit_sha=harness_commit_sha,
-                workflow_package_version=workflow_package_version,
-                test_repo_url=self.config.test_repo_url,
-                codex_cli_version=codex_cli_version,
-                scenarios=results,
-            )
 
         blockers, prerequisite_evidence = self.environment.prerequisite_evidence()
         if blockers:
-            results = [
+            return [
                 self._blocked_result(
-                    scenarios[scenario_id],
+                    scenario,
                     blockers=blockers,
                     evidence=prerequisite_evidence,
                     generated_at=generated_at,
@@ -76,29 +150,34 @@ class Phase4Runner:
                     workflow_package_version=workflow_package_version,
                     codex_cli_version=codex_cli_version,
                 )
-                for scenario_id in selected_ids
+                for scenario in selected_scenarios
             ]
-            return RunReport(
-                run_id=run_id,
-                generated_at=generated_at,
-                harness_commit_sha=harness_commit_sha,
-                workflow_package_version=workflow_package_version,
-                test_repo_url=self.config.test_repo_url,
-                codex_cli_version=codex_cli_version,
-                scenarios=results,
-            )
 
         results: list[ScenarioResult] = []
-        for scenario_id in selected_ids:
+        for scenario in selected_scenarios:
             results.append(
                 self._run_one(
-                    scenarios[scenario_id],
+                    scenario,
                     generated_at=generated_at,
                     harness_commit_sha=harness_commit_sha,
                     workflow_package_version=workflow_package_version,
                     codex_cli_version=codex_cli_version,
                 )
             )
+        return results
+
+    def _new_report(
+        self,
+        *,
+        run_id: str,
+        generated_at: str,
+        harness_commit_sha: str,
+        workflow_package_version: str,
+        codex_cli_version: str,
+        scenarios: list[ScenarioResult],
+        run_mode: str,
+        full_suite_skipped_reason: str = "",
+    ) -> RunReport:
         return RunReport(
             run_id=run_id,
             generated_at=generated_at,
@@ -106,7 +185,12 @@ class Phase4Runner:
             workflow_package_version=workflow_package_version,
             test_repo_url=self.config.test_repo_url,
             codex_cli_version=codex_cli_version,
-            scenarios=results,
+            scenarios=scenarios,
+            run_mode=run_mode,
+            smoke_scenario_ids=list(SMOKE_SCENARIO_IDS),
+            full_suite_skipped_reason=full_suite_skipped_reason,
+            timeout_seconds=self.config.timeout_seconds,
+            codex_model=self.config.codex_model,
         )
 
     def _run_one(
@@ -125,7 +209,7 @@ class Phase4Runner:
                 repo_full_name=prepared.repo_full_name,
                 config=self.config,
             )
-            codex_result = self._run_codex(prepared.path, prepared.repo_full_name, scenario)
+            codex_result, prompt_exchange = self._run_codex(prepared.path, prepared.repo_full_name, scenario)
             final_state = collect_state(
                 project_path=prepared.path,
                 repo_full_name=prepared.repo_full_name,
@@ -159,6 +243,7 @@ class Phase4Runner:
                     execution_timestamp=_now(),
                     objective_rule_results=[],
                     post_run_agentic_diagnosis=_diagnose(Outcome.BLOCKED, infrastructure_blocker),
+                    prompt_exchange=prompt_exchange,
                 )
             status, rule_results, failure_reason = evaluate_scenario(scenario, final_state)
             diagnosis = _diagnose(status, failure_reason)
@@ -187,11 +272,12 @@ class Phase4Runner:
                 execution_timestamp=_now(),
                 objective_rule_results=rule_results,
                 post_run_agentic_diagnosis=diagnosis,
+                prompt_exchange=prompt_exchange,
             )
         except (CommandFailure, subprocess.TimeoutExpired, OSError) as exc:
             return self._blocked_result(
                 scenario,
-                blockers=[str(exc)],
+                blockers=[compact_text(str(exc))],
                 evidence={"exception": type(exc).__name__},
                 generated_at=generated_at,
                 harness_commit_sha=harness_commit_sha,
@@ -213,9 +299,10 @@ class Phase4Runner:
                 if scenario_path.exists():
                     self.environment._safe_reset_local_workspace(scenario_path)
 
-    def _run_codex(self, project_path: Path, repo_full_name: str, scenario: Scenario) -> CommandResult:
+    def _run_codex(self, project_path: Path, repo_full_name: str, scenario: Scenario) -> tuple[CommandResult, list[PromptExchange]]:
         session_id = ""
         results: list[tuple[str, CommandResult]] = []
+        exchanges: list[PromptExchange] = []
         variables: dict[str, str] = {}
 
         for step in scenario.ordered_steps:
@@ -232,10 +319,20 @@ class Phase4Runner:
                 test_repo=self.config.test_repo_url,
             )
             command = self._codex_command(project_path, prompt, session_id)
-            result = run_command(
-                command,
-                cwd=project_path,
-                timeout_seconds=self.config.timeout_seconds,
+            try:
+                result = run_command(
+                    command,
+                    cwd=project_path,
+                    timeout_seconds=self.config.timeout_seconds,
+                )
+            except subprocess.TimeoutExpired as exc:
+                result = _timeout_result(project_path, scenario.scenario_id, step.ref, exc)
+            exchanges.append(
+                PromptExchange(
+                    action_ref=step.ref,
+                    fixture_prompt=compact_fixture_prompt(prompt),
+                    response_received=compact_codex_response(result.stdout, result.stderr, result.exit_code),
+                )
             )
             results.append((step.ref, result))
             session_id = session_id or _extract_thread_id(result.stdout)
@@ -255,7 +352,7 @@ class Phase4Runner:
             exit_code=exit_code,
             stdout=stdout,
             stderr=stderr,
-        )
+        ), exchanges
 
     def _codex_command(self, project_path: Path, prompt: str, session_id: str) -> list[str]:
         if session_id:
@@ -308,6 +405,11 @@ class Phase4Runner:
             execution_timestamp=generated_at,
             objective_rule_results=[],
             post_run_agentic_diagnosis={},
+            prompt_exchange=_dry_run_exchanges(
+                scenario,
+                gh_path=self.config.gh_path,
+                test_repo=self.config.test_repo_url,
+            ),
         )
 
     def _blocked_result(
@@ -328,7 +430,7 @@ class Phase4Runner:
             expected_result=scenario.to_json_data(),
             observed_result={},
             evidence=evidence,
-            failure_reason="; ".join(blockers),
+            failure_reason="; ".join(compact_text(blocker) for blocker in blockers),
             initial_state={},
             final_state={},
             github_test_repo=self.environment.repo,
@@ -340,7 +442,11 @@ class Phase4Runner:
             harness_commit_sha=harness_commit_sha,
             execution_timestamp=generated_at,
             objective_rule_results=[],
-            post_run_agentic_diagnosis=_diagnose(Outcome.BLOCKED, "; ".join(blockers)),
+            post_run_agentic_diagnosis=_diagnose(
+                Outcome.BLOCKED,
+                "; ".join(compact_text(blocker) for blocker in blockers),
+            ),
+            prompt_exchange=[],
         )
 
     def _error_result(
@@ -373,6 +479,7 @@ class Phase4Runner:
             execution_timestamp=generated_at,
             objective_rule_results=[],
             post_run_agentic_diagnosis=_diagnose(Outcome.ERROR, str(error)),
+            prompt_exchange=[],
         )
 
 
@@ -457,6 +564,71 @@ def _user_action_prompt(
         f"Scenario Purpose: {scenario.purpose}\n"
         f"Action Reference: {action_ref}\n"
     )
+
+
+def _dry_run_exchanges(
+    scenario: Scenario,
+    *,
+    gh_path: str,
+    test_repo: str,
+) -> list[PromptExchange]:
+    exchanges: list[PromptExchange] = []
+    first_action = True
+    for step in scenario.ordered_steps:
+        if step.step_type.value != "USER_ACTION":
+            continue
+        prompt = _user_action_prompt(
+            scenario=scenario,
+            action_ref=step.ref,
+            action_text=step.text,
+            first_action=first_action,
+            gh_path=gh_path,
+            test_repo=test_repo,
+        )
+        exchanges.append(
+            PromptExchange(
+                action_ref=step.ref,
+                fixture_prompt=compact_fixture_prompt(prompt),
+                response_received=compact_codex_response(
+                    "",
+                    "Dry run; Codex was not invoked.",
+                    None,
+                ),
+            )
+        )
+        first_action = False
+    return exchanges
+
+
+def _timeout_result(
+    cwd: Path,
+    scenario_id: str,
+    action_ref: str,
+    exc: subprocess.TimeoutExpired,
+) -> CommandResult:
+    stdout = _timeout_stream(exc.stdout)
+    stderr = _timeout_stream(exc.stderr)
+    timeout = exc.timeout if exc.timeout is not None else "configured"
+    timeout_message = f"Codex action {action_ref} timed out after {timeout} seconds; raw command omitted."
+    if stderr:
+        stderr = timeout_message + "\n" + stderr
+    else:
+        stderr = timeout_message
+    return CommandResult(
+        command=("codex-action", scenario_id, action_ref),
+        cwd=str(cwd),
+        exit_code=124,
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+
+def _timeout_stream(value: bytes | str | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
 
 
 def _substitute_variables(text: str, variables: dict[str, str]) -> str:
@@ -547,6 +719,7 @@ def _codex_infrastructure_blocker(result: CommandResult) -> str:
         "failed to refresh available models",
         "failed to load models cache",
         "no last agent message",
+        "timed out",
     )
     for marker in markers:
         if marker in output:

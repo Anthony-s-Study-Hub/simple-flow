@@ -31,6 +31,13 @@ REQUIRED_SCENARIO_IDS = (
     "D03",
 )
 
+SMOKE_SCENARIO_IDS = (
+    "A01",
+    "A02",
+    "A06",
+    "C01",
+)
+
 COMMON_EVIDENCE = (
     "Test Project file state",
     "Git diff and commit history",
@@ -176,15 +183,15 @@ _SCENARIOS = (
     _s(
         "A03",
         "A - Single Skill",
-        "Issue-Draft creates a PROJECT_CHANGE Canonical Draft without TDD or implementation.",
+        "Issue-Draft creates a DOCUMENTATION Canonical Draft without TDD or implementation.",
         (
             _ua("A03-U1", '@discussion "Document that Phase 4 reports must mark stale harness commits."'),
-            _ua("A03-U2", "@issue-draft PROJECT_CHANGE for docs/simple-flow/usage-guide.md"),
+            _ua("A03-U2", "@issue-draft DOCUMENTATION for docs/simple-flow/usage-guide.md"),
             _obs("A03-O1", "Read Canonical Draft JSON and Markdown."),
-            _assert("A03-A1", "PROJECT_CHANGE draft exists and no implementation starts."),
+            _assert("A03-A1", "DOCUMENTATION draft exists and no implementation starts."),
         ),
         (
-            "A PROJECT_CHANGE Canonical Draft exists.",
+            "A DOCUMENTATION Canonical Draft exists.",
             "No RED/GREEN TDD evidence is required.",
         ),
         (
@@ -194,7 +201,7 @@ _SCENARIOS = (
             "pull request opened",
         ),
         (
-            _rule("project-change draft created", "project_change_draft_count", ">=", 1),
+            _rule("documentation draft created", "documentation_draft_count", ">=", 1),
             _rule("no tdd evidence", "tdd_evidence_count", "==", 0),
             _rule("no open issue", "open_issue_count", "==", 0),
             _rule("no open pull request", "open_pr_count", "==", 0),
@@ -233,15 +240,15 @@ _SCENARIOS = (
     _s(
         "A05",
         "A - Single Skill",
-        "Start-Implement PROJECT_CHANGE follows document-change path without TDD.",
+        "Start-Implement DOCUMENTATION follows document-change path without TDD.",
         (
-            _ua("A05-U1", "@issue-draft PROJECT_CHANGE to update docs/simple-flow/usage-guide.md"),
+            _ua("A05-U1", "@issue-draft DOCUMENTATION to update docs/simple-flow/usage-guide.md"),
             _ua("A05-U2", "@start-implement {{draft_id}}"),
             _obs("A05-O1", "Read Issue, branch, PR, docs diff, and CI state."),
             _assert("A05-A1", "Project document change reaches Human PR Review without TDD evidence."),
         ),
         (
-            "Issue and PR exist for PROJECT_CHANGE.",
+            "Issue and PR exist for DOCUMENTATION.",
             "A project document is changed.",
             "No FEATURE TDD evidence is required.",
             "PR is not merged.",

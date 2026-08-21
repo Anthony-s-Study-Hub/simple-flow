@@ -13,7 +13,11 @@ from simple_flow_phase4.environment import (
 from simple_flow_phase4.models import Outcome, Phase4Config
 from simple_flow_phase4.reports import write_reports
 from simple_flow_phase4.runner import Phase4Runner
-from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, load_scenarios
+from simple_flow_phase4.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS, load_scenarios
+
+
+DEFAULT_CODEX_MODEL = "gpt-5.4-mini"
+DEFAULT_TIMEOUT_SECONDS = 60
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,6 +36,8 @@ def main(argv: list[str] | None = None) -> int:
         keep_workspace=getattr(args, "keep_workspace", False),
         codex_bypass_sandbox=getattr(args, "codex_bypass_sandbox", False),
         codex_model=getattr(args, "codex_model", None),
+        smoke_gate=getattr(args, "smoke_gate", True),
+        smoke_only=getattr(args, "smoke_only", False),
     )
 
     if args.command == "list-scenarios":
@@ -43,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         scenarios = load_scenarios()
         print(f"Phase 4 scenario catalog valid: {len(scenarios)} scenarios")
         print("Required scenarios: " + ", ".join(REQUIRED_SCENARIO_IDS))
+        print("Smoke scenarios: " + ", ".join(SMOKE_SCENARIO_IDS))
         return 0
 
     if args.command == "cleanup":
@@ -80,7 +87,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parent.add_argument("--test-repo-url", default=DEFAULT_TEST_REPO_URL)
     parent.add_argument("--gh-path", default=default_gh_path())
     parent.add_argument("--codex-command", default=default_codex_command())
-    parent.add_argument("--timeout-seconds", type=int, default=900)
+    parent.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
     parent.add_argument("--allow-remote-reset", action="store_true")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -89,7 +96,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     run_parser.add_argument("--dry-run", action="store_true")
     run_parser.add_argument("--keep-workspace", action="store_true")
     run_parser.add_argument("--codex-bypass-sandbox", action="store_true")
-    run_parser.add_argument("--codex-model")
+    run_parser.add_argument("--codex-model", default=DEFAULT_CODEX_MODEL)
+    run_parser.add_argument("--smoke-only", action="store_true")
+    run_parser.add_argument("--no-smoke-gate", dest="smoke_gate", action="store_false")
+    run_parser.set_defaults(smoke_gate=True)
 
     subparsers.add_parser("list-scenarios", parents=[parent])
     subparsers.add_parser("validate", parents=[parent])

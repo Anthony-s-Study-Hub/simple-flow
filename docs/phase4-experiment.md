@@ -11,7 +11,7 @@ Run static validation:
 python -m simple_flow_phase4.cli validate
 ```
 
-Run all live scenarios:
+Run the default smoke-gated live experiment:
 
 ```powershell
 python -m simple_flow_phase4.cli run `
@@ -20,16 +20,46 @@ python -m simple_flow_phase4.cli run `
   --allow-remote-reset
 ```
 
+The default live run executes the smoke set first: A01, A02, A06, and C01. The
+full 25-scenario suite runs only when every smoke scenario passes. This saves
+time and tokens when basic skill invocation or workflow boundaries are already
+broken.
+
+Run only the smoke set:
+
+```powershell
+python -m simple_flow_phase4.cli run --smoke-only --allow-remote-reset
+```
+
+Run the full suite without the smoke gate for debugging:
+
+```powershell
+python -m simple_flow_phase4.cli run --no-smoke-gate --allow-remote-reset
+```
+
 Run one scenario:
 
 ```powershell
 python -m simple_flow_phase4.cli run --scenario A01 --allow-remote-reset
 ```
 
+Selected scenarios run directly and do not trigger the default smoke gate.
+
 Generate a CI-safe report without launching Codex:
 
 ```powershell
 python -m simple_flow_phase4.cli run --scenario A01 --dry-run
+```
+
+Live runs default to a 60 second per-turn timeout and `gpt-5.4-mini` to keep the
+experiment small. Override these when the local Codex installation does not have
+that model or a scenario needs more room:
+
+```powershell
+python -m simple_flow_phase4.cli run `
+  --codex-model gpt-5.4 `
+  --timeout-seconds 180 `
+  --allow-remote-reset
 ```
 
 ## Boundaries
@@ -38,8 +68,8 @@ python -m simple_flow_phase4.cli run --scenario A01 --dry-run
 - Source CI must not run the live Codex experiment.
 - The harness resets the dedicated test repository before each scenario when
   `--allow-remote-reset` is supplied.
-- The Agent Under Test runs through `codex exec --ephemeral` in the scenario
-  test project.
+- The Agent Under Test runs through isolated `codex exec` sessions in the
+  scenario test project.
 - The harness may fill only mechanical variables such as Draft ID, Issue number,
   PR number, and branch name.
 - Objective PASS / FAIL / BLOCKED / ERROR status is assigned by deterministic
@@ -55,6 +85,13 @@ Each run writes:
 - `.simple-flow/phase4-reports/latest.json`
 - `.simple-flow/phase4-reports/latest.md`
 
-Reports include scenario IDs, prompt references, expected and observed state,
-evidence, status, failure reason, test repository references, Codex CLI version,
-workflow package version, harness commit SHA, and timestamp.
+Reports include scenario IDs, smoke-gate metadata, prompt references, expected
+and observed state, compact evidence, status, failure reason, test repository
+references, Codex CLI version, workflow package version, harness commit SHA, and
+timestamp.
+
+The Markdown report is intentionally compact. For each USER_ACTION, fixed
+harness code records the processed fixture prompt fields, especially the action
+sent to Codex, and the processed response received from Codex. Raw JSON event
+streams and long command output are summarized deterministically in
+`simple_flow_phase4.transcript` before they enter the human-readable report.
