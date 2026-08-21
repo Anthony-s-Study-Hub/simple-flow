@@ -91,6 +91,7 @@ def test_phase4_defaults_use_short_smoke_gate_and_mini_model() -> None:
     assert "mini" in DEFAULT_CODEX_MODEL
     assert args.smoke_gate is True
     assert args.smoke_only is False
+    assert args.codex_bypass_sandbox is True
 
 
 def test_phase4_timeout_blocker_takes_precedence_over_noisy_model_cache_output() -> None:
