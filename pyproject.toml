@@ -20,3 +20,6 @@ simple-flow-gates = "simple_flow_gates.cli:main"
 testpaths = ["tests"]
 pythonpath = ["."]
 
+[tool.setuptools.packages.find]
+include = ["simple_flow_gates*", "simple_flow_agent*"]
+exclude = ["skills*", "tests*", "scripts*"]
