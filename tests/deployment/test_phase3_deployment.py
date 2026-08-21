@@ -148,7 +148,6 @@ def test_deployed_phase1_and_phase2_regressions_pass(tmp_path: Path) -> None:
             "tests/test_branch_pr_gate.py",
             "tests/test_scope_documentation_gates.py",
             "tests/test_tdd_gate.py",
-            "tests/test_phase2_policy.py",
             "tests/test_phase2_workflow.py",
         ],
         cwd=target,
@@ -158,6 +157,14 @@ def test_deployed_phase1_and_phase2_regressions_pass(tmp_path: Path) -> None:
     )
 
     assert "passed" in completed.stdout
+
+    skill_files = list((target / ".codex" / "skills").glob("*/SKILL.md"))
+    skill_text = "\n".join(path.read_text(encoding="utf-8") for path in skill_files)
+    assert sorted(path.parent.name for path in skill_files) == sorted(UNPREFIXED_SKILLS)
+    assert "Permission: generate-canonical-draft" in skill_text
+    assert "Permission: publish-formal-issue" in skill_text
+    assert "Permission: merge-pull-request" in skill_text
+    assert "Default Deny" in (target / "AGENTS.md").read_text(encoding="utf-8")
 
 
 def test_real_target_project_destination_is_successfully_set_up() -> None:
@@ -218,4 +225,3 @@ def _hash_core_files(project: Path) -> dict[str, str]:
     ]:
         files[relative] = (project / relative).read_text(encoding="utf-8")
     return files
-

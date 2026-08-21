@@ -1,0 +1,25 @@
+# Simple Flow Usage Guide
+
+Use the five skills as human-invoked stage boundaries.
+
+## Normal FEATURE
+
+1. Use Discussion to explore the request. It stops after summarizing consensus.
+2. Use Issue-Draft to create a Canonical Draft. It stops after reporting the Draft ID.
+3. Review the draft as a human.
+4. Use Start-Implement with the approved Draft ID. It stops at Human PR Review.
+5. Review the pull request as a human.
+6. Use PR-Finalize with the accepted PR. It merges only after objective checks pass.
+
+## Review-Triage Flow
+
+When PR Review finds a problem, use Review-Triage. It classifies the finding and
+stops. Then use Issue-Draft for the next approved change and Start-Implement for
+the specified Draft ID.
+
+## PROJECT_CHANGE
+
+Use Issue-Draft to create a PROJECT_CHANGE draft. Start-Implement updates only
+approved project documents and does not require TDD. PR-Finalize is still the
+only merge entry point after human review.
+
