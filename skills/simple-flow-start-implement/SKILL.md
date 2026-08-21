@@ -31,6 +31,26 @@ The invocation means the named draft passed human review.
   TDD.
 - Stop at Human PR Review.
 
+## Execution
+
+1. Confirm the human invocation includes the exact Draft ID.
+2. Run this skill's bundled path-selection script before publishing or updating
+   Issues, branches, pull requests, or implementation files:
+
+```powershell
+python .codex/skills/start-implement/scripts/select_path.py --draft-id <Draft ID> --drafts-dir .simple-flow/drafts
+```
+
+3. If Review-Triage output clearly applies, save that JSON to a temporary file
+   and pass it with `--triage-file <triage.json>`. Repeat `--triage-file` for
+   multiple candidate triage results.
+4. Follow only the returned `path`, `tdd_required`, and `actions`.
+5. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`.
+
+In this source repository, the same bundled script lives at
+`skills/simple-flow-start-implement/scripts/select_path.py`. Installed projects
+use the `.codex/skills/start-implement/scripts/select_path.py` path shown above.
+
 ## Boundaries
 
 - Do not guess the latest Draft ID.
@@ -41,6 +61,6 @@ The invocation means the named draft passed human review.
 - Do not merge pull requests.
 - Do not invoke or simulate PR-Finalize.
 
-Use deterministic helpers such as `simple_flow_agent.start_implement` for path
+Use the bundled `scripts/select_path.py` entrypoint for deterministic path
 selection. Once the pull request is ready for human review, STOP.
 

@@ -45,6 +45,28 @@ def test_all_five_phase2_skills_exist_with_unique_ownership_markers() -> None:
         assert "STOP" in text
 
 
+def test_phase2_skills_define_required_local_script_entrypoints() -> None:
+    expected_scripts = {
+        "simple-flow-discussion": [],
+        "simple-flow-issue-draft": ["scripts/create_draft.py"],
+        "simple-flow-start-implement": ["scripts/select_path.py"],
+        "simple-flow-review-triage": ["scripts/classify_finding.py"],
+        "simple-flow-pr-finalize": ["scripts/check_pre_merge.py"],
+    }
+
+    for folder, scripts in expected_scripts.items():
+        skill_dir = ROOT / "skills" / folder
+        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        for script in scripts:
+            assert (skill_dir / script).exists()
+            assert script in text
+
+    discussion = (ROOT / "skills" / "simple-flow-discussion" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert "no deterministic script" in discussion
+
+
 def test_skill_exclusive_permissions_have_no_merge_or_draft_overlap() -> None:
     skills = {
         path.parent.name: path.read_text(encoding="utf-8")

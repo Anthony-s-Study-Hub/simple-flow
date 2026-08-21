@@ -65,8 +65,9 @@ class Draft:
 
 
 class DraftStore:
-    def __init__(self, root: str | Path):
+    def __init__(self, root: str | Path, roadmap_targets: set[str] | None = None):
         self.root = Path(root)
+        self.roadmap_targets = roadmap_targets or set()
         self.root.mkdir(parents=True, exist_ok=True)
 
     def create_feature(
@@ -135,7 +136,7 @@ class DraftStore:
         return Draft.from_json_data(data)
 
     def _validate_and_save(self, draft: Draft) -> None:
-        IssueContract.parse(draft.to_issue_body())
+        IssueContract.parse(draft.to_issue_body(), self.roadmap_targets)
         json_path = self.root / f"{draft.draft_id}.json"
         md_path = self.root / f"{draft.draft_id}.md"
         json_path.write_text(

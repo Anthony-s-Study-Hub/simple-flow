@@ -20,6 +20,22 @@ change.
 - Save structured JSON and render human-readable Markdown from the same data.
 - Output the Draft ID and STOP.
 
+## Execution
+
+1. Prepare a JSON input file containing the approved draft fields.
+2. Run this skill's bundled script before reporting a Draft ID:
+
+```powershell
+python .codex/skills/issue-draft/scripts/create_draft.py --input <draft-input.json> --drafts-dir .simple-flow/drafts --roadmap-targets .simple-flow/roadmap-targets.txt
+```
+
+3. Use only the script output as the Canonical Draft handoff.
+4. Report the returned `draft_id`, `json_path`, and `markdown_path`, then STOP.
+
+In this source repository, the same bundled script lives at
+`skills/simple-flow-issue-draft/scripts/create_draft.py`. Installed projects use
+the `.codex/skills/issue-draft/scripts/create_draft.py` path shown above.
+
 ## FEATURE Contract
 
 - Type
@@ -51,6 +67,6 @@ PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
 - Do not modify implementation code.
 - Do not invoke or simulate Start-Implement.
 
-Mechanics should use `simple_flow_agent.drafts.DraftStore` or an equivalent
-deterministic helper. After reporting the Draft ID, STOP.
+Mechanics must use the bundled `scripts/create_draft.py` entrypoint. After
+reporting the Draft ID, STOP.
 

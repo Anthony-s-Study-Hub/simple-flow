@@ -24,6 +24,20 @@ The output must also include:
 
 The result remains conversation context. It is not written to a state file.
 
+## Execution
+
+Run this skill's bundled classifier before outputting the triage result:
+
+```powershell
+python .codex/skills/review-triage/scripts/classify_finding.py --relationship <CURRENT|SUBISSUE|NEW ISSUE> --merge-impact <BLOCKING|FOLLOW-UP> --source-issue <issue-number> --source-pr <pr-number> --reason <reason>
+```
+
+Output the returned JSON fields in the conversation, then STOP. In this source
+repository, the same bundled script lives at
+`skills/simple-flow-review-triage/scripts/classify_finding.py`. Installed
+projects use the `.codex/skills/review-triage/scripts/classify_finding.py` path
+shown above.
+
 ## Boundaries
 
 - Do not edit Issues.

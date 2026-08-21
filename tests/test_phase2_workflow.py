@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -41,6 +42,122 @@ def test_issue_draft_creates_structured_and_rendered_feature_draft(tmp_path: Pat
     assert "Add a small workflow feature." in (tmp_path / "DRAFT-0001.md").read_text(
         encoding="utf-8"
     )
+
+
+def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    draft_input = tmp_path / "draft-input.json"
+    draft_dir = tmp_path / "drafts"
+    roadmap = tmp_path / "roadmap-targets.txt"
+    triage_output = tmp_path / "triage.json"
+    pr_state = tmp_path / "pr-state.json"
+    roadmap.write_text("PHASE_1_GOVERNANCE\n", encoding="utf-8")
+    draft_input.write_text(
+        json.dumps(
+            {
+                "work_type": "FEATURE",
+                "summary": "Executable skill pipeline.",
+                "requirements": ["Create the draft through a skill-local script"],
+                "acceptance_criteria": ["Start-Implement reads the script output"],
+                "scope": ["skills/"],
+                "out_of_scope": ["Phase 4"],
+                "documentation_impact": ["docs/phase2-skills.md"],
+                "roadmap_target": "PHASE_1_GOVERNANCE",
+                "source_issue": 14,
+                "source_pr": 15,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    created = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "simple-flow-issue-draft", "issue-draft", "create_draft.py")),
+            "--input",
+            str(draft_input),
+            "--drafts-dir",
+            str(draft_dir),
+            "--roadmap-targets",
+            str(roadmap),
+        ],
+        cwd=root,
+    )
+    assert created["draft_id"] == "DRAFT-0001"
+    assert (draft_dir / "DRAFT-0001.json").exists()
+
+    triage = _run_json(
+        [
+            sys.executable,
+            str(
+                _skill_script(
+                    root,
+                    "simple-flow-review-triage",
+                    "review-triage",
+                    "classify_finding.py",
+                )
+            ),
+            "--relationship",
+            "CURRENT",
+            "--merge-impact",
+            "BLOCKING",
+            "--source-issue",
+            "14",
+            "--source-pr",
+            "15",
+            "--reason",
+            "Review found a blocking current-work issue.",
+        ],
+        cwd=root,
+    )
+    triage_output.write_text(json.dumps(triage) + "\n", encoding="utf-8")
+
+    plan = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "simple-flow-start-implement", "start-implement", "select_path.py")),
+            "--draft-id",
+            "DRAFT-0001",
+            "--drafts-dir",
+            str(draft_dir),
+            "--triage-file",
+            str(triage_output),
+        ],
+        cwd=root,
+    )
+    assert plan["path"] == "REVIEW_CURRENT_BLOCKING"
+    assert plan["stop_point"] == "HUMAN_PR_REVIEW"
+    assert "merge_pull_request" not in plan["actions"]
+
+    pr_state.write_text(
+        json.dumps(
+            {
+                "exists": True,
+                "open": True,
+                "draft": False,
+                "required_checks": {"phase1-gates": True, "phase1-tests": True},
+                "unresolved_conversations": 0,
+                "commits_after_human_review": 0,
+                "linked_issue_closed": False,
+                "head_branch_deleted": False,
+                "project_item_updated": False,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    finalize = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "simple-flow-pr-finalize", "pr-finalize", "check_pre_merge.py")),
+            "--state",
+            str(pr_state),
+            "--authorized",
+        ],
+        cwd=root,
+    )
+    assert finalize["can_merge"] is True
 
 
 def test_start_implement_reads_specified_draft_not_latest(tmp_path: Path) -> None:
@@ -240,4 +357,27 @@ def test_phase2_acceptance_script_covers_runnable_scenarios(tmp_path: Path) -> N
     )
 
     assert "Phase 2 acceptance PASS" in completed.stdout
+
+
+def _skill_script(
+    root: Path,
+    source_skill: str,
+    installed_skill: str,
+    script_name: str,
+) -> Path:
+    source_path = root / "skills" / source_skill / "scripts" / script_name
+    if source_path.exists():
+        return source_path
+    return root / ".codex" / "skills" / installed_skill / "scripts" / script_name
+
+
+def _run_json(command: list[str], *, cwd: Path) -> dict[str, object]:
+    completed = subprocess.run(
+        command,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(completed.stdout)
 
