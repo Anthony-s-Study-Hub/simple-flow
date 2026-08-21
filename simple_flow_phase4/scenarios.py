@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from simple_flow_phase4.models import AssertionRule, Scenario, ScenarioStep, StepType
+from simple_flow_phase4.models import (
+    AssertionRule,
+    DraftFixture,
+    Scenario,
+    ScenarioStep,
+    StepType,
+)
 
 
 REQUIRED_SCENARIO_IDS = (
@@ -108,6 +114,7 @@ def _s(
     forbidden: tuple[str, ...],
     rules: tuple[AssertionRule, ...],
     initial_state: str = "Clean Phase 4 baseline test project with deployed Simple Flow workflow.",
+    fixture_draft: DraftFixture | None = None,
 ) -> Scenario:
     return Scenario(
         scenario_id=scenario_id,
@@ -120,6 +127,7 @@ def _s(
         evidence_sources=COMMON_EVIDENCE,
         pass_rules=rules,
         cleanup_requirements=CLEANUP,
+        fixture_draft=fixture_draft,
     )
 
 
@@ -140,18 +148,14 @@ _SCENARIOS = (
     _s(
         "S01",
         "S - Smoke",
-        "Remote artifact smoke path creates a GitHub Issue and draft PR, then stops unmerged.",
+        "Remote artifact smoke path starts from a seeded draft, creates a GitHub Issue and draft PR, then stops unmerged.",
         (
-            _ua(
-                "S01-U1",
-                "@issue-draft DOCUMENTATION with Change='Add a Phase 4 smoke marker to the usage guide'; Reason='Prove the live harness can drive GitHub Issue and draft PR creation through gh'; Impact='Smoke validation only'; Supersedes='None'; Affected Project Documents='docs/simple-flow/usage-guide.md'; Source PR / Decision Context='Phase 4 remote artifact smoke test'",
-            ),
-            _ua("S01-U2", "@start-implement {{draft_id}}"),
+            _ua("S01-U1", "@start-implement {{draft_id}}"),
             _obs("S01-O1", "Read GitHub Issue state, branch state, draft PR state, and merge state."),
             _assert("S01-A1", "Issue and draft PR exist in the remote test repo and no merge occurs."),
         ),
         (
-            "A DOCUMENTATION Canonical Draft exists.",
+            "A harness-seeded DOCUMENTATION Canonical Draft exists.",
             "A GitHub Issue exists in the test repo.",
             "A branch-bound draft PR exists in the test repo.",
             "The PR is not merged.",
@@ -166,6 +170,21 @@ _SCENARIOS = (
             _rule("issue opened", "total_issue_count", ">=", 1),
             _rule("pull request opened", "total_pr_count", ">=", 1),
             _rule("no merge", "merged_pr_count", "==", 0),
+        ),
+        initial_state=(
+            "Clean Phase 4 baseline test project with deployed Simple Flow workflow "
+            "and a harness-seeded approved DOCUMENTATION Canonical Draft."
+        ),
+        fixture_draft=DraftFixture(
+            work_type="DOCUMENTATION",
+            fields={
+                "Change": "Add a Phase 4 smoke marker to the usage guide",
+                "Reason": "Prove the live harness can drive GitHub Issue and draft PR creation through gh",
+                "Impact": "Smoke validation only",
+                "Supersedes": "None",
+                "Affected Project Documents": ["docs/deployment/usage-guide.md"],
+                "Source PR / Decision Context": "Phase 4 remote artifact smoke test",
+            },
         ),
     ),
     _s(

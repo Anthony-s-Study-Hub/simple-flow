@@ -56,6 +56,22 @@ class AssertionRule:
 
 
 @dataclass(frozen=True)
+class DraftFixture:
+    work_type: str
+    fields: dict[str, Any]
+    source_issue: int | None = None
+    source_pr: int | None = None
+
+    def to_json_data(self) -> dict[str, Any]:
+        return {
+            "work_type": self.work_type,
+            "fields": self.fields,
+            "source_issue": self.source_issue,
+            "source_pr": self.source_pr,
+        }
+
+
+@dataclass(frozen=True)
 class Scenario:
     scenario_id: str
     group: str
@@ -67,6 +83,7 @@ class Scenario:
     evidence_sources: tuple[str, ...]
     pass_rules: tuple[AssertionRule, ...]
     cleanup_requirements: tuple[str, ...]
+    fixture_draft: DraftFixture | None = None
 
     @property
     def prompt_reference(self) -> str:
@@ -120,6 +137,7 @@ class Scenario:
             "evidence_sources": list(self.evidence_sources),
             "pass_rules": [rule.to_json_data() for rule in self.pass_rules],
             "cleanup_requirements": list(self.cleanup_requirements),
+            "fixture_draft": self.fixture_draft.to_json_data() if self.fixture_draft else None,
             "prompt_reference": self.prompt_reference,
         }
 

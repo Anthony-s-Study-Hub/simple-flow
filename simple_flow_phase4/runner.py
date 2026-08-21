@@ -204,6 +204,7 @@ class Phase4Runner:
     ) -> ScenarioResult:
         try:
             prepared = self.environment.prepare_scenario_project(scenario.scenario_id)
+            scenario_fixtures = _apply_scenario_fixtures(prepared.path, scenario)
             initial_state = collect_state(
                 project_path=prepared.path,
                 repo_full_name=prepared.repo_full_name,
@@ -220,6 +221,7 @@ class Phase4Runner:
             if infrastructure_blocker:
                 evidence = {
                     "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
+                    "scenario_fixtures": scenario_fixtures,
                     "codex_command": codex_result.to_json_data(),
                     "harness_worktree_dirty": _worktree_dirty(self.config.source_root),
                 }
@@ -249,6 +251,7 @@ class Phase4Runner:
             diagnosis = _diagnose(status, failure_reason)
             evidence = {
                 "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
+                "scenario_fixtures": scenario_fixtures,
                 "codex_command": codex_result.to_json_data(),
                 "harness_worktree_dirty": _worktree_dirty(self.config.source_root),
             }
@@ -529,6 +532,48 @@ def _ci_summary(state: dict[str, object]) -> dict[str, object]:
         "summary": "observed" if rollups else "not observed",
         "pull_request_checks": rollups,
     }
+
+
+def _apply_scenario_fixtures(project_path: Path, scenario: Scenario) -> list[dict[str, object]]:
+    if not scenario.fixture_draft:
+        return []
+
+    from simple_flow_agent.drafts import DraftStore
+
+    fixture = scenario.fixture_draft
+    if fixture.work_type != "DOCUMENTATION":
+        raise ValueError(f"Unsupported Phase 4 draft fixture work type: {fixture.work_type}")
+
+    fields = fixture.fields
+    store = DraftStore(project_path / ".simple-flow" / "drafts")
+    draft = store.create_documentation(
+        change=str(fields["Change"]),
+        reason=str(fields["Reason"]),
+        impact=str(fields["Impact"]),
+        supersedes=str(fields["Supersedes"]),
+        affected_project_documents=_fixture_list(fields["Affected Project Documents"]),
+        source_context=str(fields["Source PR / Decision Context"]),
+        source_issue=fixture.source_issue,
+        source_pr=fixture.source_pr,
+    )
+    return [
+        {
+            "type": "canonical_draft",
+            "draft_id": draft.draft_id,
+            "work_type": draft.work_type,
+            "fields": draft.fields,
+        }
+    ]
+
+
+def _fixture_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return [
+        line.strip().removeprefix("-").strip()
+        for line in str(value).splitlines()
+        if line.strip()
+    ]
 
 
 def _user_action_prompt(
