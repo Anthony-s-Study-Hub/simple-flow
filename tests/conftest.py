@@ -49,23 +49,24 @@ Agent skills.
 """
 
 
-def project_change_issue_body(
+def documentation_issue_body(
     *,
     docs: str = "- docs/phase1-governance.md",
+    issue_type: str = "DOCUMENTATION",
 ) -> str:
-    return f"""Type: PROJECT_CHANGE
+    return f"""Type: {issue_type}
 
 ## Change
 
-Update the project baseline.
+Update the documentation guide.
 
 ## Reason
 
-The governance policy changed.
+The existing documentation is misleading.
 
 ## Impact
 
-Future development must follow the updated policy.
+Future development can use the correct documentation-only path.
 
 ## Supersedes
 
@@ -79,6 +80,13 @@ None
 
 #1
 """
+
+
+def project_change_issue_body(
+    *,
+    docs: str = "- docs/phase1-governance.md",
+) -> str:
+    return documentation_issue_body(docs=docs, issue_type="PROJECT_CHANGE")
 
 
 def pr_body(issue: int = 123) -> str:

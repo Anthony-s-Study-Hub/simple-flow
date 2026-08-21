@@ -5,7 +5,7 @@ deterministic GitHub and CI governance layer before any agent skills are added.
 
 The phase 1 implementation lives in `simple_flow_gates` and validates:
 
-- fixed issue contracts for `FEATURE` and `PROJECT_CHANGE`
+- fixed issue contracts for `FEATURE` and `DOCUMENTATION`
 - PR body structure and issue traceability
 - branch-to-issue binding
 - TDD RED to implementation to GREEN evidence for `FEATURE`

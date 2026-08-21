@@ -63,17 +63,17 @@ def main() -> int:
             "REVIEW_"
         )
 
-    project_change = store.create_project_change(
-        change="Project change acceptance.",
+    documentation = store.create_documentation(
+        change="Documentation acceptance.",
         reason="Long-term document rule.",
         impact="Project docs update.",
         supersedes="None",
         affected_project_documents=["AGENTS.md"],
         source_context="Acceptance scenario",
     )
-    project_plan = select_start_path(store, project_change.draft_id)
-    assert project_plan.path == "PROJECT_CHANGE_NORMAL"
-    assert project_plan.tdd_required is False
+    documentation_plan = select_start_path(store, documentation.draft_id)
+    assert documentation_plan.path == "DOCUMENTATION_NORMAL"
+    assert documentation_plan.tdd_required is False
 
     try:
         pre_merge_check(PRState.ready(), authorized=False)

@@ -21,6 +21,20 @@ def test_branch_pr_gate_passes_for_draft_pr_bound_to_issue() -> None:
     assert contract.linked_issue == 123
 
 
+def test_branch_pr_gate_accepts_documentation_branch_bound_to_issue() -> None:
+    contract = validate_branch_pr_gate(
+        PullRequestState(
+            body=pr_body(123),
+            head_ref="documentation/123-docs-only-change",
+            base_ref="main",
+            is_draft=True,
+            action="opened",
+        )
+    )
+
+    assert contract.linked_issue == 123
+
+
 def test_pr_without_linked_issue_fails() -> None:
     body = pr_body(123).replace("Closes #123", "No issue yet")
 

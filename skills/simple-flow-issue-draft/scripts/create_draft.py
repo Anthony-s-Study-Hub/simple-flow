@@ -47,8 +47,8 @@ def main(argv: list[str] | None = None) -> int:
                 source_issue=_optional_int(_field(data, "source_issue", default=None)),
                 source_pr=_optional_int(_field(data, "source_pr", default=None)),
             )
-        elif work_type == WorkType.PROJECT_CHANGE:
-            draft = store.create_project_change(
+        elif work_type == WorkType.DOCUMENTATION:
+            draft = store.create_documentation(
                 change=str(_field(data, "change", "Change")),
                 reason=str(_field(data, "reason", "Reason")),
                 impact=str(_field(data, "impact", "Impact")),
@@ -97,10 +97,10 @@ def _add_repo_root_to_path() -> None:
 
 
 def _work_type(data: dict[str, Any]):
-    from simple_flow_gates.contracts import WorkType
+    from simple_flow_gates.contracts import normalize_work_type
 
     raw = str(_field(data, "work_type", "type", "Type")).upper().replace("-", "_")
-    return WorkType(raw)
+    return normalize_work_type(raw)
 
 
 def _field(data: dict[str, Any], *names: str, default: Any = ...):

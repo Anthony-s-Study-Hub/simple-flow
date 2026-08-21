@@ -160,6 +160,43 @@ def test_skill_local_scripts_execute_phase2_pipeline(tmp_path: Path) -> None:
     assert finalize["can_merge"] is True
 
 
+def test_issue_draft_script_creates_documentation_draft(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    draft_input = tmp_path / "documentation-input.json"
+    draft_dir = tmp_path / "drafts"
+    draft_input.write_text(
+        json.dumps(
+            {
+                "work_type": "DOCUMENTATION",
+                "change": "Clarify the usage guide.",
+                "reason": "The existing wording is misleading.",
+                "impact": "Future users pick the documentation-only path.",
+                "supersedes": "None",
+                "affected_project_documents": ["docs/deployment/usage-guide.md"],
+                "source_context": "Issue #16",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    created = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "simple-flow-issue-draft", "issue-draft", "create_draft.py")),
+            "--input",
+            str(draft_input),
+            "--drafts-dir",
+            str(draft_dir),
+        ],
+        cwd=root,
+    )
+    assert created["work_type"] == "DOCUMENTATION"
+    assert "Type: DOCUMENTATION" in (draft_dir / "DRAFT-0001.md").read_text(
+        encoding="utf-8"
+    )
+
+
 def test_start_implement_reads_specified_draft_not_latest(tmp_path: Path) -> None:
     store = DraftStore(tmp_path)
     first = store.create_feature(
@@ -188,9 +225,9 @@ def test_start_implement_reads_specified_draft_not_latest(tmp_path: Path) -> Non
     assert plan.path == "FEATURE_NORMAL"
 
 
-def test_project_change_does_not_require_tdd(tmp_path: Path) -> None:
+def test_documentation_does_not_require_tdd(tmp_path: Path) -> None:
     store = DraftStore(tmp_path)
-    draft = store.create_project_change(
+    draft = store.create_documentation(
         change="Update baseline policy.",
         reason="A long-term rule changed.",
         impact="Future work follows the new rule.",
@@ -201,8 +238,8 @@ def test_project_change_does_not_require_tdd(tmp_path: Path) -> None:
 
     plan = select_start_path(store, draft.draft_id)
 
-    assert plan.work_type == "PROJECT_CHANGE"
-    assert plan.path == "PROJECT_CHANGE_NORMAL"
+    assert plan.work_type == "DOCUMENTATION"
+    assert plan.path == "DOCUMENTATION_NORMAL"
     assert plan.tdd_required is False
 
 

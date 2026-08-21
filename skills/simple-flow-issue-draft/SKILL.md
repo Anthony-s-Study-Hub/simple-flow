@@ -14,7 +14,7 @@ change.
 
 ## Responsibilities
 
-- Build one structured Canonical Draft for either FEATURE or PROJECT_CHANGE.
+- Build one structured Canonical Draft for either FEATURE or DOCUMENTATION.
 - Validate the draft with deterministic draft and issue-contract logic.
 - Assign a unique Draft ID.
 - Save structured JSON and render human-readable Markdown from the same data.
@@ -48,9 +48,9 @@ the `.codex/skills/issue-draft/scripts/create_draft.py` path shown above.
 - Roadmap Target
 
 Roadmap Target must be an existing target, UNMAPPED, or
-PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
+DOCUMENTATION_REQUIRED. Do not create a new roadmap target.
 
-## PROJECT_CHANGE Contract
+## DOCUMENTATION Contract
 
 - Type
 - Change
@@ -59,6 +59,9 @@ PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
 - Supersedes
 - Affected Project Documents
 - Source PR / Decision Context
+
+Legacy `PROJECT_CHANGE` input is accepted only as an alias for DOCUMENTATION
+during migration. New drafts must use DOCUMENTATION.
 
 ## Boundaries
 

@@ -27,7 +27,7 @@ The invocation means the named draft passed human review.
 - Publish or update the formal Issue only through the approved draft data.
 - Create the bound branch and draft PR for formal implementation.
 - For FEATURE, perform RED, implementation, GREEN, then wait for CI.
-- For PROJECT_CHANGE, update only approved project documents and do not require
+- For DOCUMENTATION, update only approved documentation files and do not require
   TDD.
 - Stop at Human PR Review.
 

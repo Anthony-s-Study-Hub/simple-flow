@@ -22,9 +22,9 @@ When PR Review finds a problem, use Review-Triage. It runs its bundled
 Then use Issue-Draft for the next approved change and Start-Implement for the
 specified Draft ID.
 
-## PROJECT_CHANGE
+## DOCUMENTATION
 
-Use Issue-Draft to create a PROJECT_CHANGE draft. Start-Implement updates only
-approved project documents and does not require TDD. PR-Finalize is still the
+Use Issue-Draft to create a DOCUMENTATION draft. Start-Implement updates only
+approved documentation files and does not require TDD. PR-Finalize is still the
 only merge entry point after human review.
 
