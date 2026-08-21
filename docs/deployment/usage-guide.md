@@ -1,6 +1,6 @@
 # Simple Flow Usage Guide
 
-Use the five skills as human-invoked stage boundaries.
+Use the six skills as human-invoked stage boundaries.
 
 ## Normal FEATURE
 
@@ -27,4 +27,12 @@ specified Draft ID.
 Use Issue-Draft to create a DOCUMENTATION draft. Start-Implement updates only
 approved documentation files and does not require TDD. PR-Finalize is still the
 only merge entry point after human review.
+
+## Documentation-Curation
+
+Use Documentation-Curation when project history needs to be curated into
+baseline update proposals. It reads deterministic history input, produces
+Decision Proposals, Documentation Findings, New Component Proposals, and one
+DOCUMENTATION Canonical Draft, then stops. The draft must be reviewed by a
+human before the existing DOCUMENTATION flow begins with Start-Implement.
 

@@ -23,6 +23,7 @@ from simple_flow_test_harness.runner import (
     _combined_codex_exit_code,
 )
 from simple_flow_test_harness.scenarios import REQUIRED_SCENARIO_IDS, SMOKE_SCENARIO_IDS
+from simple_flow_test_harness.scenarios import FULL_SUITE_SCENARIO_IDS, PHASE5_EXTENSION_SCENARIO_IDS
 from simple_flow_test_harness.transcript import compact_codex_response, compact_fixture_prompt
 
 
@@ -45,8 +46,9 @@ def test_phase4_validate_command_is_static() -> None:
         check=True,
     )
 
-    assert "Phase 4 scenario catalog valid: 26 scenarios" in completed.stdout
-    assert "Full suite scenarios: 25" in completed.stdout
+    assert "Phase 4 scenario catalog valid: 38 scenarios" in completed.stdout
+    assert "Full suite scenarios: 37" in completed.stdout
+    assert "Phase 5 extension scenarios: 12" in completed.stdout
 
 
 def test_phase4_dry_run_generates_machine_and_human_reports(tmp_path: Path) -> None:
@@ -220,7 +222,7 @@ def test_phase4_passing_smoke_gate_does_not_repeat_smoke_members(tmp_path: Path,
 
     expected_remaining = [
         scenario_id
-        for scenario_id in REQUIRED_SCENARIO_IDS
+        for scenario_id in FULL_SUITE_SCENARIO_IDS
         if scenario_id not in SMOKE_SCENARIO_IDS
     ]
     assert selected_batches == [list(SMOKE_SCENARIO_IDS), expected_remaining]

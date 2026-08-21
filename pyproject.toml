@@ -22,5 +22,5 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.setuptools.packages.find]
-include = ["simple_flow_gates*", "simple_flow_agent*", "simple_flow_deploy*", "simple_flow_test_harness*"]
+include = ["simple_flow_gates*", "simple_flow_agent*", "simple_flow_deploy*", "simple_flow_documentation_curation*", "simple_flow_test_harness*"]
 exclude = ["skills*", "tests*", "scripts*"]

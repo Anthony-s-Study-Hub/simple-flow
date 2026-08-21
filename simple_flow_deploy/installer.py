@@ -8,6 +8,7 @@ import shutil
 
 SKILL_MAP = {
     "simple-flow-discussion": "discussion",
+    "simple-flow-documentation-curation": "documentation-curation",
     "simple-flow-issue-draft": "issue-draft",
     "simple-flow-start-implement": "start-implement",
     "simple-flow-review-triage": "review-triage",
@@ -38,6 +39,18 @@ CORE_FILES = [
     "simple_flow_agent/finalize.py",
     "simple_flow_agent/review_triage.py",
     "simple_flow_agent/start_implement.py",
+    "simple_flow_documentation_curation/__init__.py",
+    "simple_flow_documentation_curation/baselines.py",
+    "simple_flow_documentation_curation/conflicts.py",
+    "simple_flow_documentation_curation/cursor.py",
+    "simple_flow_documentation_curation/mapping.py",
+    "simple_flow_documentation_curation/models.py",
+    "simple_flow_documentation_curation/normalizer.py",
+    "simple_flow_documentation_curation/patch_planner.py",
+    "simple_flow_documentation_curation/references.py",
+    "simple_flow_documentation_curation/relationships.py",
+    "simple_flow_documentation_curation/renderer.py",
+    "simple_flow_documentation_curation/versioning.py",
     "scripts/__init__.py",
     "scripts/configure_repository.ps1",
     "scripts/orphan_branch_watch.py",
@@ -59,6 +72,11 @@ DOC_FILES = {
     "docs/deployment/usage-guide.md": "docs/simple-flow/usage-guide.md",
     "docs/deployment/project-integration-guide.md": "docs/simple-flow/project-integration-guide.md",
     "docs/deployment/github-setup-guide.md": "docs/simple-flow/github-setup-guide.md",
+}
+
+BASELINE_TEMPLATE_FILES = {
+    "simple_flow_deploy/baseline_templates/high-level-project-baseline.md": ".simple-flow/baselines/high-level-project-baseline.md",
+    "simple_flow_deploy/baseline_templates/component-baseline-template.md": ".simple-flow/baselines/component-baseline-template.md",
 }
 
 SKILL_RESOURCE_ROOT = Path("simple_flow_deploy/skill_resources")
@@ -168,6 +186,9 @@ def _desired_files(
 
     for source_doc, target_doc in DOC_FILES.items():
         files[target_doc] = (source / source_doc).read_text(encoding="utf-8")
+
+    for source_template, target_template in BASELINE_TEMPLATE_FILES.items():
+        files[target_template] = (source / source_template).read_text(encoding="utf-8")
 
     files[".simple-flow/project-config.json"] = (
         json.dumps(

@@ -3,6 +3,7 @@ from __future__ import annotations
 from simple_flow_test_harness.models import StepType
 from simple_flow_test_harness.scenarios import (
     ALL_SCENARIO_IDS,
+    FULL_SUITE_SCENARIO_IDS,
     PHASE5_EXTENSION_SCENARIO_IDS,
     REQUIRED_SCENARIO_IDS,
     SMOKE_SCENARIO_IDS,
@@ -17,6 +18,7 @@ def test_required_phase4_scenarios_are_defined_once() -> None:
     assert tuple(scenarios) == ALL_SCENARIO_IDS
     assert len(REQUIRED_SCENARIO_IDS) == 25
     assert len(PHASE5_EXTENSION_SCENARIO_IDS) == 12
+    assert len(FULL_SUITE_SCENARIO_IDS) == 37
     assert SMOKE_ONLY_SCENARIO_IDS == ("S01",)
     assert len(scenarios) == 38
 
