@@ -154,11 +154,12 @@ _SCENARIOS = (
                 "S01-U1",
                 (
                     "@start-implement {{draft_id}}. For this smoke scenario, execute the minimum "
-                    "DOCUMENTATION_NORMAL path: run the path-selection script, create the GitHub "
-                    "Issue from .simple-flow/drafts/{{draft_id}}.md, create branch "
-                    "phase4-smoke/{{draft_id}}, append 'Phase 4 smoke marker: remote artifact "
-                    "path verified.' to docs/simple-flow/usage-guide.md, commit and push the "
-                    "branch, open a draft PR, then STOP at Human PR Review. Do not inspect "
+                    "DOCUMENTATION_NORMAL path by running: python .codex/skills/start-implement/"
+                    "scripts/start_documentation.py --draft-id {{draft_id}} --drafts-dir "
+                    '.simple-flow/drafts --repo {{test_repo}} --gh-path "{{gh_path}}". '
+                    "The helper creates the GitHub Issue, creates the bound documentation branch, "
+                    "applies the approved docs change, pushes the branch, and opens a draft PR. "
+                    "Then STOP at Human PR Review. Do not inspect "
                     "unrelated implementation, tests, or helper internals unless one command fails."
                 ),
             ),

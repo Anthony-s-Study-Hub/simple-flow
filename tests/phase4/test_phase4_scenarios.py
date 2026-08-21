@@ -25,6 +25,8 @@ def test_scenarios_are_data_driven_with_fixed_steps_and_objective_rules() -> Non
         "{{issue_number}}",
         "{{pr_number}}",
         "{{branch_name}}",
+        "{{gh_path}}",
+        "{{test_repo}}",
     }
 
     for scenario in load_scenarios().values():
@@ -123,7 +125,8 @@ def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:
     assert len(user_actions) == 1
     assert user_actions[0].text.startswith("@start-implement {{draft_id}}")
     assert "minimum DOCUMENTATION_NORMAL path" in user_actions[0].text
-    assert "open a draft PR" in user_actions[0].text
+    assert "scripts/start_documentation.py" in user_actions[0].text
+    assert "draft PR" in user_actions[0].text
     assert remote_smoke.fixture_draft is not None
     assert remote_smoke.fixture_draft.work_type == "DOCUMENTATION"
     assert remote_smoke.fixture_draft.fields["Change"].startswith("Append")

@@ -696,7 +696,10 @@ def _extract_thread_id(stdout: str) -> str:
 
 
 def _mechanical_variables(project_path: Path, repo_full_name: str, config: Phase4Config) -> dict[str, str]:
-    variables: dict[str, str] = {}
+    variables: dict[str, str] = {
+        "gh_path": config.gh_path,
+        "test_repo": config.test_repo_url,
+    }
     drafts_dir = project_path / ".simple-flow" / "drafts"
     draft_ids = sorted(path.stem for path in drafts_dir.glob("DRAFT-*.json")) if drafts_dir.exists() else []
     if draft_ids:
