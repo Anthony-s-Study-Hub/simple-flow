@@ -207,7 +207,14 @@ _SCENARIOS = (
         "A - Single Skill",
         "Discussion allows analysis and stops without formal artifacts.",
         (
-            _ua("A01-U1", '@discussion "Explore adding a lightweight health endpoint."'),
+            _ua(
+                "A01-U1",
+                (
+                    '@discussion "Explore adding a lightweight health endpoint. '
+                    'Do not inspect repository files; give a concise conceptual '
+                    'options/risks/open-questions summary and STOP."'
+                ),
+            ),
             _obs("A01-O1", "Read draft files, GitHub issues, branches, and PRs."),
             _assert("A01-A1", "No Canonical Draft, Issue, Branch, or PR exists."),
         ),
@@ -228,9 +235,8 @@ _SCENARIOS = (
         "A - Single Skill",
         "Issue-Draft creates a FEATURE Canonical Draft and stops.",
         (
-            _ua("A02-U1", '@discussion "Health endpoint should return HTTP 200 and ok JSON."'),
             _ua(
-                "A02-U2",
+                "A02-U1",
                 "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'; Requirements='Return HTTP 200 and JSON status ok from the health endpoint'; Acceptance Criteria='Automated test proves the health response returns status ok'; Scope='src/simple_flow_test_app/'; Out of Scope='Authentication, routing framework changes, deployment changes'; Documentation Impact='None'; Roadmap Target='UNMAPPED'",
             ),
             _obs("A02-O1", "Read Canonical Draft JSON and Markdown."),
@@ -341,8 +347,10 @@ _SCENARIOS = (
         "A - Single Skill",
         "Review-Triage emits fixed classification fields without modifying artifacts.",
         (
-            _ua("A06-U1", 'predefined review finding on Issue 1 / PR 1: "Endpoint omits error case."'),
-            _ua("A06-U2", "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=1 source-pr=1"),
+            _ua(
+                "A06-U1",
+                "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=1 source-pr=1 reason='Endpoint omits error case.'",
+            ),
             _obs("A06-O1", "Read file state, issues, branches, and PRs."),
             _assert("A06-A1", "Output includes Relationship, Merge Impact, Source Issue, Source PR, Reason and no artifacts change."),
         ),
