@@ -57,11 +57,16 @@ def _remote_branch_names() -> list[str]:
         capture_output=True,
         text=True,
     )
+    return _normalize_remote_branch_names(result.stdout.splitlines())
+
+
+def _normalize_remote_branch_names(refs: list[str]) -> list[str]:
     branches = []
-    for line in result.stdout.splitlines():
-        name = line.strip()
-        if name and name != "origin/HEAD":
-            branches.append(name.removeprefix("origin/"))
+    for ref in refs:
+        name = ref.strip()
+        if not name or name in {"origin", "origin/HEAD"}:
+            continue
+        branches.append(name.removeprefix("origin/"))
     return branches
 
 
@@ -97,4 +102,3 @@ def _commits_ahead(base: str, branch: str) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
