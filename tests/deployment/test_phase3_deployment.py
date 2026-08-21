@@ -20,7 +20,7 @@ UNPREFIXED_SKILLS = [
 SKILL_SCRIPTS = {
     "discussion": [],
     "issue-draft": ["scripts/create_draft.py"],
-    "start-implement": ["scripts/select_path.py"],
+    "start-implement": ["scripts/select_path.py", "scripts/start_documentation.py"],
     "review-triage": ["scripts/classify_finding.py"],
     "pr-finalize": ["scripts/check_pre_merge.py"],
 }
@@ -180,6 +180,44 @@ def test_reference_integrity_and_required_check_names(tmp_path: Path) -> None:
     assert "C:\\\\" not in pr_governance
     assert "Anthony-s-Study-Hub/simple-flow" not in pr_governance
     _assert_deployed_skill_script_references_exist(target)
+
+
+def test_documentation_start_script_plan_only_validates_append_change(tmp_path: Path) -> None:
+    from simple_flow_agent.drafts import DraftStore
+
+    drafts_dir = tmp_path / "drafts"
+    draft = DraftStore(drafts_dir).create_documentation(
+        change="Append 'Phase 4 smoke marker: remote artifact path verified.' to docs/simple-flow/usage-guide.md",
+        reason="Prove remote artifact creation",
+        impact="Smoke validation only",
+        supersedes="None",
+        affected_project_documents=["docs/simple-flow/usage-guide.md"],
+        source_context="Phase 4 test",
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(SSOT_SCRIPT_ROOT / "start-implement" / "scripts" / "start_documentation.py"),
+            "--draft-id",
+            draft.draft_id,
+            "--drafts-dir",
+            str(drafts_dir),
+            "--repo",
+            "owner/repo",
+            "--plan-only",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    plan = json.loads(completed.stdout)
+    assert plan["status"] == "planned"
+    assert plan["doc_path"] == "docs/simple-flow/usage-guide.md"
+    assert plan["marker"] == "Phase 4 smoke marker: remote artifact path verified."
+    assert plan["issue_title"].startswith("Append")
 
 
 def test_deployed_phase1_and_phase2_regressions_pass(tmp_path: Path) -> None:
