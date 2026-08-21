@@ -71,9 +71,10 @@ The desired repository settings are:
 }
 ```
 
-The desired main branch policy requires pull requests, required status checks,
-resolved review conversations, no force pushes, no branch deletion, and zero
-required approving reviews while the agent and human share one GitHub identity.
+The desired main branch policy includes admins in enforcement and requires pull
+requests, required status checks, resolved review conversations, no force
+pushes, no branch deletion, and zero required approving reviews while the agent
+and human share one GitHub identity.
 
 Apply the policy from a local workstation with the full GitHub CLI path:
 
