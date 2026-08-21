@@ -16,6 +16,9 @@ Phase 2 adds `AGENTS.md`, five Codex skill entrypoints under `skills/`, and
 deterministic helpers in `simple_flow_agent` for draft handoff, review triage,
 start-implement path selection, and PR-finalize prechecks.
 
+Phase 3 adds a deterministic installer in `scripts/install_simple_flow.py` for
+deploying the portable workflow into another project.
+
 Run the local test suite:
 
 ```powershell
