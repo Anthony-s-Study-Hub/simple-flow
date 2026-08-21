@@ -17,9 +17,10 @@ SKILL_MAP = {
 CORE_FILES = [
     "AGENTS.md",
     ".github/ISSUE_TEMPLATE/feature.md",
-    ".github/ISSUE_TEMPLATE/project_change.md",
+    ".github/ISSUE_TEMPLATE/documentation.md",
     ".github/pull_request_template.md",
-    ".github/workflows/phase1-gates.yml",
+    ".github/workflows/issue-governance.yml",
+    ".github/workflows/pr-governance.yml",
     ".github/workflows/phase1-tests.yml",
     ".github/workflows/orphan-branch-watch.yml",
     ".simple-flow/roadmap-targets.txt",
@@ -59,6 +60,8 @@ DOC_FILES = {
     "docs/deployment/project-integration-guide.md": "docs/simple-flow/project-integration-guide.md",
     "docs/deployment/github-setup-guide.md": "docs/simple-flow/github-setup-guide.md",
 }
+
+SKILL_RESOURCE_ROOT = Path("simple_flow_deploy/skill_resources")
 
 
 @dataclass
@@ -144,9 +147,24 @@ def _desired_files(
         files[relative] = text
 
     for source_skill, target_skill in SKILL_MAP.items():
-        text = (source / "skills" / source_skill / "SKILL.md").read_text(encoding="utf-8")
-        text = text.replace(f"name: {source_skill}", f"name: {target_skill}")
-        files[f".codex/skills/{target_skill}/SKILL.md"] = text
+        source_dir = source / "skills" / source_skill
+        skill_text = (source_dir / "SKILL.md").read_text(encoding="utf-8")
+        files[f".codex/skills/{target_skill}/SKILL.md"] = skill_text.replace(
+            f"name: {source_skill}",
+            f"name: {target_skill}",
+        )
+
+        resource_dir = source / SKILL_RESOURCE_ROOT / target_skill
+        if not resource_dir.exists():
+            continue
+        for path in resource_dir.rglob("*"):
+            if not path.is_file():
+                continue
+            skill_relative = path.relative_to(resource_dir)
+            text = path.read_text(encoding="utf-8")
+            files[
+                f".codex/skills/{target_skill}/{skill_relative.as_posix()}"
+            ] = text
 
     for source_doc, target_doc in DOC_FILES.items():
         files[target_doc] = (source / source_doc).read_text(encoding="utf-8")

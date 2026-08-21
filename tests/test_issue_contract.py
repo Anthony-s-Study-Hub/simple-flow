@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from simple_flow_gates.contracts import ContractError, IssueContract, WorkType
-from tests.conftest import feature_issue_body, project_change_issue_body
+from tests.conftest import documentation_issue_body, feature_issue_body, project_change_issue_body
 
 
 def test_legal_feature_issue_passes(roadmap_targets: set[str]) -> None:
@@ -47,9 +47,36 @@ def test_feature_roadmap_target_must_be_configured(roadmap_targets: set[str]) ->
         IssueContract.parse(body, roadmap_targets)
 
 
-def test_project_change_issue_passes_without_roadmap(roadmap_targets: set[str]) -> None:
+def test_documentation_issue_passes_without_roadmap(roadmap_targets: set[str]) -> None:
+    issue = IssueContract.parse(documentation_issue_body(), roadmap_targets)
+
+    assert issue.work_type == WorkType.DOCUMENTATION
+    assert issue.scope_patterns == ["docs/phase1-governance.md"]
+
+
+def test_legacy_project_change_issue_normalizes_to_documentation(
+    roadmap_targets: set[str],
+) -> None:
     issue = IssueContract.parse(project_change_issue_body(), roadmap_targets)
 
-    assert issue.work_type == WorkType.PROJECT_CHANGE
+    assert issue.work_type == WorkType.DOCUMENTATION
     assert issue.scope_patterns == ["docs/phase1-governance.md"]
+
+
+def test_documentation_issue_rejects_functioning_code_scope(
+    roadmap_targets: set[str],
+) -> None:
+    body = documentation_issue_body(docs="- simple_flow_gates/")
+
+    with pytest.raises(ContractError, match="DOCUMENTATION work may only affect"):
+        IssueContract.parse(body, roadmap_targets)
+
+
+def test_legacy_project_change_issue_rejects_functioning_code_scope(
+    roadmap_targets: set[str],
+) -> None:
+    body = project_change_issue_body(docs="- scripts/")
+
+    with pytest.raises(ContractError, match="DOCUMENTATION work may only affect"):
+        IssueContract.parse(body, roadmap_targets)
 

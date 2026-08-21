@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from simple_flow_gates.orphan import BranchState, find_orphan_branches
 from simple_flow_gates.repository_rules import (
+    REQUIRED_STATUS_CHECKS,
     desired_main_branch_policy,
     desired_repository_settings,
 )
@@ -39,4 +42,14 @@ def test_review_merge_policy_matches_phase1_identity_constraints() -> None:
     assert branch_policy["required_conversation_resolution"] is True
     assert branch_policy["allow_force_pushes"] is False
     assert branch_policy["required_approving_review_count"] == 0
-    assert branch_policy["required_status_checks"] == ["phase1-gates", "phase1-tests"]
+    assert branch_policy["required_status_checks"] == REQUIRED_STATUS_CHECKS
+
+
+def test_repository_configuration_script_uses_required_status_checks() -> None:
+    script = Path(__file__).resolve().parents[1] / "scripts" / "configure_repository.ps1"
+    text = script.read_text(encoding="utf-8")
+
+    for check in REQUIRED_STATUS_CHECKS:
+        assert f'"{check}"' in text
+    assert '"phase1-gates"' not in text
+    assert '"phase1-tests"' not in text

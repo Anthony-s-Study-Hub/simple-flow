@@ -18,6 +18,11 @@ workflow draft.
 - Surface risks and open questions.
 - Summarize current consensus.
 
+## Execution
+
+This skill has no deterministic script because it must not create workflow
+artifacts. Complete the conversational analysis directly, then stop.
+
 ## Boundaries
 
 - Do not generate a Canonical Draft.

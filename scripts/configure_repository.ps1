@@ -9,10 +9,21 @@ param(
   --field delete_branch_on_merge=true `
   --field allow_auto_merge=false
 
+$requiredChecks = @(
+    "pr-contract",
+    "linked-issue-contract",
+    "scope-governance",
+    "documentation-impact",
+    "tdd-evidence-order",
+    "tdd-red-replay",
+    "tdd-green-replay",
+    "current-head-tests"
+)
+
 $body = @{
     required_status_checks = @{
         strict = $true
-        contexts = @("phase1-gates", "phase1-tests")
+        contexts = $requiredChecks
     }
     enforce_admins = $true
     required_pull_request_reviews = @{

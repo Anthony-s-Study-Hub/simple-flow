@@ -1,0 +1,16 @@
+{
+  "issue": 20,
+  "red": {
+    "commit": "737742eb8707d21271b0c663786fc8181e3039e0",
+    "command": "python -m pytest tests/test_phase2_policy.py tests/test_phase2_workflow.py tests/deployment/test_phase3_deployment.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "39a663ff9f63aa73401a3ff58980a8904316fc26"
+  },
+  "green": {
+    "commit": "d73f8a8e9740eaab825aea3056ced3d6000e9446",
+    "command": "python -m pytest",
+    "exit_code": 0
+  }
+}

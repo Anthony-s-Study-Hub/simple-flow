@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -43,6 +44,201 @@ def test_issue_draft_creates_structured_and_rendered_feature_draft(tmp_path: Pat
     )
 
 
+def test_issue_draft_feature_script_creates_draft(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    draft_input = tmp_path / "draft-input.json"
+    draft_dir = tmp_path / "drafts"
+    roadmap = tmp_path / "roadmap-targets.txt"
+    roadmap.write_text("PHASE_1_GOVERNANCE\n", encoding="utf-8")
+    draft_input.write_text(
+        json.dumps(
+            {
+                "work_type": "FEATURE",
+                "summary": "Executable skill pipeline.",
+                "requirements": ["Create the draft through a skill-local script"],
+                "acceptance_criteria": ["Start-Implement reads the script output"],
+                "scope": ["skills/"],
+                "out_of_scope": ["Phase 4"],
+                "documentation_impact": ["docs/phase2-skills.md"],
+                "roadmap_target": "PHASE_1_GOVERNANCE",
+                "source_issue": 14,
+                "source_pr": 15,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    created = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "issue-draft", "create_draft.py")),
+            "--input",
+            str(draft_input),
+            "--drafts-dir",
+            str(draft_dir),
+            "--roadmap-targets",
+            str(roadmap),
+        ],
+        cwd=root,
+    )
+    assert created["draft_id"] == "DRAFT-0001"
+    assert (draft_dir / "DRAFT-0001.json").exists()
+
+
+def test_review_triage_script_classifies_blocking_current_finding() -> None:
+    root = Path(__file__).resolve().parents[1]
+
+    triage = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "review-triage", "classify_finding.py")),
+            "--relationship",
+            "CURRENT",
+            "--merge-impact",
+            "BLOCKING",
+            "--source-issue",
+            "14",
+            "--source-pr",
+            "15",
+            "--reason",
+            "Review found a blocking current-work issue.",
+        ],
+        cwd=root,
+    )
+    assert triage["relationship"] == "CURRENT"
+    assert triage["merge_impact"] == "BLOCKING"
+    assert triage["source_issue"] == 14
+    assert triage["source_pr"] == 15
+
+
+def test_start_implement_script_selects_review_blocking_path(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    draft_dir = tmp_path / "drafts"
+    triage_output = tmp_path / "triage.json"
+    store = DraftStore(draft_dir)
+    store.create_feature(
+        summary="Executable skill pipeline.",
+        requirements=["Create the draft through a skill script"],
+        acceptance_criteria=["Start-Implement reads the script output"],
+        scope=["skills/"],
+        out_of_scope=["Phase 4"],
+        documentation_impact=["docs/phase2-skills.md"],
+        roadmap_target="UNMAPPED",
+        source_issue=14,
+        source_pr=15,
+    )
+    triage_output.write_text(
+        json.dumps(
+            {
+                "relationship": "CURRENT",
+                "merge_impact": "BLOCKING",
+                "source_issue": 14,
+                "source_pr": 15,
+                "reason": "Review found a blocking current-work issue.",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    plan = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "start-implement", "select_path.py")),
+            "--draft-id",
+            "DRAFT-0001",
+            "--drafts-dir",
+            str(draft_dir),
+            "--triage-file",
+            str(triage_output),
+        ],
+        cwd=root,
+    )
+    assert plan["path"] == "REVIEW_CURRENT_BLOCKING"
+    assert plan["stop_point"] == "HUMAN_PR_REVIEW"
+    assert "merge_pull_request" not in plan["actions"]
+
+
+def test_pr_finalize_script_allows_ready_authorized_merge(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    pr_state = tmp_path / "pr-state.json"
+    pr_state.write_text(
+        json.dumps(
+            {
+                "exists": True,
+                "open": True,
+                "draft": False,
+                "required_checks": {
+                    "pr-contract": True,
+                    "linked-issue-contract": True,
+                    "scope-governance": True,
+                    "documentation-impact": True,
+                    "tdd-evidence-order": True,
+                    "tdd-red-replay": True,
+                    "tdd-green-replay": True,
+                    "current-head-tests": True,
+                },
+                "unresolved_conversations": 0,
+                "commits_after_human_review": 0,
+                "linked_issue_closed": False,
+                "head_branch_deleted": False,
+                "project_item_updated": False,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    finalize = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "pr-finalize", "check_pre_merge.py")),
+            "--state",
+            str(pr_state),
+            "--authorized",
+        ],
+        cwd=root,
+    )
+    assert finalize["can_merge"] is True
+
+
+def test_issue_draft_script_creates_documentation_draft(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    draft_input = tmp_path / "documentation-input.json"
+    draft_dir = tmp_path / "drafts"
+    draft_input.write_text(
+        json.dumps(
+            {
+                "work_type": "DOCUMENTATION",
+                "change": "Clarify the usage guide.",
+                "reason": "The existing wording is misleading.",
+                "impact": "Future users pick the documentation-only path.",
+                "supersedes": "None",
+                "affected_project_documents": ["docs/deployment/usage-guide.md"],
+                "source_context": "Issue #16",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    created = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "issue-draft", "create_draft.py")),
+            "--input",
+            str(draft_input),
+            "--drafts-dir",
+            str(draft_dir),
+        ],
+        cwd=root,
+    )
+    assert created["work_type"] == "DOCUMENTATION"
+    assert "Type: DOCUMENTATION" in (draft_dir / "DRAFT-0001.md").read_text(
+        encoding="utf-8"
+    )
+
+
 def test_start_implement_reads_specified_draft_not_latest(tmp_path: Path) -> None:
     store = DraftStore(tmp_path)
     first = store.create_feature(
@@ -71,9 +267,9 @@ def test_start_implement_reads_specified_draft_not_latest(tmp_path: Path) -> Non
     assert plan.path == "FEATURE_NORMAL"
 
 
-def test_project_change_does_not_require_tdd(tmp_path: Path) -> None:
+def test_documentation_does_not_require_tdd(tmp_path: Path) -> None:
     store = DraftStore(tmp_path)
-    draft = store.create_project_change(
+    draft = store.create_documentation(
         change="Update baseline policy.",
         reason="A long-term rule changed.",
         impact="Future work follows the new rule.",
@@ -84,8 +280,8 @@ def test_project_change_does_not_require_tdd(tmp_path: Path) -> None:
 
     plan = select_start_path(store, draft.draft_id)
 
-    assert plan.work_type == "PROJECT_CHANGE"
-    assert plan.path == "PROJECT_CHANGE_NORMAL"
+    assert plan.work_type == "DOCUMENTATION"
+    assert plan.path == "DOCUMENTATION_NORMAL"
     assert plan.tdd_required is False
 
 
@@ -204,7 +400,7 @@ def test_pr_finalize_requires_explicit_human_authorization() -> None:
 
 def test_pr_finalize_blocks_objective_failures() -> None:
     blockers = [
-        PRState.ready(required_checks={"phase1-gates": False, "phase1-tests": True}),
+        PRState.ready(required_checks={"pr-contract": False, "current-head-tests": True}),
         PRState.ready(unresolved_conversations=1),
         PRState.ready(commits_after_human_review=1),
     ]
@@ -240,4 +436,36 @@ def test_phase2_acceptance_script_covers_runnable_scenarios(tmp_path: Path) -> N
     )
 
     assert "Phase 2 acceptance PASS" in completed.stdout
+
+
+def _skill_script(
+    root: Path,
+    installed_skill: str,
+    script_name: str,
+) -> Path:
+    script_path = (
+        root
+        / "simple_flow_deploy"
+        / "skill_resources"
+        / installed_skill
+        / "scripts"
+        / script_name
+    )
+    if script_path.exists():
+        return script_path
+
+    deployed_path = root / ".codex" / "skills" / installed_skill / "scripts" / script_name
+    assert deployed_path.exists()
+    return deployed_path
+
+
+def _run_json(command: list[str], *, cwd: Path) -> dict[str, object]:
+    completed = subprocess.run(
+        command,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(completed.stdout)
 

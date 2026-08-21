@@ -14,12 +14,29 @@ change.
 
 ## Responsibilities
 
-- Build one structured Canonical Draft for either FEATURE or PROJECT_CHANGE.
+- Build one structured Canonical Draft for either FEATURE or DOCUMENTATION.
 - Validate the draft with deterministic draft and issue-contract logic.
 - Assign a unique Draft ID.
 - Save structured JSON and render human-readable Markdown from the same data
   under `.simple-flow/drafts/`.
 - Output the Draft ID and STOP.
+
+## Execution
+
+1. Prepare a JSON input file containing the approved draft fields.
+2. Run this skill's bundled script before reporting a Draft ID:
+
+```powershell
+python .codex/skills/issue-draft/scripts/create_draft.py --input <draft-input.json> --drafts-dir .simple-flow/drafts --roadmap-targets .simple-flow/roadmap-targets.txt
+```
+
+3. Use only the script output as the Canonical Draft handoff.
+4. Report the returned `draft_id`, `json_path`, and `markdown_path`, then STOP.
+
+In this source repository, the deploy-time script source of truth is
+`simple_flow_deploy/skill_resources/issue-draft/scripts/create_draft.py`.
+Installed projects use the `.codex/skills/issue-draft/scripts/create_draft.py`
+path shown above.
 
 ## FEATURE Contract
 
@@ -33,9 +50,9 @@ change.
 - Roadmap Target
 
 Roadmap Target must be an existing target, UNMAPPED, or
-PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
+DOCUMENTATION_REQUIRED. Do not create a new roadmap target.
 
-## PROJECT_CHANGE Contract
+## DOCUMENTATION Contract
 
 - Type
 - Change
@@ -45,6 +62,9 @@ PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
 - Affected Project Documents
 - Source PR / Decision Context
 
+Legacy `PROJECT_CHANGE` input is accepted only as an alias for DOCUMENTATION
+during migration. New drafts must use DOCUMENTATION.
+
 ## Boundaries
 
 - Do not publish GitHub Issues.
@@ -52,6 +72,7 @@ PROJECT_CHANGE_REQUIRED. Do not create a new roadmap target.
 - Do not modify implementation code.
 - Do not invoke or simulate Start-Implement.
 
-Mechanics should use `simple_flow_agent.drafts.DraftStore(".simple-flow/drafts")`
-or an equivalent deterministic helper. After reporting the Draft ID, STOP.
+Mechanics must use the bundled `scripts/create_draft.py` entrypoint. After
+reporting the Draft ID, STOP. The entrypoint writes the Canonical Draft JSON
+and Markdown under `.simple-flow/drafts/`.
 

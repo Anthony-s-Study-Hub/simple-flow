@@ -33,6 +33,28 @@ implementation has been reviewed and accepted.
 - Confirm GitHub Projects status cleanup.
 - Output the result and STOP.
 
+## Execution
+
+1. Confirm the human explicitly invoked `PR-Finalize <PR>`.
+2. Collect objective PR state from GitHub and CI into a JSON file with these
+   fields: `exists`, `open`, `draft`, `required_checks`,
+   `unresolved_conversations`, `commits_after_human_review`,
+   `linked_issue_closed`, `head_branch_deleted`, and `project_item_updated`.
+3. Run this skill's bundled pre-merge script before merging:
+
+```powershell
+python .codex/skills/pr-finalize/scripts/check_pre_merge.py --state <pr-state.json> --authorized
+```
+
+4. If the script exits nonzero, report the exact blocker and STOP.
+5. Only after a successful script result, perform the merge and required cleanup
+   confirmations, then output the result and STOP.
+
+In this source repository, the deploy-time script source of truth is
+`simple_flow_deploy/skill_resources/pr-finalize/scripts/check_pre_merge.py`.
+Installed projects use the `.codex/skills/pr-finalize/scripts/check_pre_merge.py`
+path shown above.
+
 ## Boundaries
 
 - Do not run a new intelligent code review.
