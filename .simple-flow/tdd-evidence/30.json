@@ -1,15 +1,15 @@
 {
   "issue": 30,
   "red": {
-    "commit": "7524e5f6f99a0e354f9735c1c8fc91107cb053f6",
-    "command": "python -m pytest tests/test_documentation_curation.py tests/deployment/test_phase3_deployment.py tests/phase4/test_phase4_scenarios.py",
+    "commit": "b5895b6bec71529daf3522a175921260bf927048",
+    "command": "python -m pytest tests/test_documentation_curation_phase5_spec.py",
     "exit_code": 2
   },
   "implementation": {
-    "commit": "daff02581ebbe8497444a7c2fec7578390a4bad5"
+    "commit": "b3a288a91d049798384264f021da1c0957f0fa39"
   },
   "green": {
-    "commit": "cd8c1d5f4292f781d8cc57be25370d65d5b5e7a7",
+    "commit": "5bb06fc2bb34cef2590d6866c67f1ec04dae5b83",
     "command": "python -m pytest",
     "exit_code": 0
   }
