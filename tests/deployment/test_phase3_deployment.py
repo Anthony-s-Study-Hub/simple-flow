@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -220,6 +221,19 @@ def test_documentation_start_script_plan_only_validates_append_change(tmp_path: 
     assert plan["issue_title"].startswith("Append")
 
 
+def test_documentation_start_script_scrubs_proxy_env_for_gh(monkeypatch) -> None:
+    module = _load_script_module(
+        SSOT_SCRIPT_ROOT / "start-implement" / "scripts" / "start_documentation.py"
+    )
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:9")
+    monkeypatch.setenv("ALL_PROXY", "http://127.0.0.1:9")
+
+    env = module.command_env(["gh", "issue", "create"])
+
+    assert "HTTPS_PROXY" not in env
+    assert "ALL_PROXY" not in env
+
+
 def test_deployed_phase1_and_phase2_regressions_pass(tmp_path: Path) -> None:
     target = tmp_path / "target-project"
     _install(target)
@@ -327,3 +341,13 @@ def _assert_deployed_skill_script_references_exist(target: Path) -> None:
             assert deployed_script.read_text(encoding="utf-8") == ssot_script.read_text(
                 encoding="utf-8"
             )
+
+
+def _load_script_module(path: Path):
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[path.stem] = module
+    spec.loader.exec_module(module)
+    return module
