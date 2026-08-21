@@ -158,7 +158,7 @@ def _desired_files(
         if not resource_dir.exists():
             continue
         for path in resource_dir.rglob("*"):
-            if not path.is_file():
+            if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
                 continue
             skill_relative = path.relative_to(resource_dir)
             text = path.read_text(encoding="utf-8")

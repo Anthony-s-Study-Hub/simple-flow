@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict, dataclass
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -207,9 +208,20 @@ def _run(command: list[str]) -> str:
         text=True,
         encoding="utf-8",
         errors="replace",
+        env=command_env(command),
         check=True,
     )
     return (completed.stdout or completed.stderr).strip()
+
+
+def command_env(command: list[str]) -> dict[str, str]:
+    env = os.environ.copy()
+    executable = command[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+    if executable in {"gh", "gh.exe"}:
+        for key in list(env):
+            if key.lower().endswith("_proxy"):
+                env.pop(key, None)
+    return env
 
 
 def _add_repo_root_to_path() -> None:
