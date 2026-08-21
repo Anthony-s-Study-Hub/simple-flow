@@ -342,7 +342,7 @@ class Phase4Runner:
             if result.exit_code != 0:
                 break
 
-        exit_code = 0 if all(result.exit_code == 0 for _, result in results) else 1
+        exit_code = _combined_codex_exit_code(results)
         stdout = "\n\n".join(
             f"=== {ref} STDOUT ===\n{result.stdout}" for ref, result in results
         )
@@ -753,6 +753,14 @@ def _gh_json(command: list[str], cwd: Path) -> list[dict[str, object]]:
     if not isinstance(data, list):
         return []
     return [item for item in data if isinstance(item, dict)]
+
+
+def _combined_codex_exit_code(results: list[tuple[str, CommandResult]]) -> int:
+    if any(result.exit_code == 124 for _, result in results):
+        return 124
+    if all(result.exit_code == 0 for _, result in results):
+        return 0
+    return 1
 
 
 def _codex_infrastructure_blocker(result: CommandResult) -> str:
