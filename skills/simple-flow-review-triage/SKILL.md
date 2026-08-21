@@ -33,10 +33,10 @@ python .codex/skills/review-triage/scripts/classify_finding.py --relationship <C
 ```
 
 Output the returned JSON fields in the conversation, then STOP. In this source
-repository, the same bundled script lives at
-`skills/simple-flow-review-triage/scripts/classify_finding.py`. Installed
-projects use the `.codex/skills/review-triage/scripts/classify_finding.py` path
-shown above.
+repository, the deploy-time script source of truth is
+`simple_flow_deploy/skill_resources/review-triage/scripts/classify_finding.py`.
+Installed projects use the `.codex/skills/review-triage/scripts/classify_finding.py`
+path shown above.
 
 ## Boundaries
 

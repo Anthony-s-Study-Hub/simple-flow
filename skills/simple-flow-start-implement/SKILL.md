@@ -47,9 +47,10 @@ python .codex/skills/start-implement/scripts/select_path.py --draft-id <Draft ID
 4. Follow only the returned `path`, `tdd_required`, and `actions`.
 5. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`.
 
-In this source repository, the same bundled script lives at
-`skills/simple-flow-start-implement/scripts/select_path.py`. Installed projects
-use the `.codex/skills/start-implement/scripts/select_path.py` path shown above.
+In this source repository, the deploy-time script source of truth is
+`simple_flow_deploy/skill_resources/start-implement/scripts/select_path.py`.
+Installed projects use the `.codex/skills/start-implement/scripts/select_path.py`
+path shown above.
 
 ## Boundaries
 

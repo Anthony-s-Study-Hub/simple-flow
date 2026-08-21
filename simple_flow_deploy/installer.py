@@ -60,6 +60,8 @@ DOC_FILES = {
     "docs/deployment/github-setup-guide.md": "docs/simple-flow/github-setup-guide.md",
 }
 
+SKILL_RESOURCE_ROOT = Path("simple_flow_deploy/skill_resources")
+
 
 @dataclass
 class InstallReport:
@@ -145,13 +147,20 @@ def _desired_files(
 
     for source_skill, target_skill in SKILL_MAP.items():
         source_dir = source / "skills" / source_skill
-        for path in source_dir.rglob("*"):
+        skill_text = (source_dir / "SKILL.md").read_text(encoding="utf-8")
+        files[f".codex/skills/{target_skill}/SKILL.md"] = skill_text.replace(
+            f"name: {source_skill}",
+            f"name: {target_skill}",
+        )
+
+        resource_dir = source / SKILL_RESOURCE_ROOT / target_skill
+        if not resource_dir.exists():
+            continue
+        for path in resource_dir.rglob("*"):
             if not path.is_file():
                 continue
-            skill_relative = path.relative_to(source_dir)
+            skill_relative = path.relative_to(resource_dir)
             text = path.read_text(encoding="utf-8")
-            if skill_relative == Path("SKILL.md"):
-                text = text.replace(f"name: {source_skill}", f"name: {target_skill}")
             files[
                 f".codex/skills/{target_skill}/{skill_relative.as_posix()}"
             ] = text
