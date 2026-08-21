@@ -64,6 +64,12 @@ python -m simple_flow_phase4.cli run `
   --allow-remote-reset
 ```
 
+Live runs also default to Codex sandbox bypass because remote-mutation scenarios
+must create Git branches, commits, pushes, Issues, and draft PRs inside the
+dedicated throwaway test workspace. Use `--codex-full-auto-sandbox` only when
+diagnosing sandbox behavior; S01 is expected to block in that mode because Git
+branch creation cannot complete.
+
 ## Boundaries
 
 - Source CI may run `validate` and dry-run schema checks.

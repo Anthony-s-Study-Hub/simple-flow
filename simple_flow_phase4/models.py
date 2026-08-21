@@ -258,7 +258,7 @@ class Phase4Config:
     allow_remote_reset: bool
     dry_run: bool = False
     keep_workspace: bool = False
-    codex_bypass_sandbox: bool = False
+    codex_bypass_sandbox: bool = True
     codex_model: str | None = None
     smoke_gate: bool = True
     smoke_only: bool = False
