@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+from typing import Callable
 from urllib.parse import urlparse
 
 from simple_flow_deploy.installer import install
@@ -203,7 +204,7 @@ class Phase4Environment:
         resolved_root = self.config.workspace_root.resolve()
         if resolved_target == resolved_root or resolved_root in resolved_target.parents:
             if resolved_target.exists():
-                shutil.rmtree(resolved_target)
+                _remove_tree(resolved_target)
             return
         raise ValueError(f"Refusing to remove path outside Phase 4 workspace: {resolved_target}")
 
@@ -264,7 +265,7 @@ class Phase4Environment:
             if child.name == ".git":
                 continue
             if child.is_dir():
-                shutil.rmtree(child)
+                _remove_tree(child)
             else:
                 child.unlink()
 
@@ -315,3 +316,16 @@ def _json_list(result: CommandResult) -> list[dict[str, object]]:
     if not isinstance(data, list):
         return []
     return [item for item in data if isinstance(item, dict)]
+
+
+def _remove_tree(path: Path) -> None:
+    shutil.rmtree(path, onerror=_retry_remove_readonly)
+
+
+def _retry_remove_readonly(
+    func: Callable[[str], None],
+    path: str,
+    _exc_info: object,
+) -> None:
+    Path(path).chmod(0o700)
+    func(path)
