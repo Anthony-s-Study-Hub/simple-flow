@@ -2,8 +2,14 @@ from __future__ import annotations
 
 
 REQUIRED_STATUS_CHECKS = [
-    "phase1-gates",
-    "phase1-tests",
+    "pr-contract",
+    "linked-issue-contract",
+    "scope-governance",
+    "documentation-impact",
+    "tdd-evidence-order",
+    "tdd-red-replay",
+    "tdd-green-replay",
+    "current-head-tests",
 ]
 
 

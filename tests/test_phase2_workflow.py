@@ -169,7 +169,16 @@ def test_pr_finalize_script_allows_ready_authorized_merge(tmp_path: Path) -> Non
                 "exists": True,
                 "open": True,
                 "draft": False,
-                "required_checks": {"phase1-gates": True, "phase1-tests": True},
+                "required_checks": {
+                    "pr-contract": True,
+                    "linked-issue-contract": True,
+                    "scope-governance": True,
+                    "documentation-impact": True,
+                    "tdd-evidence-order": True,
+                    "tdd-red-replay": True,
+                    "tdd-green-replay": True,
+                    "current-head-tests": True,
+                },
                 "unresolved_conversations": 0,
                 "commits_after_human_review": 0,
                 "linked_issue_closed": False,
@@ -391,7 +400,7 @@ def test_pr_finalize_requires_explicit_human_authorization() -> None:
 
 def test_pr_finalize_blocks_objective_failures() -> None:
     blockers = [
-        PRState.ready(required_checks={"phase1-gates": False, "phase1-tests": True}),
+        PRState.ready(required_checks={"pr-contract": False, "current-head-tests": True}),
         PRState.ready(unresolved_conversations=1),
         PRState.ready(commits_after_human_review=1),
     ]

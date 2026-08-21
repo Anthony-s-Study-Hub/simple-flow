@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from simple_flow_gates.repository_rules import REQUIRED_STATUS_CHECKS
+
 
 class FinalizeBlocked(RuntimeError):
     """Raised when PR-Finalize must stop on an objective blocker."""
@@ -33,7 +35,7 @@ class PRState:
             draft=False,
             required_checks=required_checks
             if required_checks is not None
-            else {"phase1-gates": True, "phase1-tests": True},
+            else {check: True for check in REQUIRED_STATUS_CHECKS},
             unresolved_conversations=unresolved_conversations,
             commits_after_human_review=commits_after_human_review,
             linked_issue_closed=False,

@@ -1,0 +1,253 @@
+name: PR Governance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  pr-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Validate PR contract
+        run: python -m simple_flow_gates.cli validate-pr-contract --event-path "$GITHUB_EVENT_PATH"
+
+  linked-issue-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Load linked issue body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY' > issue_number.txt
+          import os
+          import re
+          body = os.environ["PR_BODY"]
+          match = re.search(r"(?:#|issues/)(\d+)\b", body, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Pull request body does not reference a linked issue.")
+          print(match.group(1))
+          PY
+          issue="$(cat issue_number.txt)"
+          gh api "repos/${REPOSITORY}/issues/${issue}" --jq .body > issue_body.md
+      - name: Validate linked issue contract
+        run: python -m simple_flow_gates.cli validate-linked-issue --issue-body issue_body.md
+
+  scope-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=100
+      - name: Load linked issue body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY' > issue_number.txt
+          import os
+          import re
+          body = os.environ["PR_BODY"]
+          match = re.search(r"(?:#|issues/)(\d+)\b", body, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Pull request body does not reference a linked issue.")
+          print(match.group(1))
+          PY
+          issue="$(cat issue_number.txt)"
+          gh api "repos/${REPOSITORY}/issues/${issue}" --jq .body > issue_body.md
+      - name: Validate changed file scope
+        run: |
+          python -m simple_flow_gates.cli validate-scope \
+            --issue-body issue_body.md \
+            --base-ref "${{ github.event.pull_request.base.sha }}"
+
+  documentation-impact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=100
+      - name: Load linked issue body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY' > issue_number.txt
+          import os
+          import re
+          body = os.environ["PR_BODY"]
+          match = re.search(r"(?:#|issues/)(\d+)\b", body, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Pull request body does not reference a linked issue.")
+          print(match.group(1))
+          PY
+          issue="$(cat issue_number.txt)"
+          gh api "repos/${REPOSITORY}/issues/${issue}" --jq .body > issue_body.md
+      - name: Validate documentation impact
+        run: |
+          python -m simple_flow_gates.cli validate-documentation-impact \
+            --issue-body issue_body.md \
+            --base-ref "${{ github.event.pull_request.base.sha }}"
+
+  tdd-evidence-order:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=100
+      - name: Load linked issue body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY' > issue_number.txt
+          import os
+          import re
+          body = os.environ["PR_BODY"]
+          match = re.search(r"(?:#|issues/)(\d+)\b", body, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Pull request body does not reference a linked issue.")
+          print(match.group(1))
+          PY
+          issue="$(cat issue_number.txt)"
+          gh api "repos/${REPOSITORY}/issues/${issue}" --jq .body > issue_body.md
+      - name: Validate TDD evidence ordering
+        run: |
+          issue="$(cat issue_number.txt)"
+          tdd_arg=""
+          if [ -f ".simple-flow/tdd-evidence/${issue}.json" ]; then
+            tdd_arg="--tdd-evidence .simple-flow/tdd-evidence/${issue}.json"
+          fi
+          python -m simple_flow_gates.cli validate-tdd-evidence \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --issue-body issue_body.md \
+            --base-ref "${{ github.event.pull_request.base.sha }}" \
+            $tdd_arg
+
+  tdd-red-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=100
+      - name: Load linked issue body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY' > issue_number.txt
+          import os
+          import re
+          body = os.environ["PR_BODY"]
+          match = re.search(r"(?:#|issues/)(\d+)\b", body, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Pull request body does not reference a linked issue.")
+          print(match.group(1))
+          PY
+          issue="$(cat issue_number.txt)"
+          gh api "repos/${REPOSITORY}/issues/${issue}" --jq .body > issue_body.md
+      - name: Replay RED command
+        run: |
+          issue="$(cat issue_number.txt)"
+          tdd_arg=""
+          if [ -f ".simple-flow/tdd-evidence/${issue}.json" ]; then
+            tdd_arg="--tdd-evidence .simple-flow/tdd-evidence/${issue}.json"
+          fi
+          python -m simple_flow_gates.cli verify-tdd-red \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --issue-body issue_body.md \
+            --base-ref "${{ github.event.pull_request.base.sha }}" \
+            $tdd_arg
+
+  tdd-green-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=100
+      - name: Load linked issue body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY' > issue_number.txt
+          import os
+          import re
+          body = os.environ["PR_BODY"]
+          match = re.search(r"(?:#|issues/)(\d+)\b", body, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Pull request body does not reference a linked issue.")
+          print(match.group(1))
+          PY
+          issue="$(cat issue_number.txt)"
+          gh api "repos/${REPOSITORY}/issues/${issue}" --jq .body > issue_body.md
+      - name: Replay GREEN command
+        run: |
+          issue="$(cat issue_number.txt)"
+          tdd_arg=""
+          if [ -f ".simple-flow/tdd-evidence/${issue}.json" ]; then
+            tdd_arg="--tdd-evidence .simple-flow/tdd-evidence/${issue}.json"
+          fi
+          python -m simple_flow_gates.cli verify-tdd-green \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --issue-body issue_body.md \
+            --base-ref "${{ github.event.pull_request.base.sha }}" \
+            $tdd_arg

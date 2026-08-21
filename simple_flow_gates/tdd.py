@@ -85,24 +85,43 @@ def verify_tdd_commands(
     repo_path: str | Path = ".",
     timeout_seconds: int = 300,
 ) -> None:
-    expected = [
-        ("RED", evidence.red.commit, evidence.red.command, evidence.red.exit_code),
-        ("GREEN", evidence.green.commit, evidence.green.command, evidence.green.exit_code),
-    ]
+    verify_tdd_command(evidence, "red", repo_path=repo_path, timeout_seconds=timeout_seconds)
+    verify_tdd_command(evidence, "green", repo_path=repo_path, timeout_seconds=timeout_seconds)
+
+
+def verify_tdd_command(
+    evidence: TddEvidence,
+    phase: str,
+    repo_path: str | Path = ".",
+    timeout_seconds: int = 300,
+) -> None:
+    normalized_phase = phase.lower()
+    if normalized_phase == "red":
+        label = "RED"
+        phase_evidence = evidence.red
+    elif normalized_phase == "green":
+        label = "GREEN"
+        phase_evidence = evidence.green
+    else:
+        raise ContractError(f"Unsupported TDD phase: {phase}")
+
     repo = Path(repo_path)
     with tempfile.TemporaryDirectory(prefix="simple-flow-tdd-") as tmpdir:
-        for phase, commit, command, expected_exit_code in expected:
-            worktree = Path(tmpdir) / phase.lower()
-            _git(["worktree", "add", "--detach", str(worktree), commit], repo)
-            try:
-                observed = _run_evidence_command(command, worktree, timeout_seconds)
-            finally:
-                _git(["worktree", "remove", "--force", str(worktree)], repo)
-            if observed != expected_exit_code:
-                raise ContractError(
-                    f"{phase} command exit code mismatch at {commit}: "
-                    f"expected {expected_exit_code}, observed {observed}."
-                )
+        worktree = Path(tmpdir) / normalized_phase
+        _git(["worktree", "add", "--detach", str(worktree), phase_evidence.commit], repo)
+        try:
+            observed = _run_evidence_command(
+                phase_evidence.command,
+                worktree,
+                timeout_seconds,
+            )
+        finally:
+            _git(["worktree", "remove", "--force", str(worktree)], repo)
+        if observed != phase_evidence.exit_code:
+            raise ContractError(
+                f"{label} command exit code mismatch at {phase_evidence.commit}: "
+                f"expected {phase_evidence.exit_code}, observed {observed}."
+            )
 
 
 def _commit_positions(commit_history: list[str]) -> dict[str, int]:
