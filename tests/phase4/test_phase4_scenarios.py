@@ -136,6 +136,31 @@ def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:
     assert "harness-seeded" in remote_smoke.initial_state.lower()
 
 
+def test_smoke_members_keep_fast_single_skill_actions() -> None:
+    scenarios = load_scenarios()
+
+    a01_actions = _user_action_texts(scenarios["A01"])
+    a02_actions = _user_action_texts(scenarios["A02"])
+    a06_actions = _user_action_texts(scenarios["A06"])
+
+    assert len(a01_actions) == 1
+    assert "Do not inspect repository files" in a01_actions[0]
+    assert a02_actions == [
+        "@issue-draft FEATURE with Summary='Add a lightweight health endpoint'; Requirements='Return HTTP 200 and JSON status ok from the health endpoint'; Acceptance Criteria='Automated test proves the health response returns status ok'; Scope='src/simple_flow_test_app/'; Out of Scope='Authentication, routing framework changes, deployment changes'; Documentation Impact='None'; Roadmap Target='UNMAPPED'"
+    ]
+    assert a06_actions == [
+        "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=1 source-pr=1 reason='Endpoint omits error case.'"
+    ]
+
+
+def _user_action_texts(scenario) -> list[str]:
+    return [
+        step.text
+        for step in scenario.ordered_steps
+        if step.step_type == StepType.USER_ACTION
+    ]
+
+
 def test_scenario_impact_document_covers_every_phase4_scenario() -> None:
     doc = (
         __import__("pathlib").Path(__file__).resolve().parents[2]
