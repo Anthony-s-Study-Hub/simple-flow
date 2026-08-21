@@ -10,6 +10,9 @@ MAIN_BRANCHES = {"main", "master", "trunk"}
 BRANCH_ISSUE_PATTERNS = [
     re.compile(r"(?:^|[/_-])issue[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
     re.compile(r"(?:^|[/_-])feature[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
+    re.compile(r"(?:^|[/_-])documentation[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
+    re.compile(r"(?:^|[/_-])document[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
+    re.compile(r"(?:^|[/_-])docs[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
     re.compile(r"(?:^|[/_-])project-change[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
     re.compile(r"(?:^|[/_-])sf[/_-](\d+)(?:$|[/_-])", re.IGNORECASE),
 ]

@@ -7,7 +7,7 @@ by both CI and tests.
 ## Contracts
 
 `FEATURE` issues must use the exact field order in the feature template.
-`PROJECT_CHANGE` issues must use the exact field order in the project-change
+`DOCUMENTATION` issues must use the exact field order in the documentation
 template. Unknown top-level fields fail validation.
 
 Pull requests must keep the fixed PR template fields and link exactly one issue.
@@ -15,7 +15,7 @@ Development branches must include the same issue number, for example:
 
 ```text
 feature/123-short-name
-project-change/124-baseline-update
+documentation/124-usage-guide
 issue/125-ci-fix
 sf-126-small-change
 ```
@@ -54,7 +54,7 @@ pull request history in RED, implementation, GREEN order.
 
 ## Scope And Docs
 
-`FEATURE` scope is read from the issue `Scope` field. `PROJECT_CHANGE` scope is
+`FEATURE` scope is read from the issue `Scope` field. `DOCUMENTATION` scope is
 read from `Affected Project Documents`.
 
 `Documentation Impact = None` means no documentation file is required. Any other

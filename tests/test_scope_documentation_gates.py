@@ -4,7 +4,7 @@ import pytest
 
 from simple_flow_gates.contracts import ContractError, IssueContract
 from simple_flow_gates.scope import validate_documentation_gate, validate_scope_gate
-from tests.conftest import feature_issue_body, project_change_issue_body
+from tests.conftest import documentation_issue_body, feature_issue_body
 
 
 def test_scope_inside_declared_paths_passes(roadmap_targets: set[str]) -> None:
@@ -51,10 +51,10 @@ def test_required_documentation_present_passes(roadmap_targets: set[str]) -> Non
     validate_documentation_gate(issue, ["simple_flow_gates/contracts.py", "docs/phase1-governance.md"])
 
 
-def test_project_change_uses_affected_documents_for_scope_and_docs(
+def test_documentation_uses_affected_documents_for_scope_and_docs(
     roadmap_targets: set[str],
 ) -> None:
-    issue = IssueContract.parse(project_change_issue_body(), roadmap_targets)
+    issue = IssueContract.parse(documentation_issue_body(), roadmap_targets)
 
     validate_scope_gate(issue, ["docs/phase1-governance.md"])
     validate_documentation_gate(issue, ["docs/phase1-governance.md"])

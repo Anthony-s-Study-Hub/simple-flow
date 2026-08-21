@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 
-from simple_flow_gates.contracts import IssueContract, WorkType
+from simple_flow_gates.contracts import IssueContract, WorkType, normalize_work_type
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,8 @@ class Draft:
     source_pr: int | None = None
 
     def to_issue_body(self) -> str:
-        if self.work_type == WorkType.FEATURE.value:
+        work_type = normalize_work_type(self.work_type)
+        if work_type == WorkType.FEATURE:
             headings = [
                 "Summary",
                 "Requirements",
@@ -27,7 +28,7 @@ class Draft:
                 "Documentation Impact",
                 "Roadmap Target",
             ]
-        elif self.work_type == WorkType.PROJECT_CHANGE.value:
+        elif work_type == WorkType.DOCUMENTATION:
             headings = [
                 "Change",
                 "Reason",
@@ -39,7 +40,7 @@ class Draft:
         else:
             raise ValueError(f"Unsupported draft work type: {self.work_type}")
 
-        chunks = [f"Type: {self.work_type}"]
+        chunks = [f"Type: {work_type.value}"]
         for heading in headings:
             chunks.append(f"## {heading}\n\n{self.fields[heading]}")
         return "\n\n".join(chunks) + "\n"
@@ -57,7 +58,7 @@ class Draft:
     def from_json_data(cls, data: dict[str, object]) -> "Draft":
         return cls(
             draft_id=str(data["draft_id"]),
-            work_type=str(data["work_type"]),
+            work_type=normalize_work_type(str(data["work_type"])).value,
             fields={str(k): str(v) for k, v in dict(data["fields"]).items()},
             source_issue=_optional_int(data.get("source_issue")),
             source_pr=_optional_int(data.get("source_pr")),
@@ -101,7 +102,7 @@ class DraftStore:
         self._validate_and_save(draft)
         return draft
 
-    def create_project_change(
+    def create_documentation(
         self,
         *,
         change: str,
@@ -115,7 +116,7 @@ class DraftStore:
     ) -> Draft:
         draft = Draft(
             draft_id=self._next_id(),
-            work_type=WorkType.PROJECT_CHANGE.value,
+            work_type=WorkType.DOCUMENTATION.value,
             fields={
                 "Change": change,
                 "Reason": reason,
@@ -129,6 +130,30 @@ class DraftStore:
         )
         self._validate_and_save(draft)
         return draft
+
+    def create_project_change(
+        self,
+        *,
+        change: str,
+        reason: str,
+        impact: str,
+        supersedes: str,
+        affected_project_documents: list[str],
+        source_context: str,
+        source_issue: int | None = None,
+        source_pr: int | None = None,
+    ) -> Draft:
+        """Legacy alias for callers that still request the old work type name."""
+        return self.create_documentation(
+            change=change,
+            reason=reason,
+            impact=impact,
+            supersedes=supersedes,
+            affected_project_documents=affected_project_documents,
+            source_context=source_context,
+            source_issue=source_issue,
+            source_pr=source_pr,
+        )
 
     def read(self, draft_id: str) -> Draft:
         path = self.root / f"{draft_id}.json"

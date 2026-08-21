@@ -12,7 +12,7 @@ from simple_flow_gates.tdd import (
     validate_tdd_gate,
     verify_tdd_commands,
 )
-from tests.conftest import feature_issue_body, project_change_issue_body
+from tests.conftest import documentation_issue_body, feature_issue_body
 
 
 def test_feature_with_real_red_green_evidence_passes(roadmap_targets: set[str]) -> None:
@@ -45,8 +45,8 @@ def test_red_commit_later_than_implementation_fails(roadmap_targets: set[str]) -
         validate_tdd_gate(issue, 123, evidence, ["implementation", "red", "green"])
 
 
-def test_project_change_does_not_trigger_tdd_gate(roadmap_targets: set[str]) -> None:
-    issue = IssueContract.parse(project_change_issue_body(), roadmap_targets)
+def test_documentation_does_not_trigger_tdd_gate(roadmap_targets: set[str]) -> None:
+    issue = IssueContract.parse(documentation_issue_body(), roadmap_targets)
 
     validate_tdd_gate(issue, 123, None, ["implementation"])
 

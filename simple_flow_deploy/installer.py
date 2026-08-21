@@ -17,7 +17,7 @@ SKILL_MAP = {
 CORE_FILES = [
     "AGENTS.md",
     ".github/ISSUE_TEMPLATE/feature.md",
-    ".github/ISSUE_TEMPLATE/project_change.md",
+    ".github/ISSUE_TEMPLATE/documentation.md",
     ".github/pull_request_template.md",
     ".github/workflows/phase1-gates.yml",
     ".github/workflows/phase1-tests.yml",

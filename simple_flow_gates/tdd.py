@@ -53,7 +53,7 @@ def validate_tdd_gate(
     evidence: TddEvidence | None,
     commit_history: list[str],
 ) -> None:
-    if issue.work_type == WorkType.PROJECT_CHANGE:
+    if issue.work_type == WorkType.DOCUMENTATION:
         return
 
     if evidence is None:

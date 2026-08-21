@@ -12,7 +12,7 @@ class ContractError(ValueError):
 
 class WorkType(StrEnum):
     FEATURE = "FEATURE"
-    PROJECT_CHANGE = "PROJECT_CHANGE"
+    DOCUMENTATION = "DOCUMENTATION"
 
 
 FEATURE_FIELDS = [
@@ -25,7 +25,7 @@ FEATURE_FIELDS = [
     "Roadmap Target",
 ]
 
-PROJECT_CHANGE_FIELDS = [
+DOCUMENTATION_FIELDS = [
     "Change",
     "Reason",
     "Impact",
@@ -44,7 +44,15 @@ PR_FIELDS = [
     "Known Limitations",
 ]
 
-SPECIAL_ROADMAP_TARGETS = {"UNMAPPED", "PROJECT_CHANGE_REQUIRED"}
+LEGACY_WORK_TYPE_ALIASES = {
+    "PROJECT_CHANGE": WorkType.DOCUMENTATION,
+}
+SPECIAL_ROADMAP_TARGETS = {
+    "UNMAPPED",
+    "DOCUMENTATION_REQUIRED",
+    # Legacy spelling accepted for existing feature issues.
+    "PROJECT_CHANGE_REQUIRED",
+}
 HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 TYPE_RE = re.compile(r"^\s*Type:\s*([A-Z_]+)\s*$", re.MULTILINE)
 ISSUE_REF_RE = re.compile(r"(?:#|issues/)(\d+)\b", re.IGNORECASE)
@@ -61,10 +69,7 @@ class IssueContract:
         if not type_match:
             raise ContractError("Issue body must include a top-level 'Type: ...' line.")
 
-        try:
-            work_type = WorkType(type_match.group(1))
-        except ValueError as exc:
-            raise ContractError(f"Unknown issue Type: {type_match.group(1)}") from exc
+        work_type = normalize_work_type(type_match.group(1))
 
         expected_fields = fields_for_work_type(work_type)
         fields = _parse_ordered_fields(body, expected_fields)
@@ -78,13 +83,13 @@ class IssueContract:
 
     @property
     def scope_patterns(self) -> list[str]:
-        if self.work_type == WorkType.PROJECT_CHANGE:
+        if self.work_type == WorkType.DOCUMENTATION:
             return _list_items(self.fields["Affected Project Documents"])
         return _list_items(self.fields["Scope"])
 
     @property
     def documentation_impact(self) -> list[str]:
-        if self.work_type == WorkType.PROJECT_CHANGE:
+        if self.work_type == WorkType.DOCUMENTATION:
             return _list_items(self.fields["Affected Project Documents"])
         raw = self.fields["Documentation Impact"].strip()
         if raw.lower() == "none":
@@ -109,9 +114,19 @@ class PullRequestContract:
 def fields_for_work_type(work_type: WorkType) -> list[str]:
     if work_type == WorkType.FEATURE:
         return FEATURE_FIELDS
-    if work_type == WorkType.PROJECT_CHANGE:
-        return PROJECT_CHANGE_FIELDS
+    if work_type == WorkType.DOCUMENTATION:
+        return DOCUMENTATION_FIELDS
     raise ContractError(f"Unsupported work type: {work_type}")
+
+
+def normalize_work_type(raw: str) -> WorkType:
+    normalized = raw.strip().upper().replace("-", "_")
+    if normalized in LEGACY_WORK_TYPE_ALIASES:
+        return LEGACY_WORK_TYPE_ALIASES[normalized]
+    try:
+        return WorkType(normalized)
+    except ValueError as exc:
+        raise ContractError(f"Unknown issue Type: {raw}") from exc
 
 
 def load_roadmap_targets(path: str) -> set[str]:

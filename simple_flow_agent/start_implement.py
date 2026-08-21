@@ -45,8 +45,8 @@ def select_start_path(
         path = f"REVIEW_{relationship}_{impact}"
     elif draft.work_type == WorkType.FEATURE.value:
         path = "FEATURE_NORMAL"
-    elif draft.work_type == WorkType.PROJECT_CHANGE.value:
-        path = "PROJECT_CHANGE_NORMAL"
+    elif draft.work_type == WorkType.DOCUMENTATION.value:
+        path = "DOCUMENTATION_NORMAL"
     else:
         raise ValueError(f"Unsupported draft work type: {draft.work_type}")
 
@@ -68,8 +68,8 @@ def _summary(draft: Draft) -> str:
 
 def _actions_for(draft: Draft, path: str) -> list[str]:
     base = ["publish_formal_issue", "create_bound_branch"]
-    if draft.work_type == WorkType.PROJECT_CHANGE.value:
-        return base + ["create_pull_request", "update_project_documents", "wait_for_ci"]
+    if draft.work_type == WorkType.DOCUMENTATION.value:
+        return base + ["create_pull_request", "update_documentation", "wait_for_ci"]
     if path.startswith("REVIEW_CURRENT"):
         return ["resume_current_pull_request", "run_red_green_tdd", "wait_for_ci"]
     if path.startswith("REVIEW_SUBISSUE"):

@@ -34,6 +34,8 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
     assert (target / ".github" / "workflows" / "phase1-gates.yml").exists()
     assert (target / ".github" / "workflows" / "phase1-tests.yml").exists()
     assert (target / ".github" / "ISSUE_TEMPLATE" / "feature.md").exists()
+    assert (target / ".github" / "ISSUE_TEMPLATE" / "documentation.md").exists()
+    assert not (target / ".github" / "ISSUE_TEMPLATE" / "project_change.md").exists()
     assert (target / ".github" / "pull_request_template.md").exists()
     assert (target / "simple_flow_gates" / "contracts.py").exists()
     assert (target / "simple_flow_agent" / "drafts.py").exists()
