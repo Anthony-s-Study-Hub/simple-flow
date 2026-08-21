@@ -3,7 +3,7 @@
   "red": {
     "commit": "bf3cdf8b639520d36203db9508a138708b89c1a6",
     "command": "python -m pytest tests/phase4",
-    "exit_code": 2
+    "exit_code": 1
   },
   "implementation": {
     "commit": "61ff21b386d78d93e0f0bd0e51ea2c97c1dbcd0a"
