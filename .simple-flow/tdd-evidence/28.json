@@ -3,7 +3,7 @@
   "red": {
     "commit": "e448a5684e42e12f62ca9492971160133929cd7b",
     "command": "python -m pytest tests/phase4/test_local_llm_backend.py tests/phase4/test_phase4_cli_and_reports.py",
-    "exit_code": 1
+    "exit_code": 2
   },
   "implementation": {
     "commit": "faf9c5fb1d29070914d2254d0f4578a427862030"
