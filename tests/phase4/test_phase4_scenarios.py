@@ -3,6 +3,7 @@ from __future__ import annotations
 from simple_flow_test_harness.models import StepType
 from simple_flow_test_harness.scenarios import (
     ALL_SCENARIO_IDS,
+    PHASE5_EXTENSION_SCENARIO_IDS,
     REQUIRED_SCENARIO_IDS,
     SMOKE_SCENARIO_IDS,
     SMOKE_ONLY_SCENARIO_IDS,
@@ -15,8 +16,9 @@ def test_required_phase4_scenarios_are_defined_once() -> None:
 
     assert tuple(scenarios) == ALL_SCENARIO_IDS
     assert len(REQUIRED_SCENARIO_IDS) == 25
+    assert len(PHASE5_EXTENSION_SCENARIO_IDS) == 12
     assert SMOKE_ONLY_SCENARIO_IDS == ("S01",)
-    assert len(scenarios) == 26
+    assert len(scenarios) == 38
 
 
 def test_scenarios_are_data_driven_with_fixed_steps_and_objective_rules() -> None:
@@ -85,16 +87,48 @@ def test_first_version_covers_required_groups() -> None:
     ]
 
 
+def test_phase5_documentation_curation_extension_scenarios_are_defined() -> None:
+    scenarios = load_scenarios()
+
+    assert PHASE5_EXTENSION_SCENARIO_IDS == (
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+    )
+    assert [scenarios[scenario_id].group for scenario_id in PHASE5_EXTENSION_SCENARIO_IDS] == [
+        "E - Documentation Curation",
+    ] * 12
+    phase5_actions = "\n".join(
+        step.text
+        for scenario_id in PHASE5_EXTENSION_SCENARIO_IDS
+        for step in scenarios[scenario_id].ordered_steps
+    )
+    assert "@documentation-curation" in phase5_actions
+    assert "DOCUMENTATION Canonical Draft" in phase5_actions
+    assert "Start-Implement" in phase5_actions
+    assert "must not" in phase5_actions
+
+
 def test_smoke_scenarios_are_small_representative_subset() -> None:
     scenarios = load_scenarios()
 
-    assert SMOKE_SCENARIO_IDS == ("A01", "A02", "A06", "C01", "S01")
+    assert SMOKE_SCENARIO_IDS == ("A01", "A02", "A06", "C01", "E01", "S01")
     assert set(SMOKE_SCENARIO_IDS) < set(ALL_SCENARIO_IDS)
     assert [scenarios[scenario_id].group for scenario_id in SMOKE_SCENARIO_IDS] == [
         "A - Single Skill",
         "A - Single Skill",
         "A - Single Skill",
         "C - Violation And Adversarial",
+        "E - Documentation Curation",
         "S - Smoke",
     ]
 
@@ -107,6 +141,7 @@ def test_smoke_scenarios_are_small_representative_subset() -> None:
     assert "@issue-draft" in smoke_actions
     assert "@review-triage" in smoke_actions
     assert "@start-implement" in smoke_actions
+    assert "@documentation-curation" in smoke_actions
 
     remote_smoke = scenarios["S01"]
     assert "remote" in remote_smoke.purpose.lower()

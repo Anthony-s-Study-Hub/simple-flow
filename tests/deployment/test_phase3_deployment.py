@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SSOT_SCRIPT_ROOT = ROOT / "simple_flow_deploy" / "skill_resources"
 UNPREFIXED_SKILLS = [
     "discussion",
+    "documentation-curation",
     "issue-draft",
     "start-implement",
     "review-triage",
@@ -20,6 +21,7 @@ UNPREFIXED_SKILLS = [
 ]
 SKILL_SCRIPTS = {
     "discussion": [],
+    "documentation-curation": ["scripts/curate_documentation.py"],
     "issue-draft": ["scripts/create_draft.py"],
     "start-implement": ["scripts/select_path.py", "scripts/start_documentation.py"],
     "review-triage": ["scripts/classify_finding.py"],
@@ -43,8 +45,11 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
     assert (target / ".github" / "pull_request_template.md").exists()
     assert (target / "simple_flow_gates" / "contracts.py").exists()
     assert (target / "simple_flow_agent" / "drafts.py").exists()
+    assert (target / "simple_flow_documentation_curation" / "renderer.py").exists()
     assert (target / "scripts" / "orphan_branch_watch.py").exists()
     assert (target / ".simple-flow" / "project-config.json").exists()
+    assert (target / ".simple-flow" / "baselines" / "high-level-project-baseline.md").exists()
+    assert (target / ".simple-flow" / "baselines" / "component-baseline-template.md").exists()
     assert (target / "docs" / "simple-flow" / "usage-guide.md").exists()
     assert (target / "docs" / "simple-flow" / "project-integration-guide.md").exists()
     assert (target / "docs" / "simple-flow" / "github-setup-guide.md").exists()
@@ -76,7 +81,7 @@ def test_repeated_install_is_idempotent_and_reports_existing_files(tmp_path: Pat
     assert second["status"] == "success"
     assert second["created"] == []
     assert second["skipped"]
-    assert len(list((target / ".codex" / "skills").glob("*/SKILL.md"))) == 5
+    assert len(list((target / ".codex" / "skills").glob("*/SKILL.md"))) == 6
     assert (target / "AGENTS.md").read_text(encoding="utf-8").count("Default Deny") == 2
 
 
@@ -319,10 +324,13 @@ def _hash_core_files(project: Path) -> dict[str, str]:
         ".github/workflows/pr-governance.yml",
         ".github/workflows/phase1-tests.yml",
         ".codex/skills/discussion/SKILL.md",
+        ".codex/skills/documentation-curation/SKILL.md",
+        ".codex/skills/documentation-curation/scripts/curate_documentation.py",
         ".codex/skills/issue-draft/SKILL.md",
         ".codex/skills/issue-draft/scripts/create_draft.py",
         "simple_flow_gates/contracts.py",
         "simple_flow_agent/drafts.py",
+        "simple_flow_documentation_curation/renderer.py",
     ]:
         files[relative] = (project / relative).read_text(encoding="utf-8")
     return files
