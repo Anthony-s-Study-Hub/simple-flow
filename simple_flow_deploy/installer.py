@@ -144,9 +144,17 @@ def _desired_files(
         files[relative] = text
 
     for source_skill, target_skill in SKILL_MAP.items():
-        text = (source / "skills" / source_skill / "SKILL.md").read_text(encoding="utf-8")
-        text = text.replace(f"name: {source_skill}", f"name: {target_skill}")
-        files[f".codex/skills/{target_skill}/SKILL.md"] = text
+        source_dir = source / "skills" / source_skill
+        for path in source_dir.rglob("*"):
+            if not path.is_file():
+                continue
+            skill_relative = path.relative_to(source_dir)
+            text = path.read_text(encoding="utf-8")
+            if skill_relative == Path("SKILL.md"):
+                text = text.replace(f"name: {source_skill}", f"name: {target_skill}")
+            files[
+                f".codex/skills/{target_skill}/{skill_relative.as_posix()}"
+            ] = text
 
     for source_doc, target_doc in DOC_FILES.items():
         files[target_doc] = (source / source_doc).read_text(encoding="utf-8")

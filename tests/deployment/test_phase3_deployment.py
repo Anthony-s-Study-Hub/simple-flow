@@ -16,6 +16,13 @@ UNPREFIXED_SKILLS = [
     "review-triage",
     "pr-finalize",
 ]
+SKILL_SCRIPTS = {
+    "discussion": [],
+    "issue-draft": ["scripts/create_draft.py"],
+    "start-implement": ["scripts/select_path.py"],
+    "review-triage": ["scripts/classify_finding.py"],
+    "pr-finalize": ["scripts/check_pre_merge.py"],
+}
 
 
 def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Path) -> None:
@@ -43,6 +50,9 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
         assert f"name: {skill_name}" in text
         assert "simple-flow-" not in str(skill_file)
         assert "name: simple-flow-" not in text
+        for script in SKILL_SCRIPTS[skill_name]:
+            assert (target / ".codex" / "skills" / skill_name / script).exists()
+            assert script in text
 
 
 def test_repeated_install_is_idempotent_and_reports_existing_files(tmp_path: Path) -> None:
@@ -133,6 +143,7 @@ def test_reference_integrity_and_required_check_names(tmp_path: Path) -> None:
     assert str(ROOT) not in phase1_gates
     assert "C:\\\\" not in phase1_gates
     assert "Anthony-s-Study-Hub/simple-flow" not in phase1_gates
+    _assert_deployed_skill_script_references_exist(target)
 
 
 def test_deployed_phase1_and_phase2_regressions_pass(tmp_path: Path) -> None:
@@ -220,8 +231,18 @@ def _hash_core_files(project: Path) -> dict[str, str]:
         ".github/workflows/phase1-tests.yml",
         ".codex/skills/discussion/SKILL.md",
         ".codex/skills/issue-draft/SKILL.md",
+        ".codex/skills/issue-draft/scripts/create_draft.py",
         "simple_flow_gates/contracts.py",
         "simple_flow_agent/drafts.py",
     ]:
         files[relative] = (project / relative).read_text(encoding="utf-8")
     return files
+
+
+def _assert_deployed_skill_script_references_exist(target: Path) -> None:
+    for skill, scripts in SKILL_SCRIPTS.items():
+        skill_dir = target / ".codex" / "skills" / skill
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        for script in scripts:
+            assert script in skill_text
+            assert (skill_dir / script).exists()

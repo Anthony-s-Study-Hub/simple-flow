@@ -14,8 +14,9 @@ evidence checks.
 - `skills/simple-flow-review-triage` owns review finding classification only.
 - `skills/simple-flow-pr-finalize` owns final merge authorization checks and
   cleanup only.
-- `simple_flow_agent` contains deterministic helpers used by the skills and
-  tests.
+- Each executable skill owns a `scripts/` entrypoint under its skill folder.
+- `simple_flow_agent` contains shared deterministic helper code used by those
+  skill-local scripts and tests.
 - `scripts/phase2_acceptance.py` runs the automatable acceptance scenarios.
 
 ## Deterministic Handoff
@@ -23,6 +24,15 @@ evidence checks.
 Issue-Draft stores each Canonical Draft as JSON and Markdown with a unique Draft
 ID. Start-Implement must read the human-specified Draft ID and must not use the
 latest draft as a substitute.
+
+The stage scripts are the deterministic handoff points:
+
+- Issue-Draft runs `scripts/create_draft.py` before reporting a Draft ID.
+- Review-Triage runs `scripts/classify_finding.py` before outputting a
+  classification.
+- Start-Implement runs `scripts/select_path.py` before publishing Issues,
+  creating branches, or changing files.
+- PR-Finalize runs `scripts/check_pre_merge.py` before any merge.
 
 Review-Triage results remain conversation context. Start-Implement only consumes
 a triage result when it clearly matches the draft source issue and PR. Ambiguous
