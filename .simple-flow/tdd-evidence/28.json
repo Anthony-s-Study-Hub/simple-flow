@@ -1,15 +1,15 @@
 {
   "issue": 28,
   "red": {
-    "commit": "e448a56eeff85b49e6014a8f564be4a6e71e6c3b",
+    "commit": "e448a5684e42e12f62ca9492971160133929cd7b",
     "command": "python -m pytest tests/phase4/test_local_llm_backend.py tests/phase4/test_phase4_cli_and_reports.py",
     "exit_code": 1
   },
   "implementation": {
-    "commit": "faf9c5f235e1c6b68ca8c534e70d4aca53b78876"
+    "commit": "faf9c5fb1d29070914d2254d0f4578a427862030"
   },
   "green": {
-    "commit": "a812c431aebcfbe9b4c190340555116ec3c54d8b",
+    "commit": "a812c436723b2cf62f2bc6e3fa0bef5c538142fa",
     "command": "python -m pytest",
     "exit_code": 0
   },
