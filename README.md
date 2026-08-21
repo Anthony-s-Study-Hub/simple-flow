@@ -42,13 +42,13 @@ python -m simple_flow_gates.cli validate-pr --event-path $env:GITHUB_EVENT_PATH
 Validate Phase 4 static definitions:
 
 ```powershell
-python -m simple_flow_phase4.cli validate
+python -m simple_flow_test_harness.cli validate
 ```
 
 Run the live Phase 4 smoke-gated experiment explicitly:
 
 ```powershell
-python -m simple_flow_phase4.cli run --allow-remote-reset
+python -m simple_flow_test_harness.cli run --allow-remote-reset
 ```
 
 The default run uses the smoke set first, a 60 second per-turn timeout, and the
