@@ -8,6 +8,7 @@ import shutil
 from typing import Callable
 from urllib.parse import urlparse
 
+from simple_flow_test_harness.agent_backends import CODEX_BACKEND, CODEX_NOT_USED
 from simple_flow_deploy.installer import install
 from simple_flow_test_harness.commands import CommandFailure, run_command
 from simple_flow_test_harness.models import CommandResult, Phase4Config
@@ -61,11 +62,16 @@ class Phase4Environment:
         blockers: list[str] = []
         evidence: dict[str, object] = {}
 
-        for name, command in {
+        commands = {
             "git": ["git", "--version"],
             "gh": [self.config.gh_path, "--version"],
-            "codex": [self.config.codex_command, "--version"],
-        }.items():
+        }
+        if self.config.agent_backend == CODEX_BACKEND:
+            commands["codex"] = [self.config.codex_command, "--version"]
+        else:
+            evidence["codex_version_command"] = {"skipped": CODEX_NOT_USED}
+
+        for name, command in commands.items():
             try:
                 result = run_command(command, cwd=self.config.source_root, timeout_seconds=30)
             except (OSError, TimeoutError) as exc:
@@ -206,7 +212,7 @@ class Phase4Environment:
             if resolved_target.exists():
                 _remove_tree(resolved_target)
             return
-        raise ValueError(f"Refusing to remove path outside Phase 4 workspace: {resolved_target}")
+        raise ValueError(f"Refusing to remove path outside Simple Flow test harness workspace: {resolved_target}")
 
     def _clean_remote_state(self, repo_path: Path, setup_commands: list[CommandResult]) -> None:
         if not self.config.allow_remote_reset:

@@ -1,4 +1,4 @@
-# Phase 4 Real Codex Workflow Experiment
+# Phase 4 Real Agent Workflow Experiment
 
 Phase 4 adds an explicit experiment harness around the deployed Simple Flow
 workflow. It is executable validation code, not an automatic source CI test.
@@ -50,15 +50,15 @@ python -m simple_flow_test_harness.cli run --scenario A01 --allow-remote-reset
 
 Selected scenarios run directly and do not trigger the default smoke gate.
 
-Generate a CI-safe report without launching Codex:
+Generate a CI-safe report without launching the selected backend:
 
 ```powershell
 python -m simple_flow_test_harness.cli run --scenario A01 --dry-run
 ```
 
-Live runs default to a 60 second per-turn timeout and `gpt-5.4-mini` to keep the
-experiment small. Override these when the local Codex installation does not have
-that model or a scenario needs more room:
+Live runs default to the `codex` backend, a 60 second per-turn timeout, and
+`gpt-5.4-mini` to keep the experiment small. Override these when the local Codex
+installation does not have that model or a scenario needs more room:
 
 ```powershell
 python -m simple_flow_test_harness.cli run `
@@ -66,6 +66,33 @@ python -m simple_flow_test_harness.cli run `
   --timeout-seconds 180 `
   --allow-remote-reset
 ```
+
+The harness can also use an OpenAI-compatible local LLM backend. This route uses
+`/v1/models`, `/v1/chat/completions`, and function/tool calls; it does not invoke
+`codex exec`.
+
+Probe the local backend:
+
+```powershell
+python -m simple_flow_test_harness.cli probe-local-llm `
+  --local-llm-url http://169.254.83.107:1234 `
+  --local-llm-model google/gemma-4-e4b
+```
+
+Run the smoke set through the local backend:
+
+```powershell
+python -m simple_flow_test_harness.cli run --smoke-only `
+  --agent-backend local-openai `
+  --local-llm-url http://169.254.83.107:1234 `
+  --local-llm-model google/gemma-4-e4b `
+  --allow-remote-reset
+```
+
+The local backend exposes controlled tools such as `run_command`, `read_file`,
+and `list_files` to the model. Scenario prompts still use the same generic
+USER_ACTION skill aliases; backend-specific execution is invisible to scenario
+definitions.
 
 Live runs also default to Codex sandbox bypass because remote-mutation scenarios
 must create Git branches, commits, pushes, Issues, and draft PRs inside the
@@ -76,22 +103,25 @@ branch creation cannot complete.
 ## Boundaries
 
 - Source CI may run `validate` and dry-run schema checks.
-- Source CI must not run the live Codex experiment.
+- Source CI must not run the live agent experiment.
 - Local `pytest` and `--dry-run` commands do not mutate the remote test repo.
+- `probe-local-llm` checks the local endpoint only; it does not mutate the remote
+  test repo.
 - The harness resets the dedicated test repository before each scenario when
   `--allow-remote-reset` is supplied.
 - Live harness setup can mutate the remote test repo before any scenario action
   by force-pushing the baseline, closing open test issues and PRs, and deleting
   non-baseline branches.
-- The Agent Under Test runs through isolated `codex exec` sessions in the
-  scenario test project.
+- The Agent Under Test runs through the selected backend in the scenario test
+  project. `codex` uses isolated `codex exec` sessions; `local-openai` uses an
+  OpenAI-compatible local endpoint plus controlled tools.
 - The harness may fill only mechanical variables such as Draft ID, Issue number,
   PR number, and branch name.
 - Scenarios may declare explicit local fixtures, such as A02's draft input file
   and S01's approved Canonical Draft, when setup data is needed to keep the live
   action small and deterministic.
 - Objective PASS / FAIL / BLOCKED / ERROR status is assigned by deterministic
-  code after the Codex process exits.
+  code after the agent turn exits.
 - Post-run diagnosis is recorded separately and never rewrites objective status.
 
 ## Reports
@@ -105,13 +135,15 @@ Each run writes:
 
 Reports include scenario IDs, smoke-gate metadata, prompt references, expected
 and observed state, compact evidence, status, failure reason, test repository
-references, Codex CLI version, workflow package version, harness commit SHA, and
-timestamp.
+references, selected backend, selected model, endpoint, whether Codex CLI was
+used, Codex CLI version when applicable, workflow package version, harness commit
+SHA, and timestamp.
 
 The Markdown report is intentionally compact. For each USER_ACTION, fixed
 harness code records the processed fixture prompt fields, especially the action
-sent to Codex, and the processed response received from Codex. Raw JSON event
-streams and long command output are summarized deterministically in
+sent to the selected backend, and the processed response received from that
+backend. Raw JSON event streams and long command output are summarized
+deterministically in
 `simple_flow_test_harness.transcript` before they enter the human-readable report.
 
 ## Scenario Impact

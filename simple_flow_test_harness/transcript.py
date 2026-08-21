@@ -52,7 +52,7 @@ def compact_codex_response(stdout: str, stderr: str, exit_code: int | None) -> d
 
     selected = _dedupe(json_texts or plain_texts)
     meaningful_response = _truncate(
-        _single_line(" ".join(selected)) or "No meaningful Codex response captured.",
+        _single_line(" ".join(selected)) or "No meaningful response captured.",
         MAX_RESPONSE_CHARS,
     )
     return {

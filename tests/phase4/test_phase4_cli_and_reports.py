@@ -6,12 +6,19 @@ from pathlib import Path
 import subprocess
 import sys
 
-from simple_flow_test_harness.cli import DEFAULT_CODEX_MODEL, _parse_args
+from simple_flow_test_harness.cli import (
+    DEFAULT_AGENT_BACKEND,
+    DEFAULT_CODEX_MODEL,
+    DEFAULT_LOCAL_LLM_MODEL,
+    DEFAULT_LOCAL_LLM_URL,
+    _parse_args,
+)
 from simple_flow_test_harness.models import CommandResult, Outcome, ScenarioResult
 from simple_flow_test_harness.reports import compact_report_data, render_markdown
 from simple_flow_test_harness.runner import (
     Phase4Runner,
     _add_delta_metrics,
+    _agent_infrastructure_blocker,
     _codex_infrastructure_blocker,
     _combined_codex_exit_code,
 )
@@ -87,12 +94,34 @@ def test_phase4_defaults_use_short_smoke_gate_and_mini_model() -> None:
     args = _parse_args([])
 
     assert args.command == "run"
+    assert args.agent_backend == DEFAULT_AGENT_BACKEND
     assert args.timeout_seconds == 60
     assert args.codex_model == DEFAULT_CODEX_MODEL
     assert "mini" in DEFAULT_CODEX_MODEL
     assert args.smoke_gate is True
     assert args.smoke_only is False
     assert args.codex_bypass_sandbox is True
+    assert "simple-flow-test-harness-workspace" in args.workspace_root
+
+
+def test_phase4_cli_supports_local_openai_backend() -> None:
+    args = _parse_args(
+        [
+            "run",
+            "--agent-backend",
+            "local-openai",
+            "--local-llm-url",
+            "http://127.0.0.1:1234",
+            "--local-llm-model",
+            "local/test-model",
+        ]
+    )
+
+    assert args.agent_backend == "local-openai"
+    assert args.local_llm_url == "http://127.0.0.1:1234"
+    assert args.local_llm_model == "local/test-model"
+    assert DEFAULT_LOCAL_LLM_URL == "http://169.254.83.107:1234"
+    assert DEFAULT_LOCAL_LLM_MODEL == "google/gemma-4-e4b"
 
 
 def test_phase4_timeout_blocker_takes_precedence_over_noisy_model_cache_output() -> None:
@@ -105,6 +134,18 @@ def test_phase4_timeout_blocker_takes_precedence_over_noisy_model_cache_output()
     )
 
     assert _codex_infrastructure_blocker(result) == "Codex CLI infrastructure blocker: timed out"
+
+
+def test_phase4_local_model_tool_limit_is_not_infrastructure_blocker() -> None:
+    result = CommandResult(
+        command=("agent-scenario", "local-openai", "C01"),
+        cwd=str(ROOT),
+        exit_code=1,
+        stdout='{"type":"local_llm.stopped","message":"Local OpenAI backend stopped: maximum tool call count exceeded."}',
+        stderr="Local OpenAI backend stopped: maximum tool call count exceeded.",
+    )
+
+    assert _agent_infrastructure_blocker(result, "local-openai") == ""
 
 
 def test_phase4_combined_codex_result_preserves_timeout_exit_code() -> None:
@@ -219,6 +260,53 @@ def test_phase4_smoke_only_cli_generates_smoke_report(tmp_path: Path) -> None:
     data = json.loads((report_dir / "latest.json").read_text(encoding="utf-8"))
     assert data["run_mode"] == "smoke-only"
     assert [scenario["scenario_id"] for scenario in data["scenarios"]] == list(SMOKE_SCENARIO_IDS)
+
+
+def test_phase4_local_backend_dry_run_reports_codex_not_used(tmp_path: Path) -> None:
+    report_dir = tmp_path / "reports"
+    workspace = tmp_path / "workspace"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "simple_flow_test_harness.cli",
+            "run",
+            "--scenario",
+            "A01",
+            "--dry-run",
+            "--agent-backend",
+            "local-openai",
+            "--local-llm-url",
+            "http://127.0.0.1:1234",
+            "--local-llm-model",
+            "local/test-model",
+            "--source-root",
+            str(ROOT),
+            "--workspace-root",
+            str(workspace),
+            "--report-dir",
+            str(report_dir),
+            "--codex-command",
+            "missing-codex-command-for-static-test",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 1
+    data = json.loads((report_dir / "latest.json").read_text(encoding="utf-8"))
+    markdown = (report_dir / "latest.md").read_text(encoding="utf-8")
+    assert data["agent_backend"] == "local-openai"
+    assert data["agent_model"] == "local/test-model"
+    assert data["agent_endpoint"] == "http://127.0.0.1:1234"
+    assert data["codex_cli_used"] is False
+    assert data["scenarios"][0]["agent_backend"] == "local-openai"
+    assert data["scenarios"][0]["codex_cli_used"] is False
+    assert "Agent Backend" in markdown
+    assert "Codex CLI Used: `False`" in markdown
+    assert "Codex Model: `n/a`" in markdown
 
 
 def test_compact_report_documents_processed_prompt_and_response() -> None:

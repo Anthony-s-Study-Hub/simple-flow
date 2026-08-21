@@ -1,0 +1,29 @@
+{
+  "issue": 28,
+  "red": {
+    "commit": "e448a5684e42e12f62ca9492971160133929cd7b",
+    "command": "python -m pytest tests/phase4/test_local_llm_backend.py tests/phase4/test_phase4_cli_and_reports.py",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "faf9c5fb1d29070914d2254d0f4578a427862030"
+  },
+  "green": {
+    "commit": "a812c436723b2cf62f2bc6e3fa0bef5c538142fa",
+    "command": "python -m pytest",
+    "exit_code": 0
+  },
+  "verification": {
+    "validate_command": "python -m simple_flow_test_harness.cli validate",
+    "validate_exit_code": 0,
+    "probe_command": "python -m simple_flow_test_harness.cli probe-local-llm --local-llm-url http://169.254.83.107:1234 --local-llm-model google/gemma-4-e4b --timeout-seconds 30",
+    "probe_exit_code": 0,
+    "probe_tool_calls_ok": true,
+    "smoke_command": "python -m simple_flow_test_harness.cli run --smoke-only --agent-backend local-openai --local-llm-url http://169.254.83.107:1234 --local-llm-model google/gemma-4-e4b --allow-remote-reset --timeout-seconds 60 --keep-workspace",
+    "smoke_report": ".simple-flow/phase4-reports/phase4-20260821T203904z0000.md",
+    "smoke_status": "PASS",
+    "smoke_codex_cli_used": false,
+    "remote_issue": 24,
+    "remote_pr": 25
+  }
+}

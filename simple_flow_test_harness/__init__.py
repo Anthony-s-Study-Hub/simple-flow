@@ -1,4 +1,4 @@
-"""Phase 4 real Codex workflow experiment harness."""
+"""Simple Flow workflow experiment test harness."""
 
 from simple_flow_test_harness.scenarios import REQUIRED_SCENARIO_IDS, load_scenarios
 

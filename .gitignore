@@ -9,4 +9,4 @@ dist/
 build/
 *.egg-info/
 .simple-flow/phase4-reports/
-.simple-flow/phase4-workspace/
+.simple-flow/simple-flow-test-harness-workspace/

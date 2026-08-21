@@ -33,7 +33,11 @@ def render_markdown(report: RunReport) -> str:
         f"- Workflow Package Version: `{report.workflow_package_version}`",
         f"- Test Repo: `{report.test_repo_url}`",
         f"- Timeout Seconds: `{report.timeout_seconds}`",
-        f"- Codex Model: `{report.codex_model or 'default'}`",
+        f"- Agent Backend: `{report.agent_backend}`",
+        f"- Agent Model: `{report.agent_model or 'default'}`",
+        f"- Agent Endpoint: `{report.agent_endpoint or 'n/a'}`",
+        f"- Codex CLI Used: `{report.codex_cli_used}`",
+        f"- Codex Model: `{_codex_model_label(report)}`",
         f"- Codex CLI Version: `{_single_line(report.codex_cli_version)}`",
         f"- Smoke Scenarios: `{', '.join(report.smoke_scenario_ids) or 'none'}`",
         "",
@@ -61,6 +65,9 @@ def _scenario_markdown(result: ScenarioResult) -> list[str]:
         f"### {result.scenario_id} - {result.status.value}",
         "",
         f"- Prompt/Input Reference: `{result.prompt_reference}`",
+        f"- Agent Backend: `{result.agent_backend}`",
+        f"- Agent Model: `{result.agent_model or 'default'}`",
+        f"- Codex CLI Used: `{result.codex_cli_used}`",
         f"- Expected Result: {', '.join(result.expected_result.get('expected_objective_state', []))}",
         f"- Failure Reason: {compact_text(result.failure_reason or 'None', 350)}",
         f"- Relevant Issues: {_numbers(result.relevant_issues)}",
@@ -133,7 +140,7 @@ def _compact_value(value: Any) -> Any:
 
     compacted: dict[str, Any] = {}
     for key, child in value.items():
-        if key in {"codex_output", "draft_text", "body"} and isinstance(child, str):
+        if key in {"agent_output", "codex_output", "draft_text", "body"} and isinstance(child, str):
             compacted[key] = compact_text(child, 900)
         elif key == "failure_reason" and isinstance(child, str):
             compacted[key] = compact_text(child, 700)
@@ -160,6 +167,12 @@ def _numbers(items: list[dict[str, object]]) -> str:
     if not items:
         return "none"
     return ", ".join(f"#{item.get('number')}" for item in items)
+
+
+def _codex_model_label(report: RunReport) -> str:
+    if not report.codex_cli_used:
+        return "n/a"
+    return report.codex_model or "default"
 
 
 def _single_line(text: str) -> str:

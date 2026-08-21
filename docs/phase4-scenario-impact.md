@@ -9,7 +9,8 @@ can mutate the dedicated remote test repository.
 | --- | --- | --- |
 | Local/static commands | No remote mutation. | Validate harness code, scenario definitions, smoke gating, and report rendering only. |
 | Live harness commands | Harness setup can mutate `simple-flow-test` when `--allow-remote-reset` is used. | Reset the dedicated test repository before each scenario by force-pushing the baseline branch, closing test issues and PRs, and deleting non-baseline branches. |
-| Live scenario actions | Agent-driven mutation depends on the scenario. | Prove whether Codex follows the workflow by creating, avoiding, blocking, or merging GitHub artifacts as specified. |
+| Local LLM probe | No remote mutation. | Verify an OpenAI-compatible local endpoint exposes `/v1/models`, `/v1/chat/completions`, and function/tool calls. |
+| Live scenario actions | Agent-driven mutation depends on the scenario. | Prove whether the selected agent backend follows the workflow by creating, avoiding, blocking, or merging GitHub artifacts as specified. |
 
 ## Smoke Set
 
@@ -55,7 +56,8 @@ can mutate the dedicated remote test repository.
 ## Reading Results
 
 A PASS on local/static tests proves the harness code and scenario definitions are
-internally consistent. It does not prove Codex can follow the workflow.
+internally consistent. It does not prove an agent backend can follow the
+workflow.
 
 A PASS on live smoke proves the basic non-mutating skill boundaries and the
 remote Issue/PR artifact path work before the full scenario suite starts.
@@ -66,5 +68,6 @@ fixture data so the live action focuses on GitHub Issue and PR creation within
 the default 60 second turn budget.
 
 A BLOCKED live result means an external prerequisite, such as Codex model access,
-GitHub authentication, or repository access, prevented a workflow judgment. The
-objective PASS/FAIL result is meaningful only after the live scenario can run.
+local endpoint access, GitHub authentication, or repository access, prevented a
+workflow judgment. The objective PASS/FAIL result is meaningful only after the
+live scenario can run.
