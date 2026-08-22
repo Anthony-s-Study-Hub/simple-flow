@@ -52,7 +52,10 @@ def render_markdown(report: RunReport) -> str:
     lines.extend(["", "## Scenario Summary", ""])
     for result in report.scenarios:
         reason = compact_text(result.failure_reason or "objective rules satisfied", 220)
-        lines.append(f"- {result.scenario_id}: {result.status.value} - {reason}")
+        lines.append(
+            f"- {result.scenario_id}: {result.status.value} "
+            f"(skill confidence: {result.skill_confidence}) - {reason}"
+        )
 
     lines.extend(["", "## Scenario Details", ""])
     for result in report.scenarios:
@@ -70,6 +73,7 @@ def _scenario_markdown(result: ScenarioResult) -> list[str]:
         f"- Codex CLI Used: `{result.codex_cli_used}`",
         f"- Expected Result: {', '.join(result.expected_result.get('expected_objective_state', []))}",
         f"- Failure Reason: {compact_text(result.failure_reason or 'None', 350)}",
+        f"- Skill Confidence: `{result.skill_confidence}`",
         f"- Relevant Issues: {_numbers(result.relevant_issues)}",
         f"- Relevant PRs: {_numbers(result.relevant_prs)}",
         f"- CI Result: `{result.ci_result.get('summary', 'not observed')}`",
@@ -102,6 +106,16 @@ def _scenario_markdown(result: ScenarioResult) -> list[str]:
             f"- {marker}: {rule.name} (`{rule.metric}` {rule.operator} `{rule.expected}`; "
             f"actual `{compact_text(str(rule.actual), 180)}`)"
         )
+
+    lines.extend(["", "Skill Invocation Checkpoints:", ""])
+    if result.skill_checkpoints:
+        for checkpoint in result.skill_checkpoints:
+            lines.append(
+                f"- {checkpoint.status}: {checkpoint.name} - "
+                f"{compact_text(checkpoint.details, 220)}"
+            )
+    else:
+        lines.append("- None recorded.")
 
     lines.extend(["", "Post-run Agentic Diagnosis:", ""])
     if result.post_run_agentic_diagnosis:

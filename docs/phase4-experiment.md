@@ -20,11 +20,13 @@ python -m simple_flow_test_harness.cli run `
   --allow-remote-reset
 ```
 
-The default live run executes the smoke set first: A01, A02, A06, C01, and S01.
-A02 uses a deterministic local JSON input fixture for `@issue-draft`; S01 is a
-smoke-only remote-artifact scenario that should create a GitHub Issue and draft
-PR in the dedicated test repo from a harness-seeded approved DOCUMENTATION
-draft. The full 25-scenario suite runs only when every smoke scenario passes.
+The default live run executes the smoke set first: A01, A02, A06, C01, E01, and
+S01. A02 uses a deterministic local JSON input fixture for `@issue-draft`; E01
+uses deterministic history and analysis fixtures for `@documentation-curation`;
+S01 is a smoke-only remote-artifact scenario that should create a GitHub Issue
+and draft PR in the dedicated test repo from a harness-seeded approved
+DOCUMENTATION draft. The full 37-scenario suite runs only when every smoke
+scenario passes.
 Smoke scenarios that are also part of the full suite are not repeated after the
 gate passes; the second phase runs only the remaining full-suite scenarios.
 This saves time and tokens when basic skill invocation, workflow boundaries, or
@@ -137,7 +139,28 @@ Reports include scenario IDs, smoke-gate metadata, prompt references, expected
 and observed state, compact evidence, status, failure reason, test repository
 references, selected backend, selected model, endpoint, whether Codex CLI was
 used, Codex CLI version when applicable, workflow package version, harness commit
-SHA, and timestamp.
+SHA, skill invocation checkpoints, confidence band, and timestamp.
+
+Skill invocation checkpoints are deterministic report fields derived from the
+observed tool trace and final repository state. They separate harness and skill
+mechanism confidence from broader agent autonomy:
+
+- Skill discovery: whether the selected backend exposed the intended skill.
+- Instruction exposure: whether the relevant `SKILL.md` context was loaded when
+  observable.
+- Helper intent: whether the agent attempted the expected skill-owned helper
+  script.
+- Command shape: whether that helper was invoked as an executable command rather
+  than shell-only syntax.
+- Helper execution: whether the helper exited successfully.
+- Side effect: whether deterministic objective rules observed the expected local
+  or remote mutation.
+- Stop point: whether output included a recognizable stop or finish marker.
+
+Confidence bands are HIGH, MEDIUM, LOW, HARNESS_ISSUE, or UNKNOWN. A LOW result
+usually means the selected model did not translate skill instructions into the
+expected helper call. A HARNESS_ISSUE result means the harness failed before that
+agent capability question could be evaluated.
 
 The Markdown report is intentionally compact. For each USER_ACTION, fixed
 harness code records the processed fixture prompt fields, especially the action

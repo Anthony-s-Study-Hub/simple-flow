@@ -23,6 +23,7 @@ CODEX_NOT_USED = "not used by local-openai backend"
 
 SKILL_ALIASES = {
     "@discussion": "discussion",
+    "@documentation-curation": "documentation-curation",
     "@issue-draft": "issue-draft",
     "@start-implement": "start-implement",
     "@review-triage": "review-triage",

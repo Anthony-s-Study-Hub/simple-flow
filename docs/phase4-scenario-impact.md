@@ -84,3 +84,11 @@ A BLOCKED live result means an external prerequisite, such as Codex model access
 local endpoint access, GitHub authentication, or repository access, prevented a
 workflow judgment. The objective PASS/FAIL result is meaningful only after the
 live scenario can run.
+
+Each live scenario also reports skill invocation checkpoints. These checkpoints
+identify whether the skill alias resolved, `SKILL.md` instructions were exposed,
+the agent attempted the expected helper script, the command shape was executable,
+the helper exited successfully, expected side effects appeared, and the workflow
+stopped at the intended boundary. This makes a small local model failure
+diagnosable as model autonomy risk instead of automatically treating it as a
+harness or skill-package defect.

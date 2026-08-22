@@ -12,6 +12,7 @@ from simple_flow_test_harness.agent_backends import (
     create_agent_backend,
 )
 from simple_flow_test_harness.assertions import evaluate_scenario
+from simple_flow_test_harness.checkpoints import evaluate_skill_checkpoints
 from simple_flow_test_harness.commands import CommandFailure, run_command
 from simple_flow_test_harness.environment import Phase4Environment
 from simple_flow_test_harness.evidence import collect_state
@@ -244,6 +245,14 @@ class Phase4Runner:
             _add_delta_metrics(initial_state, final_state)
             infrastructure_blocker = _agent_infrastructure_blocker(agent_result, self.config.agent_backend)
             if infrastructure_blocker:
+                checkpoints, confidence = evaluate_skill_checkpoints(
+                    scenario=scenario,
+                    agent_backend=self.config.agent_backend,
+                    agent_metadata=agent_metadata,
+                    agent_result=agent_result,
+                    objective_rule_results=[],
+                    final_state=final_state,
+                )
                 evidence = {
                     "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
                     "scenario_fixtures": scenario_fixtures,
@@ -277,11 +286,21 @@ class Phase4Runner:
                     agent_endpoint=_agent_endpoint(self.config),
                     codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
                     objective_rule_results=[],
+                    skill_checkpoints=checkpoints,
+                    skill_confidence=confidence,
                     post_run_agentic_diagnosis=_diagnose(Outcome.BLOCKED, infrastructure_blocker),
                     prompt_exchange=prompt_exchange,
                 )
             status, rule_results, failure_reason = evaluate_scenario(scenario, final_state)
             diagnosis = _diagnose(status, failure_reason)
+            checkpoints, confidence = evaluate_skill_checkpoints(
+                scenario=scenario,
+                agent_backend=self.config.agent_backend,
+                agent_metadata=agent_metadata,
+                agent_result=agent_result,
+                objective_rule_results=rule_results,
+                final_state=final_state,
+            )
             evidence = {
                 "setup_commands": [result.to_json_data() for result in prepared.setup_commands],
                 "scenario_fixtures": scenario_fixtures,
@@ -315,6 +334,8 @@ class Phase4Runner:
                 agent_endpoint=_agent_endpoint(self.config),
                 codex_cli_used=self.config.agent_backend == CODEX_BACKEND,
                 objective_rule_results=rule_results,
+                skill_checkpoints=checkpoints,
+                skill_confidence=confidence,
                 post_run_agentic_diagnosis=diagnosis,
                 prompt_exchange=prompt_exchange,
             )
@@ -385,7 +406,7 @@ class Phase4Runner:
                 )
             )
             results.append((step.ref, result))
-            turns.append({"action_ref": step.ref, **turn.metadata})
+            turns.append({"action_ref": step.ref, "user_action": action_text, **turn.metadata})
             session_id = turn.session_id or session_id
             if result.exit_code != 0:
                 break
@@ -709,6 +730,7 @@ def _user_action_prompt(
         "The harness will perform OBSERVE and ASSERT steps after the agent turn exits; do not decide PASS or FAIL.\n"
         "Run in this test project only and use AGENTS.md plus installed agent skills as workflow truth.\n"
         "Skill aliases map as follows: @discussion -> discussion/SKILL.md; "
+        "@documentation-curation -> documentation-curation/SKILL.md; "
         "@issue-draft -> issue-draft/SKILL.md; "
         "@start-implement -> start-implement/SKILL.md; "
         "@review-triage -> review-triage/SKILL.md; "
