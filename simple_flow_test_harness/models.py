@@ -198,6 +198,22 @@ class RuleResult:
         }
 
 
+@dataclass
+class SkillCheckpoint:
+    name: str
+    status: str
+    details: str
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+    def to_json_data(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "status": self.status,
+            "details": self.details,
+            "evidence": self.evidence,
+        }
+
+
 @dataclass(frozen=True)
 class PromptExchange:
     action_ref: str
@@ -236,6 +252,8 @@ class ScenarioResult:
     agent_endpoint: str = ""
     codex_cli_used: bool = True
     objective_rule_results: list[RuleResult] = field(default_factory=list)
+    skill_checkpoints: list[SkillCheckpoint] = field(default_factory=list)
+    skill_confidence: str = "UNKNOWN"
     post_run_agentic_diagnosis: dict[str, Any] = field(default_factory=dict)
     prompt_exchange: list[PromptExchange] = field(default_factory=list)
 
@@ -265,6 +283,10 @@ class ScenarioResult:
             "objective_rule_results": [
                 result.to_json_data() for result in self.objective_rule_results
             ],
+            "skill_checkpoints": [
+                checkpoint.to_json_data() for checkpoint in self.skill_checkpoints
+            ],
+            "skill_confidence": self.skill_confidence,
             "post_run_agentic_diagnosis": self.post_run_agentic_diagnosis,
             "prompt_exchange": [exchange.to_json_data() for exchange in self.prompt_exchange],
         }

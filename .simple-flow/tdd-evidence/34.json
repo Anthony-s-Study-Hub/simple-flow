@@ -1,0 +1,16 @@
+{
+  "issue": 34,
+  "red": {
+    "commit": "bcd8dabb55f59cc6f4cb9c4d49e7564ab4cd252f",
+    "command": "python -m pytest tests/phase4/test_skill_checkpoints.py tests/phase4/test_local_llm_backend.py",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "e4646eff44aa3c234f8070bcae4f86267726213f"
+  },
+  "green": {
+    "commit": "5b913c861adb3b54440a1aa33b756e933610075a",
+    "command": "python -m pytest",
+    "exit_code": 0
+  }
+}

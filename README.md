@@ -33,11 +33,12 @@ self-contained vendored deployments.
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated
 agent turns with fixed scenario prompts, collects objective Git/GitHub evidence,
-and writes compact JSON plus Markdown experiment reports. Codex CLI remains the
-default backend, and an OpenAI-compatible local LLM backend can run the same
-smoke scenarios without Codex token usage. Source CI validates the harness and
-scenario catalog statically; it does not run live agent experiments
-automatically.
+and writes compact JSON plus Markdown experiment reports. Reports include
+deterministic skill invocation checkpoints so helper-script mechanics can be
+distinguished from broader agent autonomy. Codex CLI remains the default
+backend, and an OpenAI-compatible local LLM backend can run the same smoke
+scenarios without Codex token usage. Source CI validates the harness and scenario
+catalog statically; it does not run live agent experiments automatically.
 
 Run the local test suite:
 
@@ -79,8 +80,9 @@ python -m simple_flow_test_harness.cli run --smoke-only `
 
 The default run uses the smoke set first, a 60 second per-turn timeout, and the
 mini Codex model preference when the Codex backend is selected. The smoke set
-includes a remote Issue/PR artifact scenario. The full scenario set runs only
-after smoke passes. See
+includes Issue-Draft, Review-Triage, Documentation-Curation, policy-boundary,
+and remote Issue/PR artifact coverage. The full scenario set runs only after
+smoke passes. See
 `docs/phase4-scenario-impact.md` for each scenario goal and remote mutation
 impact.
 

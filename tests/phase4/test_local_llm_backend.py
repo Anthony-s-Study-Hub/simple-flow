@@ -189,3 +189,24 @@ def test_local_backend_detects_skills_only_from_actual_user_action(tmp_path: Pat
     assert context == ""
     assert resolved == []
     assert _prompt_requires_command_tool(prompt) is False
+
+
+def test_local_backend_resolves_documentation_curation_skill(tmp_path: Path) -> None:
+    skill = tmp_path / ".codex" / "skills" / "documentation-curation" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("Run scripts/curate_documentation.py and STOP.\n", encoding="utf-8")
+
+    context, resolved = _resolved_skill_context(
+        tmp_path,
+        "USER_ACTION TO EXECUTE NOW: @documentation-curation generate a documentation draft",
+    )
+
+    assert "curate_documentation.py" in context
+    assert resolved == [
+        {
+            "alias": "@documentation-curation",
+            "skill": "documentation-curation",
+            "path": str(skill),
+            "status": "loaded",
+        }
+    ]
