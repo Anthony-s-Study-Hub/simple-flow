@@ -86,9 +86,9 @@ workflow judgment. The objective PASS/FAIL result is meaningful only after the
 live scenario can run.
 
 Each live scenario also reports skill invocation checkpoints. These checkpoints
-identify whether the skill alias resolved, `SKILL.md` instructions were exposed,
-the agent attempted the expected helper script, the command shape was executable,
-the helper exited successfully, expected side effects appeared, and the workflow
-stopped at the intended boundary. This makes a small local model failure
-diagnosable as model autonomy risk instead of automatically treating it as a
-harness or skill-package defect.
+separate native host discovery evidence, harness-side skill resolution or
+context injection for non-native backends, expected helper-script intent,
+executable command shape, helper exit status, observed side effects, and the
+intended stop boundary. This makes a small local model failure diagnosable as
+model autonomy risk instead of automatically treating it as a harness or
+skill-package defect.

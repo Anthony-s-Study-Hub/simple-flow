@@ -162,7 +162,28 @@ def test_codex_backend_command_can_use_oss_local_provider(tmp_path: Path) -> Non
     assert command[:3] == ["codex", "exec", "--json"]
     assert "--oss" in command
     assert command[command.index("--local-provider") + 1] == "lmstudio"
+    assert 'model_provider="lmstudio"' in command
     assert command[command.index("--model") + 1] == "google/gemma-4-e4b"
+
+
+def test_codex_backend_resume_keeps_oss_provider_override(tmp_path: Path) -> None:
+    config = replace(
+        _dry_config(tmp_path),
+        dry_run=False,
+        codex_command="codex",
+        codex_oss=True,
+        codex_local_provider="lmstudio",
+        codex_model="google/gemma-4-e4b",
+    )
+
+    command = CodexCliBackend(config)._codex_command(tmp_path, "Continue", "thread-123")
+
+    assert command[:4] == ["codex", "exec", "resume", "--json"]
+    assert "--oss" not in command
+    assert "--local-provider" not in command
+    assert 'model_provider="lmstudio"' in command
+    assert command[command.index("--model") + 1] == "google/gemma-4-e4b"
+    assert command[-2:] == ["thread-123", "Continue"]
 
 
 def test_probe_codex_local_llm_command_is_static() -> None:

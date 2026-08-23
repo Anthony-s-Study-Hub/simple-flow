@@ -306,6 +306,8 @@ class Phase4Config:
     keep_workspace: bool = False
     codex_bypass_sandbox: bool = True
     codex_model: str | None = None
+    codex_oss: bool = False
+    codex_local_provider: str | None = None
     smoke_gate: bool = True
     smoke_only: bool = False
     agent_backend: str = "codex"

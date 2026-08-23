@@ -47,8 +47,9 @@ def evaluate_skill_checkpoints(
     helper_events = _helper_events(agent_result)
 
     checkpoints = [
-        _skill_discovery_checkpoint(agent_backend, aliases, resolved),
-        _instruction_exposure_checkpoint(agent_backend, aliases, resolved),
+        _native_skill_discovery_checkpoint(agent_backend, aliases),
+        _harness_skill_resolution_checkpoint(agent_backend, aliases, resolved),
+        _skill_context_injection_checkpoint(agent_backend, aliases, resolved),
         _helper_intent_checkpoint(expected_helpers, helper_events),
         _command_shape_checkpoint(expected_helpers, helper_events),
         _helper_execution_checkpoint(expected_helpers, helper_events),
@@ -151,28 +152,57 @@ def _helper_events(agent_result: CommandResult) -> list[dict[str, Any]]:
     return events
 
 
-def _skill_discovery_checkpoint(agent_backend: str, aliases: list[str], resolved: set[str]) -> SkillCheckpoint:
+def _native_skill_discovery_checkpoint(agent_backend: str, aliases: list[str]) -> SkillCheckpoint:
     if not aliases:
-        return SkillCheckpoint("skill discovery", NOT_APPLICABLE, "No skill alias was present in USER_ACTION steps.")
+        return SkillCheckpoint("native skill discovery", NOT_APPLICABLE, "No skill alias was present in USER_ACTION steps.")
     if agent_backend == CODEX_BACKEND:
-        return SkillCheckpoint("skill discovery", UNKNOWN, "Codex backend skill loading is not exposed in harness metadata.")
+        return SkillCheckpoint(
+            "native skill discovery",
+            UNKNOWN,
+            "Codex-native skill selection is host behavior; this harness has no direct discovery event in the captured trace.",
+        )
+    return SkillCheckpoint(
+        "native skill discovery",
+        UNKNOWN,
+        "This backend does not use the host-native Codex skill registry, so native discovery cannot be observed.",
+    )
+
+
+def _harness_skill_resolution_checkpoint(agent_backend: str, aliases: list[str], resolved: set[str]) -> SkillCheckpoint:
+    if not aliases:
+        return SkillCheckpoint("harness skill resolution", NOT_APPLICABLE, "No skill alias was present in USER_ACTION steps.")
+    if agent_backend == CODEX_BACKEND:
+        return SkillCheckpoint(
+            "harness skill resolution",
+            NOT_APPLICABLE,
+            "Codex resolves skills inside the host runtime; the harness does not pre-resolve SKILL.md files for this backend.",
+        )
     expected = {ALIAS_TO_SKILL[alias] for alias in aliases}
     missing = sorted(expected - resolved)
     status = PASS if not missing else FAIL
-    details = "All expected skill aliases resolved." if not missing else f"Missing resolved skills: {', '.join(missing)}."
-    return SkillCheckpoint("skill discovery", status, details, {"expected": sorted(expected), "resolved": sorted(resolved)})
+    details = "Harness resolved all expected skill aliases." if not missing else f"Harness could not resolve: {', '.join(missing)}."
+    return SkillCheckpoint(
+        "harness skill resolution",
+        status,
+        details,
+        {"expected": sorted(expected), "resolved": sorted(resolved)},
+    )
 
 
-def _instruction_exposure_checkpoint(agent_backend: str, aliases: list[str], resolved: set[str]) -> SkillCheckpoint:
+def _skill_context_injection_checkpoint(agent_backend: str, aliases: list[str], resolved: set[str]) -> SkillCheckpoint:
     if not aliases:
-        return SkillCheckpoint("instruction exposure", NOT_APPLICABLE, "No skill instructions were needed.")
+        return SkillCheckpoint("skill context injection", NOT_APPLICABLE, "No skill instructions were needed.")
     if agent_backend == CODEX_BACKEND:
-        return SkillCheckpoint("instruction exposure", UNKNOWN, "Codex backend instruction exposure is external to the local harness.")
+        return SkillCheckpoint(
+            "skill context injection",
+            NOT_APPLICABLE,
+            "Codex loads selected skill instructions inside the host runtime; the harness does not inject SKILL.md context for this backend.",
+        )
     expected = {ALIAS_TO_SKILL[alias] for alias in aliases}
     missing = sorted(expected - resolved)
     status = PASS if not missing else FAIL
-    details = "Relevant SKILL.md context was loaded for the local backend." if not missing else f"SKILL.md context was not loaded for: {', '.join(missing)}."
-    return SkillCheckpoint("instruction exposure", status, details)
+    details = "Harness injected relevant SKILL.md context." if not missing else f"SKILL.md context was not injected for: {', '.join(missing)}."
+    return SkillCheckpoint("skill context injection", status, details)
 
 
 def _helper_intent_checkpoint(
@@ -245,7 +275,7 @@ def _confidence(
 ) -> str:
     by_name = {checkpoint.name: checkpoint for checkpoint in checkpoints}
     if agent_backend == LOCAL_OPENAI_BACKEND and aliases:
-        if by_name["skill discovery"].status == FAIL or by_name["instruction exposure"].status == FAIL:
+        if by_name["harness skill resolution"].status == FAIL or by_name["skill context injection"].status == FAIL:
             return "HARNESS_ISSUE"
     if expected_helpers:
         if by_name["helper intent"].status == FAIL:

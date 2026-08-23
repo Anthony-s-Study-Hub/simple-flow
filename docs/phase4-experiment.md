@@ -69,6 +69,33 @@ python -m simple_flow_test_harness.cli run `
   --allow-remote-reset
 ```
 
+To keep Codex as the host while using a local model, run the same `codex`
+backend with Codex OSS provider flags. This is the preferred local-token route
+when the goal is to evaluate Codex-native skill discovery and tool mediation:
+
+```powershell
+python -m simple_flow_test_harness.cli probe-codex-local-llm `
+  --local-llm-url http://169.254.83.107:1234 `
+  --local-llm-model google/gemma-4-e4b `
+  --codex-local-provider lmstudio
+
+python -m simple_flow_test_harness.cli run --smoke-only `
+  --agent-backend codex `
+  --codex-oss `
+  --codex-local-provider lmstudio `
+  --codex-model google/gemma-4-e4b `
+  --allow-remote-reset
+```
+
+`probe-codex-local-llm` checks `/v1/models`, `/v1/responses`, a required
+Responses tool call, and a short non-mutating `codex exec --oss` run. It does
+not mutate the remote test repo.
+
+When `--codex-oss` is used, the harness also passes
+`model_provider="<provider>"` through Codex config overrides. This keeps resumed
+multi-action `codex exec` turns on the local provider because the installed
+`codex exec resume` command does not expose a separate `--oss` flag.
+
 The harness can also use an OpenAI-compatible local LLM backend. This route uses
 `/v1/models`, `/v1/chat/completions`, and function/tool calls; it does not invoke
 `codex exec`.
@@ -109,14 +136,17 @@ branch creation cannot complete.
 - Local `pytest` and `--dry-run` commands do not mutate the remote test repo.
 - `probe-local-llm` checks the local endpoint only; it does not mutate the remote
   test repo.
+- `probe-codex-local-llm` checks the local endpoint and Codex local-provider
+  compatibility only; it does not mutate the remote test repo.
 - The harness resets the dedicated test repository before each scenario when
   `--allow-remote-reset` is supplied.
 - Live harness setup can mutate the remote test repo before any scenario action
   by force-pushing the baseline, closing open test issues and PRs, and deleting
   non-baseline branches.
 - The Agent Under Test runs through the selected backend in the scenario test
-  project. `codex` uses isolated `codex exec` sessions; `local-openai` uses an
-  OpenAI-compatible local endpoint plus controlled tools.
+  project. `codex` uses isolated `codex exec` sessions and can optionally use a
+  local OSS provider; `local-openai` uses an OpenAI-compatible local endpoint
+  plus controlled tools.
 - The harness may fill only mechanical variables such as Draft ID, Issue number,
   PR number, and branch name.
 - Scenarios may declare explicit local fixtures, such as A02's draft input file
@@ -142,12 +172,19 @@ used, Codex CLI version when applicable, workflow package version, harness commi
 SHA, skill invocation checkpoints, confidence band, and timestamp.
 
 Skill invocation checkpoints are deterministic report fields derived from the
-observed tool trace and final repository state. They separate harness and skill
-mechanism confidence from broader agent autonomy:
+observed tool trace and final repository state. They separate host-native skill
+behavior, harness preparation, and skill helper mechanics from broader agent
+autonomy:
 
-- Skill discovery: whether the selected backend exposed the intended skill.
-- Instruction exposure: whether the relevant `SKILL.md` context was loaded when
-  observable.
+- Native skill discovery: whether Codex or another host exposed observable
+  evidence that it selected the intended skill. This is UNKNOWN when the host
+  does not emit discovery events in the captured trace.
+- Harness skill resolution: whether a non-native backend resolved aliases to
+  deployed `SKILL.md` files before invoking the model. This is NOT_APPLICABLE
+  for Codex-backed runs because Codex performs this internally.
+- Skill context injection: whether a non-native backend injected the relevant
+  `SKILL.md` context into its model prompt. This is NOT_APPLICABLE for
+  Codex-backed runs because Codex loads selected skill instructions internally.
 - Helper intent: whether the agent attempted the expected skill-owned helper
   script.
 - Command shape: whether that helper was invoked as an executable command rather

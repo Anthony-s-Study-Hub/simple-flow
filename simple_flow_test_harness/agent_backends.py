@@ -58,12 +58,12 @@ class LocalLLMError(RuntimeError):
 
 class CodexCliBackend:
     name = CODEX_BACKEND
-    endpoint = ""
     codex_cli_used = True
 
     def __init__(self, config: Phase4Config):
         self.config = config
         self.model = config.codex_model
+        self.endpoint = _codex_endpoint_label(config)
 
     def run_action(
         self,
@@ -129,6 +129,12 @@ class CodexCliBackend:
             command.append("--dangerously-bypass-approvals-and-sandbox")
         else:
             command.append("--full-auto")
+        if self.config.codex_oss:
+            provider = _codex_local_provider(self.config)
+            command.extend(["-c", f'model_provider="{provider}"'])
+        if self.config.codex_oss and not session_id:
+            command.append("--oss")
+            command.extend(["--local-provider", _codex_local_provider(self.config)])
         if self.config.codex_model:
             command.extend(["--model", self.config.codex_model])
         if session_id:
@@ -490,6 +496,20 @@ def create_agent_backend(config: Phase4Config) -> CodexCliBackend | OpenAICompat
     raise ValueError(f"Unsupported agent backend: {config.agent_backend}")
 
 
+def _codex_endpoint_label(config: Phase4Config) -> str:
+    if not config.codex_oss:
+        return ""
+    return f"codex-oss:{_codex_local_provider(config)}"
+
+
+def _codex_local_provider(config: Phase4Config) -> str:
+    return config.codex_local_provider or "lmstudio"
+
+
+def _codex_provider_config_args(local_provider: str) -> list[str]:
+    return ["-c", f'model_provider="{local_provider}"']
+
+
 def probe_local_openai_backend(
     *,
     base_url: str,
@@ -540,6 +560,163 @@ def probe_local_openai_backend(
             for call in tool_calls
         ],
     }
+
+
+def probe_codex_local_llm_backend(
+    *,
+    base_url: str,
+    model: str,
+    codex_command: str,
+    local_provider: str,
+    source_root: Path,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    backend = OpenAICompatibleLocalBackend(base_url=base_url, model=model)
+    result: dict[str, Any] = {
+        "base_url": base_url.rstrip("/"),
+        "model": model,
+        "codex_command": codex_command,
+        "codex_local_provider": local_provider,
+        "python_sdk_package_available": _python_codex_sdk_available(),
+        "models_ok": False,
+        "responses_ok": False,
+        "responses_tool_calls_ok": False,
+        "codex_exec_ok": False,
+    }
+    try:
+        models = backend._get_models(timeout_seconds=min(timeout_seconds, 30))
+        result["models_ok"] = bool(_model_ids(models))
+        result["available_models"] = _model_ids(models)
+    except LocalLLMError as exc:
+        result["models_error"] = str(exc)
+
+    try:
+        response = _responses_create(
+            backend,
+            {
+                "model": model,
+                "input": "Reply with exactly ok.",
+                "max_output_tokens": 16,
+            },
+            timeout_seconds=min(timeout_seconds, 30),
+        )
+        result["responses_ok"] = response.get("status") == "completed" or bool(response.get("output"))
+        result["responses_preview"] = compact_text(_responses_text(response), 200)
+    except LocalLLMError as exc:
+        result["responses_error"] = str(exc)
+
+    try:
+        tool_response = _responses_create(
+            backend,
+            {
+                "model": model,
+                "input": "Use the selected tool with message ok.",
+                "max_output_tokens": 256,
+                "tool_choice": "required",
+                "tools": [
+                    {
+                        "type": "function",
+                        "name": "echo_probe",
+                        "description": "Echo a short probe message.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {"message": {"type": "string"}},
+                            "required": ["message"],
+                            "additionalProperties": False,
+                        },
+                    }
+                ],
+            },
+            timeout_seconds=min(timeout_seconds, 30),
+        )
+        tool_calls = _responses_tool_calls(tool_response)
+        result["responses_tool_calls_ok"] = any(call.get("name") == "echo_probe" for call in tool_calls)
+        result["responses_tool_calls"] = tool_calls
+    except LocalLLMError as exc:
+        result["responses_tool_calls_error"] = str(exc)
+
+    command = [
+        codex_command,
+        "exec",
+        "--oss",
+        "--local-provider",
+        local_provider,
+        *_codex_provider_config_args(local_provider),
+        "--model",
+        model,
+        "--json",
+        "--ephemeral",
+        "--skip-git-repo-check",
+        "--sandbox",
+        "read-only",
+        "-C",
+        str(source_root),
+        "Reply with exactly CODEX_LOCAL_OK and do not run shell commands.",
+    ]
+    try:
+        codex_result = run_command(command, cwd=source_root, timeout_seconds=min(timeout_seconds, 60))
+        result["codex_exec_ok"] = codex_result.exit_code == 0 and "CODEX_LOCAL_OK" in codex_result.stdout
+        result["codex_exec"] = {
+            "exit_code": codex_result.exit_code,
+            "stdout": compact_text(codex_result.stdout, 1200),
+            "stderr": compact_text(codex_result.stderr, 1200),
+        }
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["codex_exec_error"] = str(exc)
+    return result
+
+
+def _responses_create(
+    backend: OpenAICompatibleLocalBackend,
+    payload: dict[str, Any],
+    *,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    return backend._request_json("POST", "/v1/responses", payload, timeout_seconds=timeout_seconds)
+
+
+def _responses_text(payload: dict[str, Any]) -> str:
+    texts: list[str] = []
+    output = payload.get("output", [])
+    if not isinstance(output, list):
+        return ""
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        content = item.get("content", [])
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if isinstance(part, dict) and isinstance(part.get("text"), str):
+                texts.append(part["text"])
+    return "\n".join(texts)
+
+
+def _responses_tool_calls(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    calls: list[dict[str, Any]] = []
+    output = payload.get("output", [])
+    if not isinstance(output, list):
+        return calls
+    for item in output:
+        if not isinstance(item, dict) or item.get("type") != "function_call":
+            continue
+        calls.append(
+            {
+                "name": item.get("name"),
+                "arguments": _parse_tool_arguments(item.get("arguments")),
+                "call_id": item.get("call_id"),
+            }
+        )
+    return calls
+
+
+def _python_codex_sdk_available() -> bool:
+    try:
+        import importlib.util
+
+        return importlib.util.find_spec("openai_codex") is not None
+    except (ImportError, ValueError):
+        return False
 
 
 def _extract_tool_calls(payload: dict[str, Any]) -> list[LocalToolCall]:
