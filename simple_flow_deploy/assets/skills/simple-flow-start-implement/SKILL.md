@@ -51,8 +51,13 @@ python .codex/skills/start-implement/scripts/select_path.py --draft-id <Draft ID
    instead of manually recreating the GitHub Issue, branch, commit, push, and
    draft PR steps:
 
+   In a cloned developer repository, derive `--repo` from
+   `git remote get-url origin`. Use `gh` from `PATH` unless the environment
+   exposes a different executable. Do not ask the developer for either value
+   when they are discoverable locally.
+
 ```powershell
-python .codex/skills/start-implement/scripts/start_documentation.py --draft-id <Draft ID> --drafts-dir .simple-flow/drafts --repo <owner/repo-or-url> --gh-path <gh executable>
+python .codex/skills/start-implement/scripts/start_documentation.py --draft-id <Draft ID> --drafts-dir .simple-flow/drafts --repo <origin URL> --gh-path gh
 ```
 
 6. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`.

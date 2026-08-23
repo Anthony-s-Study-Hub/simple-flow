@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sys
@@ -30,6 +32,16 @@ from simple_flow_test_harness.scenarios import (
     SMOKE_ONLY_SCENARIO_IDS,
     SMOKE_SCENARIO_IDS,
     load_scenarios,
+)
+from simple_flow_test_harness.sdk_feasibility import (
+    DEFAULT_LIVENESS_SECONDS,
+    LocalModelConfig,
+    PILOT_SCENARIOS,
+    RemoteVerificationConfig,
+    Verdict,
+    capability_confidence_by_scenario,
+    run_live_pilot,
+    sdk_preflight,
 )
 
 
@@ -106,6 +118,87 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=2))
         return 0 if result["responses_ok"] and result["responses_tool_calls_ok"] and result["codex_exec_ok"] else 1
 
+    if args.command == "sdk-preflight":
+        result = sdk_preflight(_sdk_config(args))
+        print(json.dumps(result, indent=2))
+        return 0 if result["ready"] else 2
+
+    if args.command == "sdk-pilot":
+        sdk_config = _sdk_config(args)
+        if args.repetitions < 1:
+            print("--repetitions must be positive.", file=sys.stderr)
+            return 2
+        if args.dry_run:
+            print(json.dumps({
+                "host": sdk_config.host,
+                "endpoint": sdk_config.endpoint,
+                "model": sdk_config.model,
+                "structured_result_schema": "enabled",
+                "scenarios": [
+                    {"id": item.scenario_id, "goal": item.goal, "prompt": item.prompt, "expected": item.expected}
+                    for item in PILOT_SCENARIOS
+                ],
+            }, indent=2))
+            return 0
+        project_root = Path(args.project_root).resolve()
+        if not project_root.is_dir():
+            print(f"Pilot project root does not exist: {project_root}", file=sys.stderr)
+            return 2
+        selected = tuple(item for item in PILOT_SCENARIOS if not args.scenario or item.scenario_id in args.scenario)
+        remote_config = None
+        remote_setup: dict[str, object] | None = None
+        if any(item.remote_expectation is not None for item in selected):
+            if not args.remote_verify:
+                print("Selected scenario requires --remote-verify for its remote capability oracle.", file=sys.stderr)
+                return 2
+            if not args.allow_remote_reset:
+                print("Remote SDK pilot requires --allow-remote-reset for the explicitly configured disposable test repository.", file=sys.stderr)
+                return 2
+            environment = Phase4Environment(config)
+            prepared = environment.prepare_scenario_project("sdk-pilot-remote")
+            project_root = prepared.path
+            remote_config = RemoteVerificationConfig(repository=prepared.repo_full_name, gh_path=args.gh_path)
+            remote_setup = {
+                "project_root": str(prepared.path),
+                "repository": prepared.repo_full_name,
+                "commands": [command.to_json_data() for command in prepared.setup_commands],
+            }
+            trials = asyncio.run(
+                run_live_pilot(
+                    sdk_config,
+                    project_root,
+                    repetitions=args.repetitions,
+                    scenarios=selected,
+                    remote_config=remote_config,
+                )
+            )
+        else:
+            trials = asyncio.run(
+                run_live_pilot(
+                    sdk_config,
+                    project_root,
+                    repetitions=args.repetitions,
+                    scenarios=selected,
+                    remote_config=remote_config,
+                )
+            )
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "remote_setup": remote_setup,
+            "trials": [
+                {"scenario_id": trial.scenario_id, "verdicts": trial.verdicts, "evidence": trial.evidence}
+                for trial in trials
+            ],
+            "capability_confidence": capability_confidence_by_scenario(trials),
+        }
+        report_dir = Path(args.report_dir).resolve()
+        report_dir.mkdir(parents=True, exist_ok=True)
+        report_path = report_dir / f"phase4-sdk-pilot-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+        report_path.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
+        print(json.dumps(payload, indent=2, default=str))
+        print(f"Phase 4 SDK pilot report: {report_path}")
+        return 0 if all(not trial.is_blocked and all(value == Verdict.PASS for value in trial.verdicts.values()) for trial in trials) else 1
+
     if args.command == "run":
         report = Phase4Runner(config).run(args.scenario)
         json_path, markdown_path = write_reports(report, config.report_dir)
@@ -123,7 +216,10 @@ def main(argv: list[str] | None = None) -> int:
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     raw_args = list(sys.argv[1:] if argv is None else argv)
-    commands = {"run", "list-scenarios", "validate", "cleanup", "probe-local-llm", "probe-codex-local-llm"}
+    commands = {
+        "run", "list-scenarios", "validate", "cleanup", "probe-local-llm", "probe-codex-local-llm",
+        "sdk-preflight", "sdk-pilot",
+    }
     if not raw_args or raw_args[0] not in commands:
         raw_args.insert(0, "run")
 
@@ -163,7 +259,31 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     subparsers.add_parser("cleanup", parents=[parent])
     subparsers.add_parser("probe-local-llm", parents=[parent])
     subparsers.add_parser("probe-codex-local-llm", parents=[parent])
+    sdk_preflight_parser = subparsers.add_parser("sdk-preflight", parents=[parent])
+    sdk_preflight_parser.add_argument("--sdk-host", choices=("codex-sdk", "claude-sdk"), default="codex-sdk")
+    sdk_preflight_parser.add_argument("--liveness-seconds", type=int, default=DEFAULT_LIVENESS_SECONDS)
+    sdk_pilot_parser = subparsers.add_parser("sdk-pilot", parents=[parent])
+    sdk_pilot_parser.add_argument("--sdk-host", choices=("codex-sdk", "claude-sdk"), default="codex-sdk")
+    sdk_pilot_parser.add_argument("--project-root", default=str(source_root))
+    sdk_pilot_parser.add_argument("--scenario", action="append", choices=tuple(item.scenario_id for item in PILOT_SCENARIOS))
+    sdk_pilot_parser.add_argument("--repetitions", type=int, default=1)
+    sdk_pilot_parser.add_argument("--liveness-seconds", type=int, default=DEFAULT_LIVENESS_SECONDS)
+    sdk_pilot_parser.add_argument("--action-timeout-seconds", type=int, default=900)
+    sdk_pilot_parser.add_argument("--remote-verify", action="store_true", help="Enable manifest-verified remote checks for selected remote scenarios.")
+    sdk_pilot_parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(raw_args)
+
+
+def _sdk_config(args: argparse.Namespace) -> LocalModelConfig:
+    return LocalModelConfig(
+        host=args.sdk_host,
+        endpoint=args.local_llm_url,
+        model=args.local_llm_model,
+        liveness_seconds=args.liveness_seconds,
+        action_timeout_seconds=getattr(args, "action_timeout_seconds", max(args.timeout_seconds, 900)),
+    )
+
+
 
 
 if __name__ == "__main__":

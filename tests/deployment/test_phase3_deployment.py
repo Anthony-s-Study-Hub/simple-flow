@@ -58,10 +58,16 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
     for skill_name in UNPREFIXED_SKILLS:
         skill_file = target / ".codex" / "skills" / skill_name / "SKILL.md"
         text = skill_file.read_text(encoding="utf-8")
+        expected = (ROOT / "simple_flow_deploy" / "assets" / "skills" / f"simple-flow-{skill_name}" / "SKILL.md").read_text(encoding="utf-8").replace(
+            f"name: simple-flow-{skill_name}", f"name: {skill_name}"
+        )
         assert skill_file.exists()
+        assert text == expected
         assert f"name: {skill_name}" in text
         assert "simple-flow-" not in str(skill_file)
         assert "name: simple-flow-" not in text
+        if skill_name == "start-implement":
+            assert "derive `--repo` from\n   `git remote get-url origin`" in text
         for script in SKILL_SCRIPTS[skill_name]:
             deployed_script = target / ".codex" / "skills" / skill_name / script
             ssot_script = SSOT_SCRIPT_ROOT / skill_name / script
@@ -71,6 +77,29 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
                 encoding="utf-8"
             )
             assert script in text
+
+
+def test_vendored_and_thin_modes_deploy_the_same_canonical_skill_text(tmp_path: Path) -> None:
+    vendored = tmp_path / "vendored"
+    thin = tmp_path / "thin"
+    _install(vendored)
+    _install(thin, "--mode", "thin")
+
+    for source_skill, target_skill in {
+        "simple-flow-discussion": "discussion",
+        "simple-flow-documentation-curation": "documentation-curation",
+        "simple-flow-issue-draft": "issue-draft",
+        "simple-flow-start-implement": "start-implement",
+        "simple-flow-review-triage": "review-triage",
+        "simple-flow-pr-finalize": "pr-finalize",
+    }.items():
+        expected = (ROOT / "simple_flow_deploy" / "assets" / "skills" / source_skill / "SKILL.md").read_text(encoding="utf-8").replace(
+            f"name: {source_skill}", f"name: {target_skill}"
+        )
+        if target_skill == "start-implement":
+            assert "derive `--repo` from\n   `git remote get-url origin`" in expected
+        assert (vendored / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
+        assert (thin / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
 
 
 def test_repeated_install_is_idempotent_and_reports_existing_files(tmp_path: Path) -> None:

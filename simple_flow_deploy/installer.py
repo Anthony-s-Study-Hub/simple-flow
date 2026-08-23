@@ -371,8 +371,7 @@ def _desired_vendored_files(
         files[relative] = text
 
     for source_skill, target_skill in SKILL_MAP.items():
-        source_dir = source / "skills" / source_skill
-        skill_text = (source_dir / "SKILL.md").read_text(encoding="utf-8")
+        skill_text = _canonical_skill_text(source_skill)
         files[f".codex/skills/{target_skill}/SKILL.md"] = skill_text.replace(
             f"name: {source_skill}",
             f"name: {target_skill}",
@@ -426,7 +425,7 @@ def _desired_thin_files(
         files[relative] = text
 
     for source_skill, target_skill in SKILL_MAP.items():
-        skill_text = _asset_text(f"skills/{source_skill}/SKILL.md")
+        skill_text = _canonical_skill_text(source_skill)
         files[f".codex/skills/{target_skill}/SKILL.md"] = skill_text.replace(
             f"name: {source_skill}",
             f"name: {target_skill}",
@@ -609,6 +608,11 @@ def _sha256(text: str) -> str:
 
 def _asset_text(relative: str) -> str:
     return (_package_root() / "assets" / relative).read_text(encoding="utf-8")
+
+
+def _canonical_skill_text(source_skill: str) -> str:
+    """Return the one packaged source used by every deployment mode."""
+    return _asset_text(f"skills/{source_skill}/SKILL.md")
 
 
 def _package_root():
