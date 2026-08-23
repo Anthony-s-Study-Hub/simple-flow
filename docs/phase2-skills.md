@@ -7,12 +7,12 @@ evidence checks.
 ## Artifacts
 
 - `AGENTS.md` defines the shared Default Deny rules.
-- `skills/simple-flow-discussion` owns discussion only.
-- `skills/simple-flow-issue-draft` owns Canonical Draft creation only.
-- `skills/simple-flow-start-implement` owns formal implementation startup and
+- `simple_flow_deploy/assets/skills/simple-flow-discussion` owns discussion only.
+- `simple_flow_deploy/assets/skills/simple-flow-issue-draft` owns Canonical Draft creation only.
+- `simple_flow_deploy/assets/skills/simple-flow-start-implement` owns formal implementation startup and
   continuation only.
-- `skills/simple-flow-review-triage` owns review finding classification only.
-- `skills/simple-flow-pr-finalize` owns final merge authorization checks and
+- `simple_flow_deploy/assets/skills/simple-flow-review-triage` owns review finding classification only.
+- `simple_flow_deploy/assets/skills/simple-flow-pr-finalize` owns final merge authorization checks and
   cleanup only.
 - Each executable skill owns a `scripts/` entrypoint under its skill folder.
 - `simple_flow_agent` contains shared deterministic helper code used by those

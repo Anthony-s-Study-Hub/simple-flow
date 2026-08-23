@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SKILLS_ROOT = ROOT / "simple_flow_deploy" / "assets" / "skills"
 
 
 def test_agents_md_contains_global_default_deny_rules() -> None:
@@ -37,7 +38,7 @@ def test_all_five_phase2_skills_exist_with_unique_ownership_markers() -> None:
     }
 
     for folder, marker in expected.items():
-        skill = ROOT / "skills" / folder / "SKILL.md"
+        skill = SKILLS_ROOT / folder / "SKILL.md"
         text = skill.read_text(encoding="utf-8")
         assert text.startswith("---\nname: ")
         assert "description: " in text
@@ -55,13 +56,13 @@ def test_phase2_skills_define_required_deployed_script_entrypoints() -> None:
     }
 
     for folder, scripts in expected_scripts.items():
-        skill_dir = ROOT / "skills" / folder
+        skill_dir = SKILLS_ROOT / folder
         text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
         assert not (skill_dir / "scripts").exists()
         for script in scripts:
             assert script in text
 
-    discussion = (ROOT / "skills" / "simple-flow-discussion" / "SKILL.md").read_text(
+    discussion = (SKILLS_ROOT / "simple-flow-discussion" / "SKILL.md").read_text(
         encoding="utf-8"
     )
     assert "no deterministic script" in discussion
@@ -70,7 +71,7 @@ def test_phase2_skills_define_required_deployed_script_entrypoints() -> None:
 def test_skill_exclusive_permissions_have_no_merge_or_draft_overlap() -> None:
     skills = {
         path.parent.name: path.read_text(encoding="utf-8")
-        for path in (ROOT / "skills").glob("*/SKILL.md")
+        for path in SKILLS_ROOT.glob("*/SKILL.md")
     }
 
     draft_owners = [

@@ -3,6 +3,11 @@
 Phase 4 adds an explicit experiment harness around the deployed Simple Flow
 workflow. It is executable validation code, not an automatic source CI test.
 
+> Legacy-runner note: the sections below describe the existing 38-scenario
+> runner. The SDK/local-LLM feasibility pilot in
+> [`phase4-skill-tests.md`](phase4-skill-tests.md) supersedes its native versus
+> emulated harness assumptions and confidence-band model.
+
 ## Entry Point
 
 Run static validation:
@@ -213,3 +218,6 @@ The per-scenario goal and mutation matrix lives in
 which commands are local-only, which live runs can mutate the remote test repo,
 and whether each scenario expects the Agent Under Test to create or merge remote
 GitHub artifacts.
+
+The SDK feasibility design, compact pilot scenarios, nodes, and confidence
+rules live in [`docs/phase4-skill-tests.md`](phase4-skill-tests.md).

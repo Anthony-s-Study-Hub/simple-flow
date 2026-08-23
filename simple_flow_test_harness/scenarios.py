@@ -890,7 +890,7 @@ def _phase5_fixture_files(scenario_id: str) -> tuple[FileFixture, ...]:
                             "body": "Closes #30. D-E01 is final.",
                             "changed_files": [
                                 "simple_flow_documentation_curation/renderer.py",
-                                "skills/simple-flow-documentation-curation/SKILL.md",
+                                "simple_flow_deploy/assets/skills/simple-flow-documentation-curation/SKILL.md",
                             ],
                         }
                     ],

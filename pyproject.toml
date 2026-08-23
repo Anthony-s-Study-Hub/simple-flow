@@ -12,6 +12,10 @@ dependencies = []
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
+phase4-sdk = [
+  "claude-code-sdk>=0.0.25,<0.1",
+  "openai-codex>=0.147,<0.148",
+]
 
 [project.scripts]
 simple-flow = "simple_flow_deploy.cli:main"
