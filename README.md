@@ -36,8 +36,9 @@ agent turns with fixed scenario prompts, collects objective Git/GitHub evidence,
 and writes compact JSON plus Markdown experiment reports. Reports include
 deterministic skill invocation checkpoints so helper-script mechanics can be
 distinguished from broader agent autonomy. Codex CLI remains the default
-backend, and an OpenAI-compatible local LLM backend can run the same smoke
-scenarios without Codex token usage. Source CI validates the harness and scenario
+backend; it can run either the normal Codex model route or a local OSS provider
+such as LM Studio. An OpenAI-compatible local LLM backend is also available for
+direct tool-loop experiments. Source CI validates the harness and scenario
 catalog statically; it does not run live agent experiments automatically.
 
 Run the local test suite:
@@ -75,6 +76,22 @@ python -m simple_flow_test_harness.cli run --smoke-only `
   --agent-backend local-openai `
   --local-llm-url http://169.254.83.107:1234 `
   --local-llm-model google/gemma-4-e4b `
+  --allow-remote-reset
+```
+
+Probe and run Codex itself against a local LM Studio model:
+
+```powershell
+python -m simple_flow_test_harness.cli probe-codex-local-llm `
+  --local-llm-url http://169.254.83.107:1234 `
+  --local-llm-model google/gemma-4-e4b `
+  --codex-local-provider lmstudio
+
+python -m simple_flow_test_harness.cli run --smoke-only `
+  --agent-backend codex `
+  --codex-oss `
+  --codex-local-provider lmstudio `
+  --codex-model google/gemma-4-e4b `
   --allow-remote-reset
 ```
 

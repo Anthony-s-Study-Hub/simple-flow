@@ -3,13 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import simple_flow_test_harness.agent_backends as agent_backends
 from simple_flow_test_harness.agent_backends import (
     OpenAICompatibleLocalBackend,
     _extract_tool_calls,
     _prompt_requires_command_tool,
     _resolved_skill_context,
     _script_invocation,
+    probe_codex_local_llm_backend,
 )
+from simple_flow_test_harness.models import CommandResult
 
 
 def test_openai_tool_calls_are_parsed_from_chat_completion() -> None:
@@ -38,6 +41,68 @@ def test_openai_tool_calls_are_parsed_from_chat_completion() -> None:
     assert calls[0].call_id == "call_1"
     assert calls[0].name == "run_command"
     assert calls[0].arguments == {"argv": ["python", "-V"]}
+
+
+def test_codex_local_llm_probe_reports_responses_and_codex_exec(tmp_path: Path, monkeypatch) -> None:
+    def fake_get_models(self, *, timeout_seconds):
+        del self, timeout_seconds
+        return {"data": [{"id": "google/gemma-4-e4b"}]}
+
+    def fake_request_json(self, method, path, payload, *, timeout_seconds):
+        del self, method, timeout_seconds
+        assert path == "/v1/responses"
+        if payload and payload.get("tools"):
+            return {
+                "status": "completed",
+                "output": [
+                    {
+                        "type": "function_call",
+                        "name": "echo_probe",
+                        "call_id": "call_1",
+                        "arguments": '{"message":"ok"}',
+                    }
+                ],
+            }
+        return {
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": "ok"}],
+                }
+            ],
+        }
+
+    def fake_run_command(command, *, cwd, timeout_seconds):
+        assert "--oss" in command
+        assert command[command.index("--local-provider") + 1] == "lmstudio"
+        assert 'model_provider="lmstudio"' in command
+        assert command[command.index("--model") + 1] == "google/gemma-4-e4b"
+        return CommandResult(
+            command=tuple(command),
+            cwd=str(cwd),
+            exit_code=0,
+            stdout='{"type":"item.completed","item":{"type":"agent_message","text":"CODEX_LOCAL_OK"}}\n',
+            stderr="",
+        )
+
+    monkeypatch.setattr(OpenAICompatibleLocalBackend, "_get_models", fake_get_models)
+    monkeypatch.setattr(OpenAICompatibleLocalBackend, "_request_json", fake_request_json)
+    monkeypatch.setattr(agent_backends, "run_command", fake_run_command)
+
+    result = probe_codex_local_llm_backend(
+        base_url="http://127.0.0.1:1234",
+        model="google/gemma-4-e4b",
+        codex_command="codex",
+        local_provider="lmstudio",
+        source_root=tmp_path,
+        timeout_seconds=60,
+    )
+
+    assert result["models_ok"] is True
+    assert result["responses_ok"] is True
+    assert result["responses_tool_calls_ok"] is True
+    assert result["codex_exec_ok"] is True
 
 
 def test_local_backend_executes_tool_called_skill_script_without_codex(tmp_path: Path, monkeypatch) -> None:

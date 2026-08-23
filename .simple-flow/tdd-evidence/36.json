@@ -1,0 +1,20 @@
+{
+  "issue": 36,
+  "red": {
+    "commit": "1adbe925ea90e23e1a80a0ca4364c7825e18a631",
+    "command": "python -m pytest tests/phase4/test_phase4_cli_and_reports.py tests/phase4/test_skill_checkpoints.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "de0696d355d49762ed9df0af3263960ab2dbd542"
+  },
+  "green": {
+    "commit": "67371ac850e2a924380c0dd5777647b52fe4d3a0",
+    "command": "python -m pytest",
+    "exit_code": 0
+  },
+  "live_probe": {
+    "command": "python -m simple_flow_test_harness.cli probe-codex-local-llm --local-llm-url http://169.254.83.107:1234 --local-llm-model google/gemma-4-e4b --codex-local-provider lmstudio --timeout-seconds 60",
+    "exit_code": 0
+  }
+}

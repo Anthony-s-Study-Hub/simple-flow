@@ -10,6 +10,7 @@ from simple_flow_test_harness.agent_backends import (
     DEFAULT_LOCAL_LLM_MODEL,
     DEFAULT_LOCAL_LLM_URL,
     SUPPORTED_AGENT_BACKENDS,
+    probe_codex_local_llm_backend,
     probe_local_openai_backend,
 )
 from simple_flow_test_harness.environment import (
@@ -53,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
         keep_workspace=getattr(args, "keep_workspace", False),
         codex_bypass_sandbox=getattr(args, "codex_bypass_sandbox", False),
         codex_model=getattr(args, "codex_model", None),
+        codex_oss=getattr(args, "codex_oss", False),
+        codex_local_provider=getattr(args, "codex_local_provider", None),
         smoke_gate=getattr(args, "smoke_gate", True),
         smoke_only=getattr(args, "smoke_only", False),
         agent_backend=getattr(args, "agent_backend", DEFAULT_AGENT_BACKEND),
@@ -91,6 +94,18 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=2))
         return 0 if result["models_ok"] and result["chat_completions_ok"] and result["tool_calls_ok"] else 1
 
+    if args.command == "probe-codex-local-llm":
+        result = probe_codex_local_llm_backend(
+            base_url=args.local_llm_url,
+            model=args.local_llm_model,
+            codex_command=args.codex_command,
+            local_provider=args.codex_local_provider or "lmstudio",
+            source_root=source_root,
+            timeout_seconds=args.timeout_seconds,
+        )
+        print(json.dumps(result, indent=2))
+        return 0 if result["responses_ok"] and result["responses_tool_calls_ok"] and result["codex_exec_ok"] else 1
+
     if args.command == "run":
         report = Phase4Runner(config).run(args.scenario)
         json_path, markdown_path = write_reports(report, config.report_dir)
@@ -108,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     raw_args = list(sys.argv[1:] if argv is None else argv)
-    commands = {"run", "list-scenarios", "validate", "cleanup", "probe-local-llm"}
+    commands = {"run", "list-scenarios", "validate", "cleanup", "probe-local-llm", "probe-codex-local-llm"}
     if not raw_args or raw_args[0] not in commands:
         raw_args.insert(0, "run")
 
@@ -127,6 +142,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parent.add_argument("--local-llm-url", default=DEFAULT_LOCAL_LLM_URL)
     parent.add_argument("--local-llm-model", default=DEFAULT_LOCAL_LLM_MODEL)
     parent.add_argument("--local-llm-max-tool-calls", type=int, default=8)
+    parent.add_argument("--codex-oss", action="store_true")
+    parent.add_argument("--codex-local-provider", choices=("lmstudio", "ollama"))
 
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run", parents=[parent])
@@ -145,6 +162,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     subparsers.add_parser("validate", parents=[parent])
     subparsers.add_parser("cleanup", parents=[parent])
     subparsers.add_parser("probe-local-llm", parents=[parent])
+    subparsers.add_parser("probe-codex-local-llm", parents=[parent])
     return parser.parse_args(raw_args)
 
 

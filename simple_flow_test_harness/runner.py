@@ -916,6 +916,8 @@ def _agent_model(config: Phase4Config) -> str | None:
 def _agent_endpoint(config: Phase4Config) -> str:
     if config.agent_backend == LOCAL_OPENAI_BACKEND:
         return config.local_llm_url
+    if config.codex_oss:
+        return f"codex-oss:{config.codex_local_provider or 'configured-local-provider'}"
     return ""
 
 
