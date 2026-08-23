@@ -96,6 +96,8 @@ def test_vendored_and_thin_modes_deploy_the_same_canonical_skill_text(tmp_path: 
         expected = (ROOT / "simple_flow_deploy" / "assets" / "skills" / source_skill / "SKILL.md").read_text(encoding="utf-8").replace(
             f"name: {source_skill}", f"name: {target_skill}"
         )
+        if target_skill == "start-implement":
+            assert "derive `--repo` from\n   `git remote get-url origin`" in expected
         assert (vendored / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
         assert (thin / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
 
