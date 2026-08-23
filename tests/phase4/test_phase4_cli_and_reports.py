@@ -13,6 +13,7 @@ from simple_flow_test_harness.cli import (
     DEFAULT_LOCAL_LLM_URL,
     _parse_args,
 )
+from simple_flow_test_harness.agent_backends import CodexCliBackend
 from simple_flow_test_harness.models import CommandResult, Outcome, ScenarioResult
 from simple_flow_test_harness.reports import compact_report_data, render_markdown
 from simple_flow_test_harness.runner import (
@@ -124,6 +125,63 @@ def test_phase4_cli_supports_local_openai_backend() -> None:
     assert args.local_llm_model == "local/test-model"
     assert DEFAULT_LOCAL_LLM_URL == "http://169.254.83.107:1234"
     assert DEFAULT_LOCAL_LLM_MODEL == "google/gemma-4-e4b"
+
+
+def test_phase4_cli_supports_codex_oss_local_provider() -> None:
+    args = _parse_args(
+        [
+            "run",
+            "--agent-backend",
+            "codex",
+            "--codex-oss",
+            "--codex-local-provider",
+            "lmstudio",
+            "--codex-model",
+            "google/gemma-4-e4b",
+        ]
+    )
+
+    assert args.agent_backend == "codex"
+    assert args.codex_oss is True
+    assert args.codex_local_provider == "lmstudio"
+    assert args.codex_model == "google/gemma-4-e4b"
+
+
+def test_codex_backend_command_can_use_oss_local_provider(tmp_path: Path) -> None:
+    config = replace(
+        _dry_config(tmp_path),
+        dry_run=False,
+        codex_command="codex",
+        codex_oss=True,
+        codex_local_provider="lmstudio",
+        codex_model="google/gemma-4-e4b",
+    )
+
+    command = CodexCliBackend(config)._codex_command(tmp_path, "Say ok", "")
+
+    assert command[:3] == ["codex", "exec", "--json"]
+    assert "--oss" in command
+    assert command[command.index("--local-provider") + 1] == "lmstudio"
+    assert command[command.index("--model") + 1] == "google/gemma-4-e4b"
+
+
+def test_probe_codex_local_llm_command_is_static() -> None:
+    args = _parse_args(
+        [
+            "probe-codex-local-llm",
+            "--local-llm-url",
+            "http://127.0.0.1:1234",
+            "--local-llm-model",
+            "google/gemma-4-e4b",
+            "--codex-local-provider",
+            "lmstudio",
+        ]
+    )
+
+    assert args.command == "probe-codex-local-llm"
+    assert args.local_llm_url == "http://127.0.0.1:1234"
+    assert args.local_llm_model == "google/gemma-4-e4b"
+    assert args.codex_local_provider == "lmstudio"
 
 
 def test_phase4_timeout_blocker_takes_precedence_over_noisy_model_cache_output() -> None:

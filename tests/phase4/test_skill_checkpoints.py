@@ -69,8 +69,9 @@ def test_skill_checkpoints_mark_successful_helper_invocation_high_confidence() -
 
     assert confidence == "HIGH"
     assert {checkpoint.name: checkpoint.status for checkpoint in checkpoints} == {
-        "skill discovery": "PASS",
-        "instruction exposure": "PASS",
+        "native skill discovery": "UNKNOWN",
+        "harness skill resolution": "PASS",
+        "skill context injection": "PASS",
         "helper intent": "PASS",
         "command shape": "PASS",
         "helper execution": "PASS",
@@ -114,7 +115,8 @@ def test_skill_checkpoints_mark_missing_expected_helper_low_confidence() -> None
 
     by_name = {checkpoint.name: checkpoint for checkpoint in checkpoints}
     assert confidence == "LOW"
-    assert by_name["skill discovery"].status == "PASS"
+    assert by_name["native skill discovery"].status == "UNKNOWN"
+    assert by_name["harness skill resolution"].status == "PASS"
     assert by_name["helper intent"].status == "FAIL"
     assert "documentation-curation/curate_documentation.py" in by_name["helper intent"].details
 
@@ -206,5 +208,32 @@ def test_skill_checkpoints_ignore_unexecuted_later_skill_actions() -> None:
 
     by_name = {checkpoint.name: checkpoint for checkpoint in checkpoints}
     assert confidence == "HIGH"
-    assert by_name["skill discovery"].status == "NOT_APPLICABLE"
+    assert by_name["native skill discovery"].status == "NOT_APPLICABLE"
+    assert by_name["harness skill resolution"].status == "NOT_APPLICABLE"
     assert by_name["helper intent"].status == "NOT_APPLICABLE"
+
+
+def test_codex_backend_marks_native_skill_discovery_unknown_without_host_trace() -> None:
+    scenario = load_scenarios()["A02"]
+    result = CommandResult(
+        command=("codex-action", "A02", "A02-U1"),
+        cwd="workspace",
+        exit_code=0,
+        stdout='{"type":"item.completed","item":{"type":"agent_message","text":"Finished."}}\n',
+        stderr="",
+    )
+
+    checkpoints, confidence = evaluate_skill_checkpoints(
+        scenario=scenario,
+        agent_backend="codex",
+        agent_metadata={"turns": [{"resolved_skills": []}]},
+        agent_result=result,
+        objective_rule_results=[RuleResult("feature draft created", False, "feature_draft_count", ">=", 1, 0)],
+        final_state={"metrics": {"feature_draft_count": 0}},
+    )
+
+    by_name = {checkpoint.name: checkpoint for checkpoint in checkpoints}
+    assert by_name["native skill discovery"].status == "UNKNOWN"
+    assert by_name["harness skill resolution"].status == "NOT_APPLICABLE"
+    assert by_name["skill context injection"].status == "NOT_APPLICABLE"
+    assert confidence == "LOW"
