@@ -12,10 +12,12 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator, Iterable
 from contextlib import suppress
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from enum import StrEnum
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
 import time
 from typing import Any, Protocol
@@ -53,6 +55,8 @@ CHECKPOINTS = (
     Checkpoint("structured_result", TestClass.DETERMINISTIC, "The SDK adapter emitted a complete machine-readable turn record."),
     Checkpoint("host_trace", TestClass.DETERMINISTIC, "The SDK emitted trace events usable as evidence."),
     Checkpoint("skill_invocation", TestClass.DETERMINISTIC, "The requested skill was attached through the host SDK."),
+    Checkpoint("helper_execution", TestClass.DETERMINISTIC, "Required skill helper executions match their fixed trace contract."),
+    Checkpoint("response_contract", TestClass.DETERMINISTIC, "Required conversation facts are present in the captured SDK result."),
     Checkpoint("precondition", TestClass.DETERMINISTIC, "The framework established and validated the scenario prerequisites."),
     Checkpoint("objective_state", TestClass.DETERMINISTIC, "Observed project state satisfies the scenario oracle."),
     Checkpoint("remote_state", TestClass.DETERMINISTIC, "Remote repository evidence satisfies the scenario manifest."),
@@ -68,12 +72,27 @@ class CIExpectation(StrEnum):
     SUCCESS = "success"
 
 
+class RemoteMode(StrEnum):
+    """The framework-owned remote lifecycle required by a scenario."""
+
+    CREATE_DRAFT_PR = "create-draft-pr"
+    FINALIZE_SEEDED_PR = "finalize-seeded-pr"
+
+
 @dataclass(frozen=True)
 class Fixture:
     relative_path: str
     content: str
     attach_to_turn: bool = False
     label: str = "approved Canonical Draft input"
+
+
+@dataclass(frozen=True)
+class ScriptExpectation:
+    """A skill-owned helper that must be observed in the SDK command trace."""
+
+    script: str
+    exit_codes: tuple[int, ...] = (0,)
 
 
 @dataclass(frozen=True)
@@ -92,6 +111,7 @@ class RemoteExpectation:
     pr_merged: bool
     exact_files: tuple[tuple[str, str], ...]
     ci_expectation: CIExpectation = CIExpectation.IGNORE
+    mode: RemoteMode = RemoteMode.CREATE_DRAFT_PR
 
     def branch_for_issue(self, issue_number: int) -> str:
         return self.branch_template.format(issue_number=issue_number)
@@ -107,6 +127,8 @@ class PilotScenario:
     requires_stop: bool
     fixtures: tuple[Fixture, ...] = ()
     remote_expectation: RemoteExpectation | None = None
+    script_expectations: tuple[ScriptExpectation, ...] = ()
+    response_markers: tuple[str, ...] = ()
 
 
 PILOT_SCENARIOS = (
@@ -117,6 +139,7 @@ PILOT_SCENARIOS = (
         ("no new draft", "no workspace change"),
         "discussion",
         True,
+        script_expectations=(),
     ),
     PilotScenario(
         "P02",
@@ -146,6 +169,7 @@ PILOT_SCENARIOS = (
                 "approved Canonical Draft input",
             ),
         ),
+        script_expectations=(ScriptExpectation("create_draft.py"),),
     ),
     PilotScenario(
         "P03-U",
@@ -154,6 +178,7 @@ PILOT_SCENARIOS = (
         ("no new draft", "no workspace change"),
         "start-implement",
         True,
+        script_expectations=(ScriptExpectation("select_path.py", (1,)),),
     ),
     PilotScenario(
         "P03-R",
@@ -200,6 +225,79 @@ PILOT_SCENARIOS = (
             pr_merged=False,
             exact_files=(("docs/app/usage.md", "# Test Project Usage\n\nThe sample app exposes a small health payload helper.\n\nPhase 4 P03 remote verification marker.\n"),),
         ),
+        script_expectations=(
+            ScriptExpectation("select_path.py"),
+            ScriptExpectation("start_documentation.py"),
+        ),
+    ),
+    PilotScenario(
+        "P04",
+        "Review-Triage classifies one blocking current-work finding without mutating workflow state.",
+        "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=42 source-pr=84 reason='The new endpoint omits an error response test.'",
+        ("CURRENT relationship", "BLOCKING merge impact", "no workflow artifact"),
+        "review-triage",
+        True,
+        script_expectations=(ScriptExpectation("classify_finding.py"),),
+        response_markers=("CURRENT", "BLOCKING", "42", "84"),
+    ),
+    PilotScenario(
+        "P05",
+        "Documentation-Curation turns supplied history into one DOCUMENTATION draft and stops.",
+        "@documentation-curation Curate the provided history into baseline update proposals and one DOCUMENTATION Canonical Draft; then stop.",
+        ("one documentation draft", "no Issue, branch, PR, or merge"),
+        "documentation-curation",
+        True,
+        (
+            Fixture(
+                ".simple-flow/phase4-history.json",
+                "{\n"
+                '  "repository": "Anthony-s-Study-Hub/simple-flow-test",\n'
+                '  "issues": [{"number": 30, "updated_at": "2026-08-21T10:00:00Z", "state": "closed"}],\n'
+                '  "pull_requests": [{"number": 31, "updated_at": "2026-08-21T11:00:00Z", "state": "merged"}]\n'
+                "}\n",
+                True,
+                "normalized history package",
+            ),
+        ),
+        script_expectations=(ScriptExpectation("curate_documentation.py"),),
+    ),
+    PilotScenario(
+        "P06",
+        "PR-Finalize merges a framework-seeded review-accepted pull request and verifies normal post-merge state.",
+        "@pr-finalize {pr_number}",
+        ("merged fixture PR", "linked Issue closed", "head branch deleted"),
+        "pr-finalize",
+        True,
+        (
+            Fixture(
+                ".simple-flow/phase4-pr-state.json",
+                "{\n"
+                '  "exists": true,\n  "open": true,\n  "draft": false,\n'
+                '  "required_checks": {},\n  "unresolved_conversations": 0,\n'
+                '  "commits_after_human_review": 0,\n  "linked_issue_closed": false,\n'
+                '  "head_branch_deleted": false,\n  "project_item_updated": false,\n'
+                '  "pr_number": {{pr_number}}\n}\n',
+                True,
+                "objective review-accepted pull request state",
+            ),
+            Fixture(
+                ".simple-flow/phase4-remote-context.json",
+                "{\n  \"repository\": \"{{repository}}\",\n  \"gh_command\": \"gh\"\n}\n",
+                True,
+                "remote execution context",
+            ),
+        ),
+        RemoteExpectation(
+            issue_title="Phase 4 P06 PR-Finalize fixture",
+            branch_template="phase4-harness/pr-finalize-{issue_number}",
+            pr_title="Phase 4 P06 PR-Finalize fixture",
+            base_branch="main",
+            pr_draft=False,
+            pr_merged=True,
+            exact_files=(("docs/app/usage.md", "# Test Project Usage\n\nThe sample app exposes a small health payload helper.\n\nPhase 4 P06 PR-Finalize fixture marker.\n"),),
+            mode=RemoteMode.FINALIZE_SEEDED_PR,
+        ),
+        script_expectations=(ScriptExpectation("check_pre_merge.py"),),
     ),
 )
 
@@ -251,6 +349,7 @@ class SdkTurn:
     error: str | None = None
     submitted_prompt: str = ""
     attached_skill: str | None = None
+    sandbox_mode: str = ""
     completed: bool = False
 
 
@@ -317,6 +416,8 @@ class RemoteGateway(Protocol):
     def issue_has_cleanup_note(self, issue_number: int) -> bool: ...
 
     def cleanup(self, *, pr_numbers: tuple[int, ...], issue_numbers: tuple[int, ...], branches: tuple[str, ...]) -> dict[str, Any]: ...
+
+    def seed_finalize_fixture(self, expectation: RemoteExpectation) -> dict[str, Any]: ...
 
 
 class WorkspaceObserver:
@@ -400,9 +501,50 @@ class GitHubRemoteGateway:
             result = self._run(["git", "push", "origin", "--delete", branch], check=False)
             actions.append({"action": "delete_branch", "branch": branch, "returncode": result.returncode, "stderr": result.stderr[-500:]})
         for issue_number in issue_numbers:
-            result = self._run([self.config.gh_path, "issue", "close", str(issue_number), "--repo", self.config.repository, "--comment", REMOTE_CLEANUP_NOTE], check=False)
+            comment = self._run([self.config.gh_path, "issue", "comment", str(issue_number), "--repo", self.config.repository, "--body", REMOTE_CLEANUP_NOTE], check=False)
+            actions.append({"action": "comment_cleanup_issue", "id": issue_number, "returncode": comment.returncode, "stderr": comment.stderr[-500:]})
+            result = self._run([self.config.gh_path, "issue", "close", str(issue_number), "--repo", self.config.repository], check=False)
             actions.append({"action": "close_issue", "id": issue_number, "returncode": result.returncode, "stderr": result.stderr[-500:]})
         return {"actions": actions, "success": all(item["returncode"] == 0 for item in actions)}
+
+    def seed_finalize_fixture(self, expectation: RemoteExpectation) -> dict[str, Any]:
+        """Create the exact remote PR state that PR-Finalize is meant to finish."""
+        if expectation.mode != RemoteMode.FINALIZE_SEEDED_PR:
+            raise ValueError("Only PR-Finalize scenarios may request a seeded remote fixture")
+        issue_url = self._run(
+            [
+                self.config.gh_path, "issue", "create", "--repo", self.config.repository,
+                "--title", expectation.issue_title,
+                "--body", "Framework-owned Phase 4 PR-Finalize fixture.",
+            ]
+        ).stdout.strip()
+        issue_number = _github_item_number(issue_url, "issues")
+        branch = expectation.branch_for_issue(issue_number)
+        self._run(["git", "checkout", "main"])
+        self._run(["git", "checkout", "-B", branch])
+        for path, content in expectation.exact_files:
+            target = self.project_root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        self._run(["git", "add", *[path for path, _ in expectation.exact_files]])
+        self._run(["git", "commit", "-m", "test: seed PR-Finalize fixture"])
+        self._run(["git", "push", "--force-with-lease", "--set-upstream", "origin", branch])
+        pr_url = self._run(
+            [
+                self.config.gh_path, "pr", "create", "--repo", self.config.repository,
+                "--base", expectation.base_branch, "--head", branch,
+                "--title", expectation.pr_title, "--body", f"Closes #{issue_number}\n\nFramework-owned Phase 4 PR-Finalize fixture.",
+            ]
+        ).stdout.strip()
+        pr_number = _github_item_number(pr_url, "pull")
+        self._run(["git", "checkout", "main"])
+        return {
+            "issue_number": issue_number,
+            "issue_url": issue_url,
+            "branch": branch,
+            "pr_number": pr_number,
+            "pr_url": pr_url,
+        }
 
     def _gh_json(self, args: list[str]) -> dict[str, Any] | list[Any]:
         result = self._run([self.config.gh_path, *args])
@@ -419,7 +561,12 @@ class GitHubRemoteGateway:
         return data if isinstance(data, list) else [data]
 
     def _run(self, command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
-        result = subprocess.run(command, cwd=self.project_root, text=True, capture_output=True, check=False)
+        environment = os.environ.copy()
+        if Path(command[0]).name.lower() in {"gh", "gh.exe"}:
+            for key in list(environment):
+                if key.lower().endswith("_proxy"):
+                    environment.pop(key, None)
+        result = subprocess.run(command, cwd=self.project_root, text=True, capture_output=True, check=False, env=environment)
         if check and result.returncode != 0:
             raise RuntimeError(f"Remote command failed ({result.returncode}): {' '.join(command)}\n{result.stderr[-1000:]}")
         return result
@@ -435,11 +582,22 @@ class RemoteScenarioPipeline:
         self.gateway = gateway
         self.expectation = scenario.remote_expectation
         self.before: RemoteSnapshot | None = None
+        self.fixture: dict[str, Any] | None = None
 
     def capture_before(self) -> RemoteVerification:
         try:
             self.before = self.gateway.snapshot(self.expectation.base_branch)
             return RemoteVerification(Verdict.PASS, {"before": _remote_snapshot_data(self.before)})
+        except Exception as exc:
+            return RemoteVerification(Verdict.BLOCKED, {"error": f"{type(exc).__name__}: {exc}"})
+
+    def prepare_fixture(self) -> RemoteVerification:
+        """Create a framework-owned remote fixture only when the scenario requires one."""
+        if self.expectation.mode != RemoteMode.FINALIZE_SEEDED_PR:
+            return RemoteVerification(Verdict.PASS, {"kind": "not-required"})
+        try:
+            self.fixture = self.gateway.seed_finalize_fixture(self.expectation)
+            return RemoteVerification(Verdict.PASS, {"fixture": self.fixture})
         except Exception as exc:
             return RemoteVerification(Verdict.BLOCKED, {"error": f"{type(exc).__name__}: {exc}"})
 
@@ -487,6 +645,16 @@ class RemoteScenarioPipeline:
     def _run_artifact_ids(self, after: RemoteSnapshot) -> tuple[tuple[int, ...], tuple[int, ...], tuple[str, ...]]:
         before = self.before
         assert before is not None
+        if self.expectation.mode == RemoteMode.FINALIZE_SEEDED_PR and self.fixture is not None:
+            pr_number = int(self.fixture["pr_number"])
+            issue_number = int(self.fixture["issue_number"])
+            branch = str(self.fixture["branch"])
+            pull_by_number = {_item_number(item): item for item in after.pull_requests}
+            cleanup_prs = () if bool(pull_by_number.get(pr_number, {}).get("merged_at")) else (pr_number,)
+            # `gh pr close --delete-branch` owns this head branch when the PR
+            # is not merged. Do not turn its successful deletion into a second
+            # failing cleanup command.
+            return cleanup_prs, (issue_number,), ()
         pr_numbers = tuple(number for number in (_item_number(item) for item in _new_remote_items(before.pull_requests, after.pull_requests)) if number is not None)
         issue_numbers = tuple(number for number in (_item_number(item) for item in _new_remote_items(before.issues, after.issues)) if number is not None)
         pr_heads = {
@@ -521,6 +689,8 @@ class RemoteScenarioPipeline:
         return {"pull_requests": list(pr_numbers), "issues": list(issue_numbers), "branches": list(branches), "required_note": REMOTE_CLEANUP_NOTE, "failures": failures}
 
     def _evaluate(self, after: RemoteSnapshot) -> tuple[dict[str, Any], int | None, int | None, str | None]:
+        if self.expectation.mode == RemoteMode.FINALIZE_SEEDED_PR:
+            return self._evaluate_finalize(after)
         before = self.before
         assert before is not None
         failures: list[str] = []
@@ -579,6 +749,58 @@ class RemoteScenarioPipeline:
             branch,
         )
 
+    def _evaluate_finalize(self, after: RemoteSnapshot) -> tuple[dict[str, Any], int | None, int | None, str | None]:
+        before = self.before
+        assert before is not None
+        failures: list[str] = []
+        if self.fixture is None:
+            failures.append("PR-Finalize fixture was not created")
+            return ({"before": _remote_snapshot_data(before), "failures": failures}, None, None, None)
+        issue_number = int(self.fixture["issue_number"])
+        pr_number = int(self.fixture["pr_number"])
+        branch = str(self.fixture["branch"])
+        issue = next((item for item in after.issues if _item_number(item) == issue_number), None)
+        pr = next((item for item in after.pull_requests if _item_number(item) == pr_number), None)
+        if issue is None or str(issue.get("title", "")) != self.expectation.issue_title:
+            failures.append("Fixture Issue is missing or does not match the manifest")
+        elif str(issue.get("state", "")).lower() != "closed":
+            failures.append("Linked fixture Issue was not closed")
+        if pr is None or str(pr.get("title", "")) != self.expectation.pr_title:
+            failures.append("Fixture pull request is missing or does not match the manifest")
+        else:
+            if not bool(pr.get("merged_at")):
+                failures.append("Fixture pull request was not merged")
+            if bool(pr.get("draft")):
+                failures.append("Fixture pull request remained draft")
+        if branch in after.branches:
+            failures.append("Fixture pull request head branch was not deleted")
+        for path, expected_content in self.expectation.exact_files:
+            try:
+                if self.gateway.file_content(self.expectation.base_branch, path) != expected_content:
+                    failures.append(f"Merged content mismatch: {path}")
+            except Exception as exc:
+                failures.append(f"Cannot read merged content {path}: {type(exc).__name__}: {exc}")
+        new_issue_numbers = {_item_number(item) for item in _new_remote_items(before.issues, after.issues)}
+        new_pr_numbers = {_item_number(item) for item in _new_remote_items(before.pull_requests, after.pull_requests)}
+        if new_issue_numbers - {issue_number}:
+            failures.append(f"Unexpected new issues: {sorted(new_issue_numbers - {issue_number})}")
+        if new_pr_numbers - {pr_number}:
+            failures.append(f"Unexpected new pull requests: {sorted(new_pr_numbers - {pr_number})}")
+        return (
+            {
+                "before": _remote_snapshot_data(before),
+                "manifest": asdict(self.expectation),
+                "fixture": self.fixture,
+                "matched_issue_number": issue_number,
+                "expected_branch": branch,
+                "matched_pr_number": pr_number,
+                "failures": failures,
+            },
+            issue_number,
+            pr_number,
+            branch,
+        )
+
     def _check_ci(self, pr_number: int, failures: list[str]) -> None:
         expectation = self.expectation.ci_expectation
         if expectation == CIExpectation.IGNORE:
@@ -609,30 +831,40 @@ class CodexSdkAdapter:
             f'model_providers.{self.config.provider}.wire_api="responses"',
             f'model_providers.{self.config.provider}.requires_openai_auth=false',
         )
+
         client = AsyncCodex(CodexConfig(cwd=str(project_root), config_overrides=overrides))
         events: list[SdkEvent] = []
+        sandbox = Sandbox.full_access if scenario.remote_expectation is not None else Sandbox.workspace_write
+        sandbox_mode = str(getattr(sandbox, "value", sandbox))
         skill_path = _skill_path(project_root, scenario.required_skill)
         if scenario.required_skill and skill_path is None:
-            return SdkTurn("", (), None, error=f"Missing installed skill: {scenario.required_skill}", submitted_prompt=scenario.prompt)
+            return SdkTurn("", (), None, error=f"Missing installed skill: {scenario.required_skill}", submitted_prompt=scenario.prompt, sandbox_mode=sandbox_mode)
         try:
-            thread = await client.thread_start(
-                cwd=str(project_root),
-                model=self.config.model,
-                model_provider=self.config.provider,
-                approval_mode=ApprovalMode.auto_review,
-                sandbox=Sandbox.workspace_write,
+            started = time.monotonic()
+            thread = await asyncio.wait_for(
+                client.thread_start(
+                    cwd=str(project_root),
+                    model=self.config.model,
+                    model_provider=self.config.provider,
+                    approval_mode=ApprovalMode.auto_review,
+                    sandbox=sandbox,
+                ),
+                timeout=_remaining_action_seconds(started, self.config.action_timeout_seconds),
             )
             turn_input = [TextInput(scenario.prompt)]
             if skill_path is not None:
                 turn_input.append(SkillInput(scenario.required_skill or "", str(skill_path)))
             for fixture, path in _attached_fixture_paths(project_root, scenario):
                 turn_input.append(MentionInput(fixture.label, str(path)))
-            turn = await thread.turn(turn_input, output_schema=RESULT_SCHEMA, sandbox=Sandbox.workspace_write)
+            turn = await asyncio.wait_for(
+                thread.turn(turn_input, output_schema=RESULT_SCHEMA, sandbox=sandbox),
+                timeout=_remaining_action_seconds(started, self.config.action_timeout_seconds),
+            )
             completed: Any | None = None
             async for event in _stream_with_liveness(
                 turn.stream(),
                 self.config.liveness_seconds,
-                self.config.action_timeout_seconds,
+                _remaining_action_seconds(started, self.config.action_timeout_seconds),
             ):
                 events.append(_normalize_codex_event(event))
                 if getattr(event, "method", "") == "turn/completed":
@@ -647,10 +879,11 @@ class CodexSdkAdapter:
                 error=getattr(completed, "error", None) if completed else "Codex completed without a completion event",
                 submitted_prompt=scenario.prompt,
                 attached_skill=scenario.required_skill,
+                sandbox_mode=sandbox_mode,
                 completed=completed is not None,
             )
         except Exception as exc:  # SDK errors are infrastructure evidence, not agent failures.
-            return SdkTurn("", tuple(events), None, error=f"{type(exc).__name__}: {exc}", submitted_prompt=scenario.prompt)
+            return SdkTurn("", tuple(events), None, error=f"{type(exc).__name__}: {exc}", submitted_prompt=scenario.prompt, sandbox_mode=sandbox_mode)
         finally:
             await client.close()
 
@@ -694,10 +927,11 @@ class ClaudeSdkAdapter:
                 _capture_result(final_text, events, session_id, True),
                 session_id,
                 submitted_prompt=scenario.prompt,
+                sandbox_mode="accept-edits",
                 completed=True,
             )
         except Exception as exc:
-            return SdkTurn(final_text, tuple(events), None, session_id, f"{type(exc).__name__}: {exc}", submitted_prompt=scenario.prompt)
+            return SdkTurn(final_text, tuple(events), None, session_id, f"{type(exc).__name__}: {exc}", submitted_prompt=scenario.prompt, sandbox_mode="accept-edits")
 
 
 async def _stream_with_liveness(
@@ -748,6 +982,13 @@ async def _stream_with_liveness(
                 await pump_task
 
 
+def _remaining_action_seconds(started: float, action_timeout_seconds: int) -> float:
+    remaining = action_timeout_seconds - (time.monotonic() - started)
+    if remaining <= 0:
+        raise TimeoutError(f"SDK action exceeded {action_timeout_seconds} seconds")
+    return remaining
+
+
 def run_pilot_trial(
     scenario: PilotScenario,
     turn: SdkTurn,
@@ -759,21 +1000,28 @@ def run_pilot_trial(
     precondition: ScenarioPrecondition | None = None,
 ) -> TrialResult:
     precondition = precondition or ScenarioPrecondition(Verdict.PASS, {})
+    tool_invocations = _tool_invocation_evidence(turn.events)
+    skill_tool_invocations = _skill_tool_invocation_evidence(tool_invocations, turn.attached_skill)
     local_objective = _objective_verdict(scenario, before, after)
     remote_objective = remote.verdict if remote is not None else (Verdict.PASS if scenario.remote_expectation is None else Verdict.BLOCKED)
     objective = _combined_objective_verdict(precondition.verdict, local_objective, remote_objective)
+    helper_execution = _helper_execution_verdict(scenario, skill_tool_invocations)
+    response_contract = _response_contract_verdict(scenario, turn.final_text)
+    workflow_objective = _combined_objective_verdict(objective, helper_execution, response_contract)
     verdicts: dict[str, Verdict] = {
         "local_route": Verdict.PASS if config.endpoint else Verdict.BLOCKED,
         "prompt_fidelity": Verdict.PASS if turn.submitted_prompt == scenario.prompt and prompt_is_developer_realistic(scenario.prompt) else Verdict.FAIL,
         "structured_result": Verdict.PASS if _valid_result(turn.structured_result) else Verdict.FAIL,
         "host_trace": Verdict.PASS if turn.events else Verdict.BLOCKED,
         "skill_invocation": _skill_delivery_verdict(turn.attached_skill, scenario.required_skill),
+        "helper_execution": helper_execution,
+        "response_contract": response_contract,
         "precondition": precondition.verdict,
         "objective_state": local_objective,
         "remote_state": remote_objective,
         "remote_cleanup": remote.cleanup_verdict if remote is not None else Verdict.PASS,
-        "workflow_outcome": _workflow_outcome_verdict(turn, objective),
-        "stop_boundary": _stop_verdict(turn.structured_result, scenario.requires_stop, objective),
+        "workflow_outcome": _workflow_outcome_verdict(turn, workflow_objective),
+        "stop_boundary": _stop_verdict(turn.structured_result, scenario.requires_stop, workflow_objective),
     }
     if turn.error:
         for name in verdicts:
@@ -787,12 +1035,23 @@ def run_pilot_trial(
             "session_id": turn.session_id,
             "event_count": len(turn.events),
             "event_methods": sorted({str(event.data.get("method", event.data.get("type", event.kind))) for event in turn.events}),
+            "sandbox_mode": turn.sandbox_mode or _sandbox_mode(config, scenario),
+            "tool_invocations": tool_invocations,
+            "failed_tool_invocations": [
+                item for item in tool_invocations if item.get("exit_code") not in (None, 0)
+            ],
+            "skill_tool_invocations": skill_tool_invocations,
+            "failed_skill_tool_invocations": [
+                item for item in skill_tool_invocations if item.get("exit_code") not in (None, 0)
+            ],
             "attached_skill": turn.attached_skill,
             "final_text_preview": turn.final_text[:1200],
             "before": asdict(before),
             "after": asdict(after),
             "remote": remote.evidence if remote is not None else None,
             "precondition": precondition.evidence,
+            "helper_expectations": [asdict(item) for item in scenario.script_expectations],
+            "response_markers": list(scenario.response_markers),
         },
     )
 
@@ -858,6 +1117,88 @@ def make_adapter(config: LocalModelConfig) -> SdkAdapter:
     raise ValueError(f"Unsupported SDK host: {config.host}")
 
 
+REMOTE_PREFLIGHT_BRANCH = "phase4-harness/preflight"
+
+
+def _remote_execution_preflight(
+    project_root: Path,
+    scenario: PilotScenario,
+    config: LocalModelConfig,
+) -> ScenarioPrecondition:
+    """Check the fixed local capabilities a remote scenario needs before a turn.
+
+    This is framework-owned infrastructure evidence, not an agent task.  The
+    branch is created and deleted locally only; no remote state is changed.
+    """
+    if scenario.remote_expectation is None:
+        return ScenarioPrecondition(Verdict.PASS, {"kind": "not-required"})
+    commands: list[dict[str, Any]] = []
+    start = _preflight_command(["git", "branch", "--show-current"], project_root)
+    commands.append(start)
+    start_branch = str(start["stdout"]).strip() if start["exit_code"] == 0 else ""
+    if not start_branch:
+        return ScenarioPrecondition(
+            Verdict.BLOCKED,
+            {"kind": "remote-execution-preflight", "sandbox": _sandbox_mode(config, scenario), "commands": commands, "failures": ["Cannot determine the local baseline branch"]},
+        )
+
+    create = _preflight_command(["git", "checkout", "-B", REMOTE_PREFLIGHT_BRANCH], project_root)
+    commands.append(create)
+    restore: dict[str, Any] | None = None
+    delete: dict[str, Any] | None = None
+    if create["exit_code"] == 0:
+        restore = _preflight_command(["git", "checkout", start_branch], project_root)
+        commands.append(restore)
+        delete = _preflight_command(["git", "branch", "-D", REMOTE_PREFLIGHT_BRANCH], project_root)
+        commands.append(delete)
+
+    gh_environment = {key: value for key, value in os.environ.items() if not key.lower().endswith("_proxy")}
+    gh_auth = _preflight_command(["gh", "auth", "status"], project_root, environment=gh_environment)
+    commands.append(gh_auth)
+
+    failures: list[str] = []
+    if create["exit_code"] != 0:
+        failures.append("Git ref write preflight failed")
+    if restore is not None and (restore["exit_code"] != 0 or delete is None or delete["exit_code"] != 0):
+        failures.append("Git ref write preflight cleanup failed")
+    if gh_auth["exit_code"] != 0:
+        failures.append("GitHub CLI authentication preflight failed")
+    return ScenarioPrecondition(
+        Verdict.PASS if not failures else Verdict.BLOCKED,
+        {"kind": "remote-execution-preflight", "sandbox": _sandbox_mode(config, scenario), "commands": commands, "failures": failures},
+    )
+
+
+def _preflight_command(command: list[str], project_root: Path, *, environment: dict[str, str] | None = None) -> dict[str, Any]:
+    try:
+        completed = subprocess.run(command, cwd=project_root, text=True, capture_output=True, check=False, env=environment)
+        return {
+            "command": command,
+            "exit_code": completed.returncode,
+            "stdout": _sanitize_trace_text(completed.stdout),
+            "stderr": _sanitize_trace_text(completed.stderr),
+        }
+    except OSError as exc:
+        return {"command": command, "exit_code": None, "stdout": "", "stderr": _sanitize_trace_text(str(exc))}
+
+
+def _sandbox_mode(config: LocalModelConfig, scenario: PilotScenario) -> str:
+    if config.host == "codex-sdk":
+        return "full-access" if scenario.remote_expectation is not None else "workspace-write"
+    return "accept-edits"
+
+
+def _combine_preconditions(*preconditions: ScenarioPrecondition) -> ScenarioPrecondition:
+    failures = [item for item in preconditions if item.verdict != Verdict.PASS]
+    if not failures:
+        verdict = Verdict.PASS
+    elif any(item.verdict == Verdict.BLOCKED for item in failures):
+        verdict = Verdict.BLOCKED
+    else:
+        verdict = Verdict.FAIL
+    return ScenarioPrecondition(verdict, {"checks": [item.evidence for item in preconditions]})
+
+
 async def run_live_pilot(
     config: LocalModelConfig,
     project_root: Path,
@@ -875,28 +1216,40 @@ async def run_live_pilot(
     for _ in range(repetitions):
         for scenario in scenarios:
             _prepare_fixture(project_root, scenario, remote_config)
-            precondition = _scenario_precondition(project_root, scenario)
+            precondition = _combine_preconditions(
+                _scenario_precondition(project_root, scenario),
+                _remote_execution_preflight(project_root, scenario, config),
+            )
             before = observer.snapshot(project_root)
             remote_pipeline: RemoteScenarioPipeline | None = None
             remote_before: RemoteVerification | None = None
+            active_scenario = scenario
             if scenario.remote_expectation is not None:
                 if remote_config is None:
                     remote_before = RemoteVerification(Verdict.BLOCKED, {"error": "Remote verification is required for this scenario"})
                 else:
                     remote_pipeline = RemoteScenarioPipeline(scenario, GitHubRemoteGateway(project_root, remote_config))
                     remote_before = remote_pipeline.capture_before()
-            if precondition.verdict == Verdict.PASS:
-                turn = await adapter.run(scenario, project_root)
+                    if remote_before.verdict == Verdict.PASS:
+                        fixture = remote_pipeline.prepare_fixture()
+                        if fixture.verdict != Verdict.PASS:
+                            remote_before = fixture
+                        elif remote_pipeline.fixture is not None:
+                            values = {"pr_number": str(remote_pipeline.fixture["pr_number"])}
+                            _prepare_fixture(project_root, scenario, remote_config, template_values=values)
+                            active_scenario = replace(scenario, prompt=scenario.prompt.format(**values))
+            if precondition.verdict == Verdict.PASS and (remote_before is None or remote_before.verdict == Verdict.PASS):
+                turn = await adapter.run(active_scenario, project_root)
             else:
                 turn = SdkTurn(
                     "", (), None,
                     error="Scenario precondition did not pass",
-                    submitted_prompt=scenario.prompt,
-                    attached_skill=scenario.required_skill,
+                    submitted_prompt=active_scenario.prompt,
+                    attached_skill=active_scenario.required_skill,
                 )
             after = observer.snapshot(project_root)
             remote_after = remote_pipeline.capture_and_verify() if remote_pipeline is not None and remote_before and remote_before.verdict == Verdict.PASS else remote_before
-            trials.append(run_pilot_trial(scenario, turn, before, after, config=config, remote=remote_after, precondition=precondition))
+            trials.append(run_pilot_trial(active_scenario, turn, before, after, config=config, remote=remote_after, precondition=precondition))
     return trials
 
 
@@ -996,15 +1349,22 @@ def _prepare_fixture(
     project_root: Path,
     scenario: PilotScenario,
     remote_config: RemoteVerificationConfig | None = None,
+    *,
+    template_values: dict[str, str] | None = None,
 ) -> None:
     for fixture in scenario.fixtures:
         path = project_root / fixture.relative_path
         path.parent.mkdir(parents=True, exist_ok=True)
         content = fixture.content
+        values = {"repository": remote_config.repository} if remote_config is not None else {}
+        values.update(template_values or {})
+        for key, value in values.items():
+            content = content.replace(f"{{{{{key}}}}}", value)
         if "{{repository}}" in content:
-            if remote_config is None:
-                raise ValueError(f"{scenario.scenario_id} fixture requires remote configuration")
-            content = content.replace("{{repository}}", remote_config.repository)
+            raise ValueError(f"{scenario.scenario_id} fixture requires remote configuration")
+        if re.search(r"{{[a-z_]+}}", content):
+            # A run-scoped remote identifier has not been allocated yet.
+            continue
         path.write_text(content, encoding="utf-8")
 
 
@@ -1033,7 +1393,31 @@ def _skill_delivery_verdict(attached_skill: str | None, required_skill: str | No
     return Verdict.PASS if attached_skill == required_skill else Verdict.FAIL
 
 
+def _helper_execution_verdict(scenario: PilotScenario, invocations: Iterable[dict[str, Any]]) -> Verdict:
+    """Verify fixed helper outcomes from actual execution, never from source reads."""
+    records = list(invocations)
+    for expectation in scenario.script_expectations:
+        matches = [
+            item for item in records
+            if re.search(
+                rf"{re.escape(expectation.script.lower())}(?:[\s'\"]|$)",
+                str(item.get("command", "")).replace("\\", "/").lower(),
+            )
+        ]
+        if not matches or not {item.get("exit_code") for item in matches}.intersection(expectation.exit_codes):
+            return Verdict.FAIL
+    return Verdict.PASS
+
+
+def _response_contract_verdict(scenario: PilotScenario, final_text: str) -> Verdict:
+    return Verdict.PASS if all(marker.casefold() in final_text.casefold() for marker in scenario.response_markers) else Verdict.FAIL
+
+
 def _workflow_outcome_verdict(turn: SdkTurn, objective: Verdict) -> Verdict:
+    if objective == Verdict.BLOCKED:
+        return Verdict.BLOCKED
+    if objective == Verdict.UNKNOWN:
+        return Verdict.UNKNOWN
     if not turn.completed:
         return Verdict.UNKNOWN
     return Verdict.PASS if objective == Verdict.PASS else Verdict.FAIL
@@ -1042,6 +1426,10 @@ def _workflow_outcome_verdict(turn: SdkTurn, objective: Verdict) -> Verdict:
 def _stop_verdict(result: dict[str, Any] | None, required: bool, objective: Verdict) -> Verdict:
     if not required:
         return Verdict.PASS
+    if objective == Verdict.BLOCKED:
+        return Verdict.BLOCKED
+    if objective == Verdict.UNKNOWN:
+        return Verdict.UNKNOWN
     if not _valid_result(result):
         return Verdict.UNKNOWN
     return Verdict.PASS if result["turn_completed"] and objective == Verdict.PASS else Verdict.FAIL
@@ -1053,6 +1441,9 @@ def _objective_verdict(scenario: PilotScenario, before: WorkspaceSnapshot, after
     new_branches = after.implementation_branches - before.implementation_branches
     if scenario.scenario_id == "P02":
         return Verdict.PASS if new_drafts >= 1 and new_branches <= 0 else Verdict.FAIL
+    if scenario.scenario_id == "P05":
+        allowed = (".simple-flow/drafts/", ".simple-flow/documentation-curation/")
+        return Verdict.PASS if new_drafts >= 1 and new_branches <= 0 and all(path.startswith(allowed) for path in after.changed_paths) else Verdict.FAIL
     if scenario.remote_expectation is not None:
         # Start-Implement is expected to create and commit locally before it
         # pushes the branch. The remote manifest owns that capability oracle.
@@ -1082,6 +1473,71 @@ def _normalize_codex_event(event: Any) -> SdkEvent:
     else:
         kind = "event"
     return SdkEvent(kind, {"method": method, **payload_data})
+
+
+def _tool_invocation_evidence(events: Iterable[SdkEvent]) -> list[dict[str, Any]]:
+    """Keep completed tool calls as compact, sanitized report evidence."""
+    invocations: list[dict[str, Any]] = []
+    for event in events:
+        if event.data.get("method") != "item/completed":
+            continue
+        for item in _completed_tool_items(event.data):
+            item_type = str(item.get("type", ""))
+            command = item.get("command")
+            if command is None:
+                command = item.get("input")
+            output = item.get("aggregated_output", item.get("aggregatedOutput", item.get("output", "")))
+            exit_code = item.get("exit_code", item.get("exitCode"))
+            if not item_type and command is None:
+                continue
+            record: dict[str, Any] = {"type": item_type or "tool"}
+            if command is not None:
+                record["command"] = _sanitize_trace_text(str(command), limit=1200)
+            if exit_code is not None:
+                record["exit_code"] = exit_code
+            if output:
+                record["output"] = _sanitize_trace_text(str(output), limit=2000)
+            invocations.append(record)
+    return invocations
+
+
+def _skill_tool_invocation_evidence(
+    invocations: Iterable[dict[str, Any]],
+    skill_name: str | None,
+) -> list[dict[str, Any]]:
+    if not skill_name:
+        return []
+    marker = f".codex/skills/{skill_name}/scripts/"
+    return [
+        item
+        for item in invocations
+        if _executes_skill_script(str(item.get("command", "")), marker)
+    ]
+
+
+def _executes_skill_script(command: str, marker: str) -> bool:
+    normalized = re.sub(r"/+", "/", command.replace("\\", "/").lower())
+    pattern = rf"(?:^|[^a-z0-9_])(?:python(?:\.exe)?|py(?:\.exe)?)\s+(?:['\"])?(?:\./)?{re.escape(marker)}"
+    return bool(re.search(pattern, normalized))
+
+
+def _completed_tool_items(value: Any) -> Iterable[dict[str, Any]]:
+    if isinstance(value, dict):
+        item_type = str(value.get("type", "")).lower()
+        if item_type in {"commandexecution", "command_execution", "functioncall", "function_call", "toolcall", "tool_call"}:
+            yield value
+        for nested in value.values():
+            yield from _completed_tool_items(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from _completed_tool_items(nested)
+
+
+def _sanitize_trace_text(value: str, *, limit: int = 2000) -> str:
+    """Retain diagnostic output without exposing credentials in reports."""
+    sanitized = re.sub(r"\b(?:gh[opsu]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)\b", "[REDACTED_TOKEN]", value)
+    sanitized = re.sub(r"(?i)(authorization\s*[:=]\s*bearer\s+)[^\s]+", r"\1[REDACTED_TOKEN]", sanitized)
+    return sanitized[:limit]
 
 
 def _has_skill_tool(value: Any) -> bool:
@@ -1173,6 +1629,13 @@ def _git_implementation_branch_count(project_root: Path) -> int:
 def _item_number(item: dict[str, Any]) -> int | None:
     value = item.get("number")
     return int(value) if isinstance(value, int | str) and str(value).isdigit() else None
+
+
+def _github_item_number(url: str, resource: str) -> int:
+    match = re.search(rf"/{re.escape(resource)}/(\d+)\s*$", url)
+    if not match:
+        raise RuntimeError(f"Cannot determine {resource} number from GitHub output: {url}")
+    return int(match.group(1))
 
 
 def _new_remote_items(before: Iterable[dict[str, Any]], after: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:

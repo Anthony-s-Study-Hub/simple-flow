@@ -205,6 +205,10 @@ class Phase4Environment:
     def cleanup_workspace(self) -> None:
         self._safe_reset_local_workspace(self.config.workspace_root)
 
+    def cleanup_scenario_project(self, project_path: Path) -> None:
+        """Remove one harness-owned disposable project without touching the workspace root."""
+        self._safe_reset_local_workspace(project_path)
+
     def _safe_reset_local_workspace(self, target: Path) -> None:
         resolved_target = target.resolve()
         resolved_root = self.config.workspace_root.resolve()
