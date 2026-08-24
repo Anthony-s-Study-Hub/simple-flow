@@ -155,23 +155,39 @@ def main(argv: list[str] | None = None) -> int:
                 print("Remote SDK pilot requires --allow-remote-reset for the explicitly configured disposable test repository.", file=sys.stderr)
                 return 2
             environment = Phase4Environment(config)
-            prepared = environment.prepare_scenario_project("sdk-pilot-remote")
-            project_root = prepared.path
-            remote_config = RemoteVerificationConfig(repository=prepared.repo_full_name, gh_path=args.gh_path)
-            remote_setup = {
-                "project_root": str(prepared.path),
-                "repository": prepared.repo_full_name,
-                "commands": [command.to_json_data() for command in prepared.setup_commands],
-            }
-            trials = asyncio.run(
-                run_live_pilot(
-                    sdk_config,
-                    project_root,
-                    repetitions=args.repetitions,
-                    scenarios=selected,
-                    remote_config=remote_config,
-                )
-            )
+            setups: list[dict[str, object]] = []
+            trials = []
+            for repetition in range(args.repetitions):
+                for scenario in selected:
+                    prepared = None
+                    try:
+                        prepared = environment.prepare_scenario_project(f"sdk-pilot-{scenario.scenario_id}")
+                        scenario_remote_config = (
+                            RemoteVerificationConfig(repository=prepared.repo_full_name, gh_path=args.gh_path)
+                            if scenario.remote_expectation is not None else None
+                        )
+                        setups.append({
+                            "repetition": repetition + 1,
+                            "scenario_id": scenario.scenario_id,
+                            "project_root": str(prepared.path),
+                            "repository": prepared.repo_full_name,
+                            "commands": [command.to_json_data() for command in prepared.setup_commands],
+                        })
+                        trials.extend(
+                            asyncio.run(
+                                run_live_pilot(
+                                    sdk_config,
+                                    prepared.path,
+                                    repetitions=1,
+                                    scenarios=(scenario,),
+                                    remote_config=scenario_remote_config,
+                                )
+                            )
+                        )
+                    finally:
+                        if prepared is not None:
+                            environment.cleanup_scenario_project(prepared.path)
+            remote_setup = {"runs": setups}
         else:
             trials = asyncio.run(
                 run_live_pilot(
