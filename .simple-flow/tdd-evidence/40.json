@@ -1,0 +1,16 @@
+{
+  "issue": 40,
+  "red": {
+    "commit": "7b57e6a44963b8539a4016a309a66b7885b2f1a4",
+    "command": "python -m pytest tests/phase4/test_sdk_feasibility.py -q",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "b287ca0d0f1fe9b847069c03ab92c71ba579c767"
+  },
+  "green": {
+    "commit": "f355f8c26451390d1a762a013265a7bd3c4a90fc",
+    "command": "python -m pytest -q",
+    "exit_code": 0
+  }
+}
