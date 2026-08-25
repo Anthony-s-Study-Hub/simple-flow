@@ -1,16 +1,16 @@
 {
   "issue": 46,
   "red": {
-    "commit": "17b40f486daed6e5afad731c830939871b6a611e",
-    "command": "python -m pytest -q tests/test_phase2_policy.py tests/phase4/test_phase4_scenarios.py",
+    "commit": "8d4b45dfac4513d6bd0dc215534411da91dc3fce",
+    "command": "python -m pytest -q tests/deployment/test_release_installer_cli.py",
     "exit_code": 1
   },
   "implementation": {
-    "commit": "87d4ef5c91f8fa724ac95628760777b90f53d1f1"
+    "commit": "8010b749aa03d6ead335b0bf698da0e2c70a852a"
   },
   "green": {
-    "commit": "ba6eeef101bb3778536fdab983604a3c1a610c67",
-    "command": "python -m pytest -q tests/test_phase2_policy.py tests/phase4/test_phase4_scenarios.py",
+    "commit": "7ba6baf9054bc6b63133358c6fa4ac600d4f6f2c",
+    "command": "python -m pytest -q tests/deployment/test_release_installer_cli.py",
     "exit_code": 0
   }
 }
