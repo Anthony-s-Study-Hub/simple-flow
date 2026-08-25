@@ -40,8 +40,21 @@ documentation update proposals.
 python .codex/skills/documentation-curation/scripts/curate_documentation.py --history-package <history.json> --analysis <analysis.json> --drafts-dir .simple-flow/drafts --output-dir .simple-flow/documentation-curation
 ```
 
-5. Report the returned `draft_id`, `draft_json`, `draft_markdown`,
-   `pending_cursor`, and `stop_point`, then STOP.
+5. Use the returned shared Canonical Draft handoff fields: `status`,
+   `draft_id`, `work_type`, `json_path`, and `markdown_path`. The
+   curation-specific fields `pending_cursor`, `operation_count`, and
+   `stop_point` are additional evidence, not a separate draft contract.
+6. Reply with the Draft ID and both clickable review links, replacing the
+   placeholders below with the returned absolute paths:
+
+```markdown
+Created `{{draft_id}}` (`{{work_type}}`).
+
+[Open draft for review](<{{markdown_path}}>)
+[Open draft JSON](<{{json_path}}>)
+```
+
+Then STOP.
 
 In this source repository, the deploy-time script source of truth is
 `simple_flow_deploy/skill_resources/documentation-curation/scripts/curate_documentation.py`.

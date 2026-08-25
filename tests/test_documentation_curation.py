@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from simple_flow_agent.drafts import DraftStore
+from simple_flow_agent.start_implement import select_start_path
 from simple_flow_documentation_curation.baselines import (
     BaselineSchemaError,
     parse_component_baseline,
@@ -337,8 +338,68 @@ def test_documentation_curation_script_generates_draft_and_stops(tmp_path: Path)
 
     assert completed.returncode == 0, completed.stderr
     result = json.loads(completed.stdout)
+    assert result["status"] == "ok"
     assert result["stop_point"] == "DOCUMENTATION_DRAFT_CREATED"
     assert result["draft_id"].startswith("DRAFT-")
+    assert result["work_type"] == "DOCUMENTATION"
+    assert Path(result["json_path"]) == (drafts / f"{result['draft_id']}.json").resolve()
+    assert Path(result["markdown_path"]) == (drafts / f"{result['draft_id']}.md").resolve()
     assert result["created_issue"] is False
     assert result["created_pull_request"] is False
     assert (drafts / f"{result['draft_id']}.json").exists()
+    created = DraftStore(drafts).read(result["draft_id"])
+    assert select_start_path(DraftStore(drafts), created.draft_id).path == "DOCUMENTATION_NORMAL"
+
+
+def test_issue_draft_documentation_result_uses_the_shared_draft_handoff_contract(tmp_path: Path) -> None:
+    input_path = tmp_path / "documentation-input.json"
+    drafts = tmp_path / "drafts"
+    input_path.write_text(
+        json.dumps(
+            {
+                "work_type": "DOCUMENTATION",
+                "change": "Update the project baseline.",
+                "reason": "Keep the documented architecture current.",
+                "impact": "Documentation only.",
+                "supersedes": "None",
+                "affected_project_documents": ["docs/baselines/project.md"],
+                "source_context": "Issue #30 / PR #31",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "simple_flow_deploy/skill_resources/issue-draft/scripts/create_draft.py",
+            "--input",
+            str(input_path),
+            "--drafts-dir",
+            str(drafts),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    result = json.loads(completed.stdout)
+    assert {"status", "draft_id", "work_type", "json_path", "markdown_path"} <= result.keys()
+    assert result["status"] == "ok"
+    assert result["work_type"] == "DOCUMENTATION"
+    assert Path(result["json_path"]) == (drafts / f"{result['draft_id']}.json").resolve()
+    assert Path(result["markdown_path"]) == (drafts / f"{result['draft_id']}.md").resolve()
+    draft = DraftStore(drafts).read(result["draft_id"])
+    assert select_start_path(DraftStore(drafts), draft.draft_id).path == "DOCUMENTATION_NORMAL"
+
+
+def test_draft_skills_publish_one_shared_handoff_contract_and_review_links() -> None:
+    issue_skill = (ROOT / "simple_flow_deploy/assets/skills/simple-flow-issue-draft/SKILL.md").read_text(encoding="utf-8")
+    curation_skill = (ROOT / "simple_flow_deploy/assets/skills/simple-flow-documentation-curation/SKILL.md").read_text(encoding="utf-8")
+
+    for skill in (issue_skill, curation_skill):
+        for field in ("status", "draft_id", "work_type", "json_path", "markdown_path"):
+            assert f"`{field}`" in skill
+        assert "[Open draft for review]" in skill
+        assert "[Open draft JSON]" in skill

@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass, field, replace
 from enum import StrEnum
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 import subprocess
 import time
@@ -129,6 +129,7 @@ class PilotScenario:
     remote_expectation: RemoteExpectation | None = None
     script_expectations: tuple[ScriptExpectation, ...] = ()
     response_markers: tuple[str, ...] = ()
+    draft_work_type: str | None = None
 
 
 PILOT_SCENARIOS = (
@@ -170,6 +171,7 @@ PILOT_SCENARIOS = (
             ),
         ),
         script_expectations=(ScriptExpectation("create_draft.py"),),
+        draft_work_type="FEATURE",
     ),
     PilotScenario(
         "P03-U",
@@ -260,6 +262,7 @@ PILOT_SCENARIOS = (
             ),
         ),
         script_expectations=(ScriptExpectation("curate_documentation.py"),),
+        draft_work_type="DOCUMENTATION",
     ),
     PilotScenario(
         "P06",
@@ -1410,7 +1413,42 @@ def _helper_execution_verdict(scenario: PilotScenario, invocations: Iterable[dic
 
 
 def _response_contract_verdict(scenario: PilotScenario, final_text: str) -> Verdict:
-    return Verdict.PASS if all(marker.casefold() in final_text.casefold() for marker in scenario.response_markers) else Verdict.FAIL
+    markers_present = all(marker.casefold() in final_text.casefold() for marker in scenario.response_markers)
+    if not markers_present:
+        return Verdict.FAIL
+    if scenario.draft_work_type is None:
+        return Verdict.PASS
+    return Verdict.PASS if _has_draft_review_links(final_text) else Verdict.FAIL
+
+
+def _has_draft_review_links(final_text: str) -> bool:
+    """Require absolute Markdown links to both files of one Canonical Draft."""
+    targets = [
+        match.group("angle") or match.group("plain")
+        for match in re.finditer(
+            r"\[[^\]]+\]\(\s*(?:<(?P<angle>[^>]+)>|(?P<plain>[^)\s]+))\s*\)",
+            final_text,
+        )
+    ]
+    paths = [_absolute_draft_link_path(target) for target in targets]
+    markdown = [path for path in paths if path is not None and path.suffix.casefold() == ".md"]
+    json_paths = [path for path in paths if path is not None and path.suffix.casefold() == ".json"]
+    return any(
+        path.parent.name == "drafts"
+        and path.parent.parent.name == ".simple-flow"
+        and path.stem.startswith("DRAFT-")
+        and any(candidate.stem == path.stem for candidate in json_paths)
+        for path in markdown
+    )
+
+
+def _absolute_draft_link_path(target: str) -> Path | PureWindowsPath | None:
+    path: Path | PureWindowsPath
+    if re.match(r"^[A-Za-z]:[\\/]", target):
+        path = PureWindowsPath(target)
+    else:
+        path = Path(target)
+    return path if path.is_absolute() else None
 
 
 def _workflow_outcome_verdict(turn: SdkTurn, objective: Verdict) -> Verdict:

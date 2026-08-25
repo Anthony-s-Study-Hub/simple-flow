@@ -31,7 +31,19 @@ python .codex/skills/issue-draft/scripts/create_draft.py --input <draft-input.js
 ```
 
 3. Use only the script output as the Canonical Draft handoff.
-4. Report the returned `draft_id`, `json_path`, and `markdown_path`, then STOP.
+4. Use the returned shared Canonical Draft handoff fields: `status`,
+   `draft_id`, `work_type`, `json_path`, and `markdown_path`.
+5. Reply with the Draft ID and both clickable review links, replacing the
+   placeholders below with the returned absolute paths:
+
+```markdown
+Created `{{draft_id}}` (`{{work_type}}`).
+
+[Open draft for review](<{{markdown_path}}>)
+[Open draft JSON](<{{json_path}}>)
+```
+
+Then STOP.
 
 In this source repository, the deploy-time script source of truth is
 `simple_flow_deploy/skill_resources/issue-draft/scripts/create_draft.py`.

@@ -1,0 +1,16 @@
+{
+  "issue": 43,
+  "red": {
+    "commit": "ab8f52d5d1feab0b1dcc654336bf4f38a2e9c09c",
+    "command": "python -m pytest -q tests/test_documentation_curation.py tests/phase4/test_sdk_feasibility.py",
+    "exit_code": 2
+  },
+  "implementation": {
+    "commit": "c975474e0c8ed1171184b557793cc76a7b3b429c"
+  },
+  "green": {
+    "commit": "623c8c576972511bc8ff159522f0580b6e5c60ef",
+    "command": "python -m pytest -q tests/test_documentation_curation.py tests/phase4/test_sdk_feasibility.py",
+    "exit_code": 0
+  }
+}
