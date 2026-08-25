@@ -30,6 +30,7 @@ from simple_flow_test_harness.sdk_feasibility import (
     _prepare_fixture,
     _remaining_action_seconds,
     _executes_skill_script,
+    _has_draft_review_links,
     _remote_execution_preflight,
     _scenario_precondition,
     _sandbox_mode,
@@ -54,6 +55,11 @@ def test_pilot_prompts_are_developer_requests_without_harness_mechanics() -> Non
     }
     assert all(prompt_is_developer_realistic(scenario.prompt) for scenario in PILOT_SCENARIOS)
     assert not prompt_is_developer_realistic("Run python .codex/skills/issue-draft/scripts/create_draft.py")
+    assert {
+        scenario.scenario_id: scenario.draft_work_type
+        for scenario in PILOT_SCENARIOS
+        if scenario.draft_work_type is not None
+    } == {"P02": "FEATURE", "P05": "DOCUMENTATION"}
 
 
 def test_checkpoint_classes_make_confidence_scope_explicit() -> None:
@@ -234,7 +240,11 @@ def test_pr_finalize_cleanup_does_not_delete_a_pr_head_twice() -> None:
 def test_trial_cross_checks_trace_result_and_local_state() -> None:
     scenario = next(item for item in PILOT_SCENARIOS if item.scenario_id == "P02")
     turn = SdkTurn(
-        final_text="draft created",
+        final_text=(
+            "Created DRAFT-0001.\n"
+            "[Open draft for review](<C:/phase4/.simple-flow/drafts/DRAFT-0001.md>)\n"
+            "[Open draft JSON](<C:/phase4/.simple-flow/drafts/DRAFT-0001.json>)"
+        ),
         structured_result={
             "schema_version": 1,
             "session_id": "session-1",
@@ -270,6 +280,21 @@ def test_trial_cross_checks_trace_result_and_local_state() -> None:
         config=_config(),
     )
     assert changed_prompt.verdicts["prompt_fidelity"] == Verdict.FAIL
+
+
+def test_draft_review_link_contract_requires_one_absolute_markdown_json_pair() -> None:
+    assert _has_draft_review_links(
+        "[Open draft for review](<C:/phase4/.simple-flow/drafts/DRAFT-0001.md>)\n"
+        "[Open draft JSON](<C:/phase4/.simple-flow/drafts/DRAFT-0001.json>)"
+    )
+    assert not _has_draft_review_links(
+        "[Open draft for review](.simple-flow/drafts/DRAFT-0001.md)\n"
+        "[Open draft JSON](.simple-flow/drafts/DRAFT-0001.json)"
+    )
+    assert not _has_draft_review_links(
+        "[Open draft for review](<C:/phase4/.simple-flow/drafts/DRAFT-0001.md>)\n"
+        "[Open draft JSON](<C:/phase4/.simple-flow/drafts/DRAFT-0002.json>)"
+    )
 
 
 def test_report_retains_failed_command_evidence_and_redacts_tokens() -> None:
