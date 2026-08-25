@@ -1,0 +1,16 @@
+{
+  "issue": 46,
+  "red": {
+    "commit": "17b40f486daed6e5afad731c830939871b6a611e",
+    "command": "python -m pytest -q tests/test_phase2_policy.py tests/phase4/test_phase4_scenarios.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "87d4ef5c91f8fa724ac95628760777b90f53d1f1"
+  },
+  "green": {
+    "commit": "ba6eeef101bb3778536fdab983604a3c1a610c67",
+    "command": "python -m pytest -q tests/test_phase2_policy.py tests/phase4/test_phase4_scenarios.py",
+    "exit_code": 0
+  }
+}
