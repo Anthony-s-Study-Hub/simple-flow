@@ -1,22 +1,24 @@
 # Skill Toolkit Deployment
 
-Simple Flow is deployed as a reusable agent-skill toolkit. It does not install
-CI workflows, application code, tests, documentation, configuration files, or
-project-local workflow state.
+Simple Flow is deployed as a reusable agent-skill toolkit. It installs only
+agent skills and the `.simple_tool/` workflow runtime and state scaffold; it
+does not install target CI workflows, root application packages, tests,
+documentation, governance files, or root configuration.
 
 From a target project root:
 
 ```powershell
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow doctor .
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow install .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.2 simple-flow doctor .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.2 simple-flow install .
 ```
 
 The default install copies the six canonical skills to both supported
 project-local protocols:
 
 ```text
-.codex/skills/simple-flow-*/SKILL.md
-.claude/skills/simple-flow-*/SKILL.md
+.codex/skills/<short-skill-name>/SKILL.md
+.claude/skills/<short-skill-name>/SKILL.md
+.simple_tool/
 ```
 
 Use `--agent codex` or `--agent claude` to install only one protocol. `plan`
@@ -25,16 +27,17 @@ conflict instead of overwriting a locally customized skill.
 
 ## Included skills
 
-- `simple-flow-discussion`
-- `simple-flow-issue-draft`
-- `simple-flow-start-implement`
-- `simple-flow-review-triage`
-- `simple-flow-pr-finalize`
-- `simple-flow-documentation-curation`
+- `discussion`
+- `issue-draft`
+- `start-implement`
+- `review-triage`
+- `pr-finalize`
+- `documentation-curation`
 
-The skills carry their workflow in conversation context. In particular,
-Start-Implement infers one clearly approved proposal from the conversation,
-creates or reuses a GitHub Issue, and opens a PR against the repository's
-default branch. It asks for a choice only when the intended proposal is
-ambiguous. PR-Finalize merges only after explicit user acceptance and objective
-GitHub checks.
+Skill-local scripts are copied beside their `SKILL.md` files, and their shared
+runtime is copied under `.simple_tool/runtime/`, so they remain runnable after
+deployment. Issue-Draft writes Canonical Drafts beneath `.simple_tool/drafts/`;
+Start-Implement selects that durable handoff before creating or reusing a
+GitHub Issue and opening a PR against the repository default branch.
+PR-Finalize merges only after explicit user acceptance and objective GitHub
+checks.

@@ -21,14 +21,15 @@ Phase 3 adds a deterministic release installer for deploying the portable skill
 toolkit into another project. From a new project root:
 
 ```powershell
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow doctor .
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow install .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.2 simple-flow doctor .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.2 simple-flow install .
 ```
 
-The default release install copies only the six skill `SKILL.md` files to both
-`.codex/skills/` and `.claude/skills/`; it does not add workflow state, CI,
-documentation, or source code to the project. Use `--agent codex` or
-`--agent claude` for a single protocol.
+The default release install copies the six short-named skills and their local
+helper scripts to both `.codex/skills/` and `.claude/skills/`. It also creates
+the self-contained `.simple_tool/` runtime and durable workflow-state scaffold;
+it does not add target CI, documentation, governance, tests, or root source
+packages. Use `--agent codex` or `--agent claude` for a single protocol.
 
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated
@@ -104,5 +105,5 @@ smoke passes. See
 impact.
 
 Phase 5 adds the Documentation-Curation skill. The skill turns project history
-into a reviewable documentation-change proposal in conversation without adding
-project-local state.
+into a reviewable DOCUMENTATION Canonical Draft under `.simple_tool/`, which is
+the installed workflow state owned by the portable toolkit.

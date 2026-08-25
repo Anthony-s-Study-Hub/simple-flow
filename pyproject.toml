@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simple-flow"
-version = "0.2.1"
+version = "0.2.2"
 description = "Deterministic GitHub and CI gates for the Simple Flow workflow study."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,4 +33,5 @@ exclude = ["skills*", "tests*", "scripts*"]
 [tool.setuptools.package-data]
 simple_flow_deploy = [
   "assets/skills/*/SKILL.md",
+  "skill_resources/*/scripts/*.py",
 ]

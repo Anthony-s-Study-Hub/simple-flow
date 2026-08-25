@@ -1,6 +1,6 @@
 ---
 name: simple-flow-documentation-curation
-description: Turn project history into a reviewable documentation-change proposal without modifying the project.
+description: Turn project history into a validated file-backed documentation Canonical Draft without modifying project content.
 ---
 
 # Simple Flow Documentation-Curation
@@ -12,16 +12,18 @@ On Windows, use PowerShell-compatible commands when collecting local history.
 
 ## Outcome
 
-Analyze the supplied or locally available history and produce one
-documentation-ready proposal in the conversation. Identify durable decisions,
+Analyze the supplied or locally available history and run this skill's bundled
+`scripts/curate_documentation.py`. It records its deterministic curation output
+under `.simple_tool/documentation-curation/` and creates a DOCUMENTATION
+Canonical Draft in `.simple_tool/drafts/`. Identify durable decisions,
 conflicts, superseded guidance, affected documents, and proposed edits. Mark
 uncertain evidence as an open question rather than inventing a conclusion.
 
-The proposal can be handed to Issue-Draft or implemented directly when the
-user clearly approves it. Do not persist curation state in the target project.
+Report the Draft ID and stop. A later Start-Implement invocation uses that
+file-backed draft.
 
 ## Boundaries
 
 - Do not modify documentation, Issues, branches, or pull requests.
-- Do not create a hidden cursor, baseline, draft, or other project artifact.
+- Do not create an Issue, branch, pull request, or project-content change.
 - Do not merge.

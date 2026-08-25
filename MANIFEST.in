@@ -1,1 +1,2 @@
 recursive-include simple_flow_deploy/assets/skills SKILL.md
+recursive-include simple_flow_deploy/skill_resources *.py

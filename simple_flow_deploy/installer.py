@@ -10,17 +10,23 @@ import sys
 import tomllib
 
 
-SKILLS = (
-    "simple-flow-discussion",
-    "simple-flow-documentation-curation",
-    "simple-flow-issue-draft",
-    "simple-flow-start-implement",
-    "simple-flow-review-triage",
-    "simple-flow-pr-finalize",
-)
+SKILL_MAP = {
+    "simple-flow-discussion": "discussion",
+    "simple-flow-documentation-curation": "documentation-curation",
+    "simple-flow-issue-draft": "issue-draft",
+    "simple-flow-start-implement": "start-implement",
+    "simple-flow-review-triage": "review-triage",
+    "simple-flow-pr-finalize": "pr-finalize",
+}
 AGENT_ROOTS = {"codex": ".codex/skills", "claude": ".claude/skills"}
 INSTALL_TARGETS = {"both", *AGENT_ROOTS}
+RUNTIME_PACKAGES = (
+    "simple_flow_agent",
+    "simple_flow_gates",
+    "simple_flow_documentation_curation",
+)
 PACKAGE_NAME = "simple-flow"
+TOOL_ROOT = ".simple_tool"
 
 
 @dataclass
@@ -86,7 +92,7 @@ def install(
     agent: str = "both",
     dry_run: bool = False,
 ) -> InstallReport:
-    del source_root  # Deployment intentionally uses only packaged skill assets.
+    del source_root  # Deployment always reads the installed public package assets.
     destination = Path(target).resolve()
     _validate_agent(agent)
     desired = _desired_files(agent)
@@ -129,9 +135,9 @@ def doctor(
             name="install-conflicts",
             status="fail" if conflicts else "ok",
             message=(
-                "Conflicting skill files: " + ", ".join(item["path"] for item in conflicts)
+                "Conflicting toolkit files: " + ", ".join(item["path"] for item in conflicts)
                 if conflicts
-                else "No conflicting skill files detected."
+                else "No conflicting toolkit files detected."
             ),
         )
     )
@@ -151,16 +157,72 @@ def package_version(source_root: str | Path | None = None) -> str:
 
 
 def _desired_files(agent: str) -> dict[str, str]:
-    files: dict[str, str] = {}
+    files = _state_files()
     selected_agents = AGENT_ROOTS if agent == "both" else {agent: AGENT_ROOTS[agent]}
     for root in selected_agents.values():
-        for skill in SKILLS:
-            files[f"{root}/{skill}/SKILL.md"] = _asset_text(f"skills/{skill}/SKILL.md")
+        for source_skill, target_skill in SKILL_MAP.items():
+            skill_text = _asset_text(f"skills/{source_skill}/SKILL.md")
+            files[f"{root}/{target_skill}/SKILL.md"] = skill_text.replace(
+                f"name: {source_skill}", f"name: {target_skill}"
+            )
+            for relative, text in _resource_text_files(target_skill).items():
+                files[f"{root}/{target_skill}/{relative}"] = text
+
+    for package in RUNTIME_PACKAGES:
+        for relative, text in _package_text_files(package).items():
+            files[f"{TOOL_ROOT}/runtime/{package}/{relative}"] = text
     return files
+
+
+def _state_files() -> dict[str, str]:
+    return {
+        f"{TOOL_ROOT}/status.json": json.dumps(
+            {
+                "schema": "simple-tool-status.v1",
+                "active_draft": None,
+                "active_issue": None,
+                "active_pull_request": None,
+            },
+            indent=2,
+        )
+        + "\n",
+        f"{TOOL_ROOT}/roadmap-targets.txt": "# Optional project roadmap target identifiers.\n",
+        f"{TOOL_ROOT}/.gitignore": "tmp/\n*.lock\n",
+        f"{TOOL_ROOT}/drafts/.gitkeep": "",
+        f"{TOOL_ROOT}/handoffs/.gitkeep": "",
+        f"{TOOL_ROOT}/triage/.gitkeep": "",
+        f"{TOOL_ROOT}/evidence/.gitkeep": "",
+        f"{TOOL_ROOT}/tmp/.gitkeep": "",
+    }
 
 
 def _asset_text(relative: str) -> str:
     return (_package_root() / "assets" / relative).read_text(encoding="utf-8")
+
+
+def _resource_text_files(skill: str) -> dict[str, str]:
+    resource_root = _package_root() / "skill_resources" / skill
+    # Discussion has no deterministic helper script, so it intentionally has
+    # no resource directory.  Every other skill is validated by
+    # _check_packaged_assets().
+    return _traversable_text_files(resource_root) if resource_root.is_dir() else {}
+
+
+def _package_text_files(package: str) -> dict[str, str]:
+    return _traversable_text_files(resources.files(package))
+
+
+def _traversable_text_files(root, prefix: str = "") -> dict[str, str]:
+    files: dict[str, str] = {}
+    for child in root.iterdir():
+        relative = f"{prefix}{child.name}"
+        if child.is_dir():
+            if child.name == "__pycache__":
+                continue
+            files.update(_traversable_text_files(child, f"{relative}/"))
+        elif child.is_file() and child.suffix == ".py":
+            files[relative] = child.read_text(encoding="utf-8")
+    return files
 
 
 def _package_root():
@@ -213,11 +275,15 @@ def _check_target_writable(destination: Path) -> Precheck:
 
 
 def _check_packaged_assets() -> Precheck:
-    missing = [
-        f"skills/{skill}/SKILL.md"
-        for skill in SKILLS
-        if not (_package_root() / "assets" / "skills" / skill / "SKILL.md").is_file()
-    ]
+    missing = []
+    for source_skill, target_skill in SKILL_MAP.items():
+        skill_file = _package_root() / "assets" / "skills" / source_skill / "SKILL.md"
+        if not skill_file.is_file():
+            missing.append(str(skill_file))
+        if not _resource_text_files(target_skill):
+            # Discussion intentionally has no deterministic helper.
+            if target_skill != "discussion":
+                missing.append(f"skill_resources/{target_skill}/scripts")
     if missing:
-        return Precheck("packaged-assets", "fail", "Missing skill assets: " + ", ".join(missing))
-    return Precheck("packaged-assets", "ok", "All packaged skill assets are available.")
+        return Precheck("packaged-assets", "fail", "Missing toolkit assets: " + ", ".join(missing))
+    return Precheck("packaged-assets", "ok", "All skill packages and runtime assets are available.")

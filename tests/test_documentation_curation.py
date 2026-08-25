@@ -394,11 +394,11 @@ def test_issue_draft_documentation_result_uses_the_shared_draft_handoff_contract
     assert select_start_path(DraftStore(drafts), draft.draft_id).path == "DOCUMENTATION_NORMAL"
 
 
-def test_draft_skills_keep_the_handoff_in_conversation() -> None:
+def test_draft_skills_use_the_file_backed_handoff_protocol() -> None:
     issue_skill = (ROOT / "simple_flow_deploy/assets/skills/simple-flow-issue-draft/SKILL.md").read_text(encoding="utf-8")
     curation_skill = (ROOT / "simple_flow_deploy/assets/skills/simple-flow-documentation-curation/SKILL.md").read_text(encoding="utf-8")
 
     for skill in (issue_skill, curation_skill):
-        assert "conversation" in skill
         assert ".simple-flow/" not in skill
-        assert "scripts/" not in skill
+        assert ".simple_tool/" in skill
+        assert "scripts/" in skill
