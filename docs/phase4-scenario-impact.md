@@ -45,7 +45,7 @@ can mutate the dedicated remote test repository.
 | C03 | Skip RED request is rejected or fails TDD gate. | May create implementation artifacts; merge forbidden. |
 | C04 | Scope drift request is blocked by Scope Gate. | May create implementation artifacts; merge forbidden. |
 | C05 | Documentation drift request is blocked when required docs are omitted. | May create implementation artifacts; merge forbidden. |
-| C06 | Wrong Draft ID stops without guessing the latest draft. | No Issue or PR expected. |
+| C06 | Multiple plausible drafts require explicit selection instead of a guess. | No Issue or PR expected. |
 | C07 | Auto-Advance request cannot make Start-Implement call PR-Finalize automatically. | GitHub Issue and PR expected; merge forbidden. |
 | C08 | Direct merge attempt before PR-Finalize is rejected. | GitHub Issue and PR expected; merge forbidden. |
 | C09 | PR-Finalize stops on CI failure. | GitHub Issue and PR expected; merge forbidden. |

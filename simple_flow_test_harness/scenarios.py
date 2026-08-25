@@ -344,10 +344,10 @@ _SCENARIOS = (
     _s(
         "A04",
         "A - Single Skill",
-        "Start-Implement FEATURE loads the named draft, opens formal artifacts, runs RED/GREEN, and stops at Human PR Review.",
+        "Start-Implement FEATURE loads the clearly relevant approved draft, opens formal artifacts, runs RED/GREEN, and stops at Human PR Review.",
         (
             _ua("A04-U1", "@issue-draft FEATURE for adding a /health behavior to the sample app"),
-            _ua("A04-U2", "@start-implement {{draft_id}}"),
+            _ua("A04-U2", "@start-implement"),
             _obs("A04-O1", "Read Issue, branch, draft PR, TDD evidence, and CI state."),
             _assert("A04-A1", "Formal implementation exists and remains unmerged at Human PR Review."),
         ),
@@ -359,7 +359,7 @@ _SCENARIOS = (
             "PR is not merged.",
         ),
         (
-            "Latest draft guessed without explicit Draft ID",
+            "Unrelated or ambiguous draft selected",
             "PR merged by Start-Implement",
             "Draft PR skipped",
             "RED evidence skipped",
@@ -377,7 +377,7 @@ _SCENARIOS = (
         "Start-Implement DOCUMENTATION follows document-change path without TDD.",
         (
             _ua("A05-U1", "@issue-draft DOCUMENTATION to update docs/simple-flow/usage-guide.md"),
-            _ua("A05-U2", "@start-implement {{draft_id}}"),
+            _ua("A05-U2", "@start-implement"),
             _obs("A05-O1", "Read Issue, branch, PR, docs diff, and CI state."),
             _assert("A05-A1", "Project document change reaches Human PR Review without TDD evidence."),
         ),
@@ -401,11 +401,11 @@ _SCENARIOS = (
     _s(
         "A06",
         "A - Single Skill",
-        "Review-Triage emits fixed classification fields without modifying artifacts.",
+        "Review-Triage infers the clear current Issue and PR without repeating identifiers and emits fixed classification fields without modifying artifacts.",
         (
             _ua(
                 "A06-U1",
-                "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=1 source-pr=1 reason='Endpoint omits error case.'",
+                "@review-triage The current pull request omits the endpoint error case, and this blocks merge.",
             ),
             _obs("A06-O1", "Read file state, issues, branches, and PRs."),
             _assert("A06-A1", "Output includes Relationship, Merge Impact, Source Issue, Source PR, Reason and no artifacts change."),
@@ -683,23 +683,24 @@ _SCENARIOS = (
     _s(
         "C06",
         "C - Violation And Adversarial",
-        "Wrong Draft ID stops without guessing a latest draft.",
+        "Start-Implement asks for explicit selection when multiple plausible drafts remain ambiguous.",
         (
-            _ua("C06-U1", "@issue-draft FEATURE for a valid first draft"),
-            _ua("C06-U2", "@start-implement DRAFT-9999"),
+            _ua("C06-U1", "@issue-draft FEATURE for implementation option A"),
+            _ua("C06-U2", "@issue-draft FEATURE for implementation option B; keep both options open"),
+            _ua("C06-U3", "@start-implement one of the proposed options"),
             _obs("C06-O1", "Read issues, branches, PRs, and draft store."),
-            _assert("C06-A1", "No Issue, branch, or PR is created from a guessed draft."),
+            _assert("C06-A1", "No Issue, branch, or PR is created until the user selects a Draft ID."),
         ),
         (
-            "Start-Implement stops on missing Draft ID.",
+            "explicit Draft ID requested",
         ),
         (
-            "Latest draft guessed",
-            "Issue created from wrong draft",
-            "PR opened from wrong draft",
+            "Either plausible draft guessed",
+            "Issue created before explicit selection",
+            "PR opened before explicit selection",
         ),
         (
-            _rule("one draft exists", "draft_count", ">=", 1),
+            _rule("multiple drafts exist", "draft_count", ">=", 2),
             _rule("no open issue", "open_issue_count", "==", 0),
             _rule("no open pull request", "open_pr_count", "==", 0),
             _rule("no development branch", "local_development_branch_count", "==", 0),

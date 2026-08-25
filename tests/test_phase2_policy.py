@@ -90,12 +90,16 @@ def test_skill_exclusive_permissions_have_no_merge_or_draft_overlap() -> None:
 
 
 def test_context_aware_skills_avoid_redundant_identifier_prompts() -> None:
-    start_implement = (
-        SKILLS_ROOT / "simple-flow-start-implement" / "SKILL.md"
-    ).read_text(encoding="utf-8")
-    review_triage = (
-        SKILLS_ROOT / "simple-flow-review-triage" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    start_implement = " ".join(
+        (SKILLS_ROOT / "simple-flow-start-implement" / "SKILL.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    review_triage = " ".join(
+        (SKILLS_ROOT / "simple-flow-review-triage" / "SKILL.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
 
     assert "most recent clearly relevant Canonical Draft" in start_implement
     assert "multiple plausible drafts" in start_implement
