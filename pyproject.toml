@@ -32,15 +32,5 @@ exclude = ["skills*", "tests*", "scripts*"]
 
 [tool.setuptools.package-data]
 simple_flow_deploy = [
-  "assets/AGENTS.md",
-  "assets/.github/ISSUE_TEMPLATE/*.md",
-  "assets/.github/workflows/*.yml",
-  "assets/.github/pull_request_template.md",
-  "assets/.simple-flow/roadmap-targets.txt",
-  "assets/docs/deployment/*.md",
   "assets/skills/*/SKILL.md",
-  "assets/scripts/*.py",
-  "assets/scripts/*.ps1",
-  "baseline_templates/*.md",
-  "skill_resources/*/scripts/*.py",
 ]

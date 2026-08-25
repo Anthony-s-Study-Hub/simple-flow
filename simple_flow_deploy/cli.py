@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from simple_flow_deploy.installer import (
-    default_release_source,
+    INSTALL_TARGETS,
     doctor,
     install,
     package_version,
@@ -12,6 +12,7 @@ from simple_flow_deploy.installer import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RELEASE_REPOSITORY = "https://github.com/Anthony-s-Study-Hub/simple-flow.git"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,7 +33,6 @@ def main(argv: list[str] | None = None) -> int:
     install_parser = subparsers.add_parser("install", help="Install Simple Flow into a project.")
     _add_target_argument(install_parser)
     _add_install_options(install_parser)
-    install_parser.add_argument("--clean-target", action="store_true")
     install_parser.add_argument("--dry-run", action="store_true")
     install_parser.set_defaults(func=_run_install)
 
@@ -56,10 +56,12 @@ def _add_target_argument(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_install_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--project-name", default="new-project")
-    parser.add_argument("--test-command", default="python -m pytest")
-    parser.add_argument("--scope", action="append", default=[])
-    parser.add_argument("--documentation", action="append", default=[])
+    parser.add_argument(
+        "--agent",
+        choices=sorted(INSTALL_TARGETS),
+        default="both",
+        help="Install Codex skills, Claude skills, or both (default).",
+    )
     parser.add_argument("--json", action="store_true")
 
 
@@ -67,11 +69,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
     report = doctor(
         source_root=ROOT,
         target=args.target,
-        project_name=args.project_name,
-        test_command=args.test_command,
-        scope=args.scope or ["src/"],
-        documentation=args.documentation or ["docs/"],
-        mode="thin",
+        agent=args.agent,
     )
     if args.json:
         print(report.to_json())
@@ -84,12 +82,7 @@ def _run_install(args: argparse.Namespace) -> int:
     report = install(
         source_root=ROOT,
         target=args.target,
-        project_name=args.project_name,
-        test_command=args.test_command,
-        scope=args.scope or ["src/"],
-        documentation=args.documentation or ["docs/"],
-        clean_target=getattr(args, "clean_target", False),
-        mode="thin",
+        agent=args.agent,
         dry_run=getattr(args, "dry_run", False),
     )
     if args.json:
@@ -107,9 +100,7 @@ def _run_plan(args: argparse.Namespace) -> int:
 def _print_doctor(report) -> None:
     print(f"Simple Flow doctor: {report.status}")
     print(f"Target: {report.target}")
-    print(f"Mode: {report.mode}")
-    if report.release_source:
-        print(f"Release source: {report.release_source}")
+    print(f"Agent target: {report.agent}")
     for check in report.checks:
         print(f"- {check.name}: {check.status} - {check.message}")
 
@@ -118,9 +109,7 @@ def _print_install(report, *, dry_run: bool) -> None:
     action = "Plan" if dry_run else "Install"
     print(f"Simple Flow {action.lower()}: {report.status}")
     print(f"Target: {report.target}")
-    print(f"Mode: {report.mode}")
-    if report.release_source:
-        print(f"Release source: {report.release_source}")
+    print(f"Agent target: {report.agent}")
     print(f"Created/changed: {len(report.created)}")
     print(f"Skipped: {len(report.skipped)}")
     if report.conflicts:
@@ -131,11 +120,7 @@ def _print_install(report, *, dry_run: bool) -> None:
 
 def current_install_command(version: str | None = None) -> str:
     resolved_version = version or package_version(ROOT)
-    return (
-        "uvx --from "
-        f"{default_release_source(resolved_version)} "
-        "simple-flow install ."
-    )
+    return f"uvx --from git+{RELEASE_REPOSITORY}@v{resolved_version} simple-flow install ."
 
 
 if __name__ == "__main__":
