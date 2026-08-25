@@ -394,12 +394,11 @@ def test_issue_draft_documentation_result_uses_the_shared_draft_handoff_contract
     assert select_start_path(DraftStore(drafts), draft.draft_id).path == "DOCUMENTATION_NORMAL"
 
 
-def test_draft_skills_publish_one_shared_handoff_contract_and_review_links() -> None:
+def test_draft_skills_keep_the_handoff_in_conversation() -> None:
     issue_skill = (ROOT / "simple_flow_deploy/assets/skills/simple-flow-issue-draft/SKILL.md").read_text(encoding="utf-8")
     curation_skill = (ROOT / "simple_flow_deploy/assets/skills/simple-flow-documentation-curation/SKILL.md").read_text(encoding="utf-8")
 
     for skill in (issue_skill, curation_skill):
-        for field in ("status", "draft_id", "work_type", "json_path", "markdown_path"):
-            assert f"`{field}`" in skill
-        assert "[Open draft for review]" in skill
-        assert "[Open draft JSON]" in skill
+        assert "conversation" in skill
+        assert ".simple-flow/" not in skill
+        assert "scripts/" not in skill
