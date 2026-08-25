@@ -18,7 +18,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Select the deterministic Simple Flow Start-Implement path."
     )
     parser.add_argument("--draft-id", required=True)
-    parser.add_argument("--drafts-dir", default=".simple-flow/drafts")
+    parser.add_argument("--drafts-dir", default=".simple_tool/drafts")
     parser.add_argument(
         "--triage-file",
         action="append",
@@ -40,7 +40,12 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _add_repo_root_to_path() -> None:
-    for parent in Path(__file__).resolve().parents:
+    roots = [Path.cwd().resolve(), *Path.cwd().resolve().parents]
+    for parent in [*roots, *Path(__file__).resolve().parents]:
+        runtime = parent / ".simple_tool" / "runtime"
+        if (runtime / "simple_flow_agent").is_dir():
+            sys.path.insert(0, str(runtime))
+            return
         if (parent / "simple_flow_agent").is_dir():
             sys.path.insert(0, str(parent))
             return

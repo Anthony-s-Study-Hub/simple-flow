@@ -23,8 +23,8 @@ def main() -> int:
     )
     parser.add_argument("--history-package", required=True)
     parser.add_argument("--analysis", required=True)
-    parser.add_argument("--drafts-dir", default=".simple-flow/drafts")
-    parser.add_argument("--output-dir", default=".simple-flow/documentation-curation")
+    parser.add_argument("--drafts-dir", default=".simple_tool/drafts")
+    parser.add_argument("--output-dir", default=".simple_tool/documentation-curation")
     args = parser.parse_args()
 
     history_data = json.loads(Path(args.history_package).read_text(encoding="utf-8"))
@@ -101,7 +101,12 @@ def _validate_references(analysis: CurationAnalysis, resolver: ReferenceResolver
 
 
 def _add_repo_root_to_path() -> None:
-    for parent in Path(__file__).resolve().parents:
+    roots = [Path.cwd().resolve(), *Path.cwd().resolve().parents]
+    for parent in [*roots, *Path(__file__).resolve().parents]:
+        runtime = parent / ".simple_tool" / "runtime"
+        if (runtime / "simple_flow_agent").is_dir():
+            sys.path.insert(0, str(runtime))
+            return
         if (parent / "simple_flow_agent").is_dir():
             sys.path.insert(0, str(parent))
             return

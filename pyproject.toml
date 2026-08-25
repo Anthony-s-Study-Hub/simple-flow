@@ -33,4 +33,5 @@ exclude = ["skills*", "tests*", "scripts*"]
 [tool.setuptools.package-data]
 simple_flow_deploy = [
   "assets/skills/*/SKILL.md",
+  "skill_resources/*/scripts/*.py",
 ]

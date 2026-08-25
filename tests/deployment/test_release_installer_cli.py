@@ -9,12 +9,12 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = {
-    "simple-flow-discussion",
-    "simple-flow-documentation-curation",
-    "simple-flow-issue-draft",
-    "simple-flow-start-implement",
-    "simple-flow-review-triage",
-    "simple-flow-pr-finalize",
+    "discussion",
+    "documentation-curation",
+    "issue-draft",
+    "start-implement",
+    "review-triage",
+    "pr-finalize",
 }
 
 
@@ -46,7 +46,7 @@ def test_release_cli_default_install_uses_dual_skill_layout_only(tmp_path: Path)
     report = json.loads(completed.stdout)
     assert report["status"] == "success"
     assert report["agent"] == "both"
-    assert len(report["created"]) == 12
+    assert (target / ".simple_tool" / "status.json").exists()
     for root in (".codex/skills", ".claude/skills"):
         assert {path.parent.name for path in (target / root).glob("*/SKILL.md")} == SKILLS
     assert not (target / ".simple-flow").exists()
@@ -62,7 +62,7 @@ def test_release_cli_can_install_one_agent_protocol(tmp_path: Path) -> None:
     completed = _run_cli("install", str(target), "--agent", "claude", "--json")
 
     assert completed.returncode == 0, completed.stderr
-    assert (target / ".claude" / "skills" / "simple-flow-start-implement" / "SKILL.md").exists()
+    assert (target / ".claude" / "skills" / "start-implement" / "SKILL.md").exists()
     assert not (target / ".codex").exists()
 
 

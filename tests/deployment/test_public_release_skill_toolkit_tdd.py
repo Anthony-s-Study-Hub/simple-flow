@@ -16,6 +16,6 @@ def test_public_release_install_writes_only_codex_and_claude_skill_protocols(
     report = install(source_root=ROOT, target=target)
 
     assert report.status == "success"
-    assert {path.name for path in target.iterdir()} == {".codex", ".claude"}
+    assert {path.name for path in target.iterdir()} == {".codex", ".claude", ".simple_tool"}
     assert len(list(target.glob(".codex/skills/*/SKILL.md"))) == 6
     assert len(list(target.glob(".claude/skills/*/SKILL.md"))) == 6

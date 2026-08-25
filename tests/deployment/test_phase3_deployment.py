@@ -7,13 +7,13 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SKILLS = {
-    "simple-flow-discussion",
-    "simple-flow-documentation-curation",
-    "simple-flow-issue-draft",
-    "simple-flow-start-implement",
-    "simple-flow-review-triage",
-    "simple-flow-pr-finalize",
+SKILL_MAP = {
+    "simple-flow-discussion": "discussion",
+    "simple-flow-documentation-curation": "documentation-curation",
+    "simple-flow-issue-draft": "issue-draft",
+    "simple-flow-start-implement": "start-implement",
+    "simple-flow-review-triage": "review-triage",
+    "simple-flow-pr-finalize": "pr-finalize",
 }
 
 
@@ -24,16 +24,18 @@ def test_public_release_cli_contract_deploys_only_standard_codex_and_claude_skil
 
     assert report["status"] == "success"
     assert report["agent"] == "both"
-    assert len(report["created"]) == 12
+    assert (target / ".simple_tool" / "status.json").exists()
     for root in (".codex/skills", ".claude/skills"):
         deployed = {path.parent.name for path in (target / root).glob("*/SKILL.md")}
-        assert deployed == SKILLS
-        for skill in deployed:
+        assert deployed == set(SKILL_MAP.values())
+        for source_skill, skill in SKILL_MAP.items():
             installed = target / root / skill / "SKILL.md"
-            source = ROOT / "simple_flow_deploy" / "assets" / "skills" / skill / "SKILL.md"
-            assert installed.read_text(encoding="utf-8") == source.read_text(encoding="utf-8")
+            source = ROOT / "simple_flow_deploy" / "assets" / "skills" / source_skill / "SKILL.md"
+            assert installed.read_text(encoding="utf-8") == source.read_text(encoding="utf-8").replace(
+                f"name: {source_skill}", f"name: {skill}"
+            )
 
-    assert {path.name for path in target.iterdir()} == {".codex", ".claude"}
+    assert {path.name for path in target.iterdir()} == {".codex", ".claude", ".simple_tool"}
 
 
 def test_public_release_cli_contract_is_idempotent_and_refuses_conflicting_skill(tmp_path: Path) -> None:
@@ -43,23 +45,22 @@ def test_public_release_cli_contract_is_idempotent_and_refuses_conflicting_skill
     repeated = _install(target)
     assert repeated["status"] == "success"
     assert repeated["created"] == []
-    assert len(repeated["skipped"]) == 12
+    assert repeated["skipped"]
 
-    skill = target / ".codex" / "skills" / "simple-flow-discussion" / "SKILL.md"
+    skill = target / ".codex" / "skills" / "discussion" / "SKILL.md"
     skill.write_text("local skill override\n", encoding="utf-8")
     conflict = _install(target, check=False)
     assert conflict["status"] == "conflict"
     assert conflict["conflicts"] == [
-        {"path": ".codex/skills/simple-flow-discussion/SKILL.md", "reason": "exists with different content"}
+        {"path": ".codex/skills/discussion/SKILL.md", "reason": "exists with different content"}
     ]
 
 
-def test_start_implement_is_conversation_first_and_uses_issue_pr_main_route() -> None:
+def test_start_implement_uses_a_file_backed_draft_and_the_issue_pr_main_route() -> None:
     text = (ROOT / "simple_flow_deploy" / "assets" / "skills" / "simple-flow-start-implement" / "SKILL.md").read_text(encoding="utf-8")
 
-    assert "Infer the intended proposal from the current conversation" in text
-    assert "only if the conversation contains multiple plausible" in text
-    assert "asking for a legacy Draft ID" in text
+    assert ".simple_tool/drafts/" in text
+    assert "scripts/select_path.py" in text
     assert "Create or reuse the matching GitHub Issue" in text
     assert "Open a pull request against the default branch" in text
     assert "Closes #<issue-number>" in text

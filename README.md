@@ -104,5 +104,5 @@ smoke passes. See
 impact.
 
 Phase 5 adds the Documentation-Curation skill. The skill turns project history
-into a reviewable documentation-change proposal in conversation without adding
-project-local state.
+into a reviewable DOCUMENTATION Canonical Draft under `.simple_tool/`, which is
+the installed workflow state owned by the portable toolkit.
