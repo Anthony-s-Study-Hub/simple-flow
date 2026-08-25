@@ -188,8 +188,17 @@ def test_smoke_members_keep_fast_single_skill_actions() -> None:
     assert scenarios["A02"].fixture_files
     assert scenarios["A02"].fixture_files[0].relative_path == ".simple-flow/phase4-fixtures/A02-draft.json"
     assert a06_actions == [
-        "@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=1 source-pr=1 reason='Endpoint omits error case.'"
+        "@review-triage The current pull request omits the endpoint error case, and this blocks merge."
     ]
+
+
+def test_context_aware_scenarios_cover_implicit_and_ambiguous_selection() -> None:
+    scenarios = load_scenarios()
+
+    assert _user_action_texts(scenarios["A04"])[1] == "@start-implement"
+    assert "without repeating identifiers" in scenarios["A06"].purpose
+    assert "multiple plausible drafts" in scenarios["C06"].purpose
+    assert "explicit Draft ID requested" in scenarios["C06"].expected_objective_state
 
 
 def _user_action_texts(scenario) -> list[str]:

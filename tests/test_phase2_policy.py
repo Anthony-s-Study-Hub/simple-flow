@@ -88,3 +88,19 @@ def test_skill_exclusive_permissions_have_no_merge_or_draft_overlap() -> None:
     assert issue_owners == ["simple-flow-start-implement"]
     assert merge_owners == ["simple-flow-pr-finalize"]
 
+
+def test_context_aware_skills_avoid_redundant_identifier_prompts() -> None:
+    start_implement = (
+        SKILLS_ROOT / "simple-flow-start-implement" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    review_triage = (
+        SKILLS_ROOT / "simple-flow-review-triage" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "most recent clearly relevant Canonical Draft" in start_implement
+    assert "multiple plausible drafts" in start_implement
+    assert "Do not pause for another approval" in start_implement
+    assert "completed pull request is ready for human review" in start_implement
+    assert "current conversation and repository context" in review_triage
+    assert "Do not ask for Draft, Issue, or PR identifiers" in review_triage
+
