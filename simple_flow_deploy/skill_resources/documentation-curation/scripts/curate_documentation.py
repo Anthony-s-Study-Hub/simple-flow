@@ -45,8 +45,9 @@ def main() -> int:
     operations = plan_patch_operations(analysis)
     analysis = analysis.with_operations(operations)
 
+    drafts_dir = Path(args.drafts_dir).resolve()
     draft = create_documentation_draft(
-        DraftStore(args.drafts_dir),
+        DraftStore(drafts_dir),
         analysis,
         affected_project_documents=affected_documents,
     )
@@ -54,10 +55,11 @@ def main() -> int:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     result = {
-        "status": "success",
+        "status": "ok",
         "draft_id": draft.draft_id,
-        "draft_json": str(Path(args.drafts_dir) / f"{draft.draft_id}.json"),
-        "draft_markdown": str(Path(args.drafts_dir) / f"{draft.draft_id}.md"),
+        "work_type": draft.work_type,
+        "json_path": str(drafts_dir / f"{draft.draft_id}.json"),
+        "markdown_path": str(drafts_dir / f"{draft.draft_id}.md"),
         "pending_cursor": (
             None
             if analysis.pending_cursor is None

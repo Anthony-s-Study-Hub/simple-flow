@@ -24,11 +24,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         input_path = Path(args.input)
         data = json.loads(input_path.read_text(encoding="utf-8"))
+        drafts_dir = Path(args.drafts_dir).resolve()
         roadmap_path = Path(args.roadmap_targets)
         roadmap_targets = (
             load_roadmap_targets(str(roadmap_path)) if roadmap_path.exists() else set()
         )
-        store = DraftStore(args.drafts_dir, roadmap_targets=roadmap_targets)
+        store = DraftStore(drafts_dir, roadmap_targets=roadmap_targets)
         work_type = _work_type(data)
 
         if work_type == WorkType.FEATURE:
@@ -72,7 +73,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "error", "error": str(exc)}, indent=2), file=sys.stderr)
         return 1
 
-    drafts_dir = Path(args.drafts_dir)
     print(
         json.dumps(
             {
