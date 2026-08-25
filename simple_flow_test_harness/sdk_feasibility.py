@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass, field, replace
 from enum import StrEnum
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 import subprocess
 import time
@@ -1430,9 +1430,9 @@ def _has_draft_review_links(final_text: str) -> bool:
             final_text,
         )
     ]
-    paths = [Path(target) for target in targets]
-    markdown = [path for path in paths if path.is_absolute() and path.suffix.casefold() == ".md"]
-    json_paths = [path for path in paths if path.is_absolute() and path.suffix.casefold() == ".json"]
+    paths = [_absolute_draft_link_path(target) for target in targets]
+    markdown = [path for path in paths if path is not None and path.suffix.casefold() == ".md"]
+    json_paths = [path for path in paths if path is not None and path.suffix.casefold() == ".json"]
     return any(
         path.parent.name == "drafts"
         and path.parent.parent.name == ".simple-flow"
@@ -1440,6 +1440,15 @@ def _has_draft_review_links(final_text: str) -> bool:
         and any(candidate.stem == path.stem for candidate in json_paths)
         for path in markdown
     )
+
+
+def _absolute_draft_link_path(target: str) -> Path | PureWindowsPath | None:
+    path: Path | PureWindowsPath
+    if re.match(r"^[A-Za-z]:[\\/]", target):
+        path = PureWindowsPath(target)
+    else:
+        path = Path(target)
+    return path if path.is_absolute() else None
 
 
 def _workflow_outcome_verdict(turn: SdkTurn, objective: Verdict) -> Verdict:
