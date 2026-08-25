@@ -2,6 +2,10 @@
 
 Each project supplies only project-specific configuration.
 
+Install Simple Flow only through its versioned public GitHub repository
+package. The installer does not accept vendored, local-checkout, ignored
+`build/`, or alternate-repository sources.
+
 Required inputs:
 
 - Test command.
@@ -18,8 +22,8 @@ edited per project. If a project needs different core workflow logic, treat that
 as a portability defect in the deployment package.
 
 Installed skills must keep their bundled `scripts/` directories. Those scripts
-are the agent-facing deterministic entrypoints and call the shared
-`simple_flow_agent` helper package installed at the project root.
+are the agent-facing deterministic entrypoints and use the matching public
+Simple Flow package version.
 
 Documentation-Curation also installs `.simple-flow/baselines/` templates and
 the `simple_flow_documentation_curation` helper package. Projects may fill in

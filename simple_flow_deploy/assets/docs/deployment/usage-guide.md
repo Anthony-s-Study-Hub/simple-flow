@@ -2,6 +2,11 @@
 
 Use the six skills as human-invoked stage boundaries.
 
+Install or upgrade this workflow only with the versioned public GitHub
+repository command documented by Simple Flow. Installed skills come from the
+package's `simple_flow_deploy/assets/skills` SSOT; local checkouts and ignored
+`build/` output are not deployment sources.
+
 ## Normal FEATURE
 
 1. Use Discussion to explore the request. It stops after summarizing consensus.
