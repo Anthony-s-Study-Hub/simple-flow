@@ -18,93 +18,39 @@ def test_agents_md_contains_global_default_deny_rules() -> None:
         "Only Issue-Draft may generate a Canonical Draft",
         "Only Start-Implement may publish or update formal Issues",
         "Only PR-Finalize may merge",
-        "Review-Triage must not modify issues or code",
-        "Discussion must not generate formal drafts",
-        "Start-Implement must not merge pull requests",
-        "must not bypass Issue, Branch, Pull Request, or CI",
-        "must go through Review-Triage before fixes",
     ]
     for phrase in required:
         assert phrase in text
 
 
-def test_all_five_phase2_skills_exist_with_unique_ownership_markers() -> None:
+def test_portable_skill_toolkit_contains_six_valid_skill_entrypoints() -> None:
     expected = {
-        "simple-flow-discussion": "Owned Stage: Discussion",
-        "simple-flow-issue-draft": "Owned Stage: Issue-Draft",
-        "simple-flow-start-implement": "Owned Stage: Start-Implement",
-        "simple-flow-review-triage": "Owned Stage: Review-Triage",
-        "simple-flow-pr-finalize": "Owned Stage: PR-Finalize",
+        "simple-flow-discussion",
+        "simple-flow-documentation-curation",
+        "simple-flow-issue-draft",
+        "simple-flow-start-implement",
+        "simple-flow-review-triage",
+        "simple-flow-pr-finalize",
     }
 
-    for folder, marker in expected.items():
-        skill = SKILLS_ROOT / folder / "SKILL.md"
-        text = skill.read_text(encoding="utf-8")
+    skills = {path.parent.name: path.read_text(encoding="utf-8") for path in SKILLS_ROOT.glob("*/SKILL.md")}
+
+    assert set(skills) == expected
+    for text in skills.values():
         assert text.startswith("---\nname: ")
         assert "description: " in text
-        assert marker in text
-        assert "STOP" in text
+        assert ".simple-flow/" not in text
+        assert "scripts/" not in text
 
 
-def test_phase2_skills_define_required_deployed_script_entrypoints() -> None:
-    expected_scripts = {
-        "simple-flow-discussion": [],
-        "simple-flow-issue-draft": ["scripts/create_draft.py"],
-        "simple-flow-start-implement": ["scripts/select_path.py"],
-        "simple-flow-review-triage": ["scripts/classify_finding.py"],
-        "simple-flow-pr-finalize": ["scripts/check_pre_merge.py"],
-    }
+def test_workflow_ownership_keeps_issue_pr_and_merge_actions_separate() -> None:
+    issue_draft = (SKILLS_ROOT / "simple-flow-issue-draft" / "SKILL.md").read_text(encoding="utf-8")
+    start = (SKILLS_ROOT / "simple-flow-start-implement" / "SKILL.md").read_text(encoding="utf-8")
+    finalize = (SKILLS_ROOT / "simple-flow-pr-finalize" / "SKILL.md").read_text(encoding="utf-8")
 
-    for folder, scripts in expected_scripts.items():
-        skill_dir = SKILLS_ROOT / folder
-        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-        assert not (skill_dir / "scripts").exists()
-        for script in scripts:
-            assert script in text
-
-    discussion = (SKILLS_ROOT / "simple-flow-discussion" / "SKILL.md").read_text(
-        encoding="utf-8"
-    )
-    assert "no deterministic script" in discussion
-
-
-def test_skill_exclusive_permissions_have_no_merge_or_draft_overlap() -> None:
-    skills = {
-        path.parent.name: path.read_text(encoding="utf-8")
-        for path in SKILLS_ROOT.glob("*/SKILL.md")
-    }
-
-    draft_owners = [
-        name for name, text in skills.items() if "Permission: generate-canonical-draft" in text
-    ]
-    issue_owners = [
-        name for name, text in skills.items() if "Permission: publish-formal-issue" in text
-    ]
-    merge_owners = [
-        name for name, text in skills.items() if "Permission: merge-pull-request" in text
-    ]
-
-    assert draft_owners == ["simple-flow-issue-draft"]
-    assert issue_owners == ["simple-flow-start-implement"]
-    assert merge_owners == ["simple-flow-pr-finalize"]
-
-
-def test_context_aware_skills_avoid_redundant_identifier_prompts() -> None:
-    start_implement = " ".join(
-        (SKILLS_ROOT / "simple-flow-start-implement" / "SKILL.md")
-        .read_text(encoding="utf-8")
-        .split()
-    )
-    review_triage = " ".join(
-        (SKILLS_ROOT / "simple-flow-review-triage" / "SKILL.md")
-        .read_text(encoding="utf-8")
-        .split()
-    )
-
-    assert "most recent clearly relevant Canonical Draft" in start_implement
-    assert "multiple plausible drafts" in start_implement
-    assert "Do not pause for another approval" in start_implement
-    assert "completed pull request is ready for human review" in start_implement
-    assert "current conversation and repository context" in review_triage
-    assert "Do not ask for Draft, Issue, or PR identifiers" in review_triage
-
+    assert "Do not create or edit a GitHub Issue" in issue_draft
+    assert "Create or reuse the matching GitHub Issue" in start
+    assert "Open a pull request against the default branch" in start
+    assert "Do not merge" in start
+    assert "explicitly approves merging a pull request" in finalize
+    assert "Merge with the repository's normal merge method" in finalize

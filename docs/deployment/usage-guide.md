@@ -1,48 +1,22 @@
 # Simple Flow Usage Guide
 
-Use the six skills as human-invoked stage boundaries.
+The toolkit provides six project-local agent skills. Use the same skill names
+from Codex or Claude after installation.
 
-Install or upgrade this workflow only with the versioned public GitHub
-repository command documented in `docs/phase3-deployment.md`. Installed skills
-come from the package's `simple_flow_deploy/assets/skills` SSOT; local checkouts
-and ignored `build/` output are not deployment sources.
+1. Use `simple-flow-discussion` to explore a request.
+2. Use `simple-flow-issue-draft` to turn the agreed result into one
+   implementation-ready proposal in the conversation.
+3. When the user asks to implement the proposal, use
+   `simple-flow-start-implement`. It infers the single clear proposal from the
+   chat, creates or reuses the matching GitHub Issue, makes the change on an
+   Issue-bound branch, and opens a PR against the repository default branch.
+4. Use `simple-flow-review-triage` for review findings that need classification.
+5. After the user explicitly approves a PR for merge, use
+   `simple-flow-pr-finalize` to verify and merge it through the repository's
+   normal default-branch route.
+6. Use `simple-flow-documentation-curation` to derive a documentation-change
+   proposal from project history.
 
-## Normal FEATURE
-
-1. Use Discussion to explore the request. It stops after summarizing consensus.
-2. Use Issue-Draft to create a Canonical Draft. It runs its bundled
-   `scripts/create_draft.py` entrypoint and stops after reporting the Draft ID.
-3. Review the draft as a human.
-4. Use Start-Implement. When the approved draft is clear from the conversation,
-   it selects that draft without requiring the Draft ID again. It asks for an
-   explicit Draft ID only if multiple drafts remain plausible. After opening the
-   Issue and draft PR, it continues implementation and CI without another
-   approval pause, then stops at Human PR Review.
-5. Review the pull request as a human.
-6. Use PR-Finalize with the accepted PR. It runs its bundled
-   `scripts/check_pre_merge.py` entrypoint and merges only after objective
-   checks pass.
-
-## Review-Triage Flow
-
-When PR Review finds a problem, use Review-Triage. It runs its bundled
-`scripts/classify_finding.py` entrypoint, infers a clear current Issue and PR
-from the conversation and repository, classifies the finding, and stops. The
-user only needs to identify the target when multiple candidates are genuinely
-ambiguous. Then use Issue-Draft for the next approved change and Start-Implement
-for the resulting approved draft.
-
-## DOCUMENTATION
-
-Use Issue-Draft to create a DOCUMENTATION draft. Start-Implement updates only
-approved documentation files and does not require TDD. PR-Finalize is still the
-only merge entry point after human review.
-
-## Documentation-Curation
-
-Use Documentation-Curation when project history needs to be curated into
-baseline update proposals. It reads deterministic history input, produces
-Decision Proposals, Documentation Findings, New Component Proposals, and one
-DOCUMENTATION Canonical Draft, then stops. The draft must be reviewed by a
-human before the existing DOCUMENTATION flow begins with Start-Implement.
-
+The skills use the conversation and the repository's normal Git/GitHub state;
+they do not create a `.simple-flow` state directory. Start-Implement asks the
+user to select work only when more than one proposal is a plausible match.

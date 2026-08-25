@@ -1,90 +1,32 @@
 ---
 name: simple-flow-issue-draft
-description: Convert mature Simple Flow discussion into a validated Canonical Draft and stop before GitHub Issue creation or implementation.
+description: Turn a mature project discussion into one issue-ready implementation proposal without creating GitHub artifacts.
 ---
 
 # Simple Flow Issue-Draft
 
-Owned Stage: Issue-Draft
+Use this skill when the conversation has converged on a change but the user has
+not yet asked to implement it.
 
-Permission: generate-canonical-draft
+## Outcome
 
-Use this skill only after discussion is mature enough to define what should
-change.
+Produce one concise, issue-ready proposal in the conversation. It must include:
 
-## Responsibilities
+- title and work type (FEATURE or DOCUMENTATION)
+- problem and intended outcome
+- requirements and acceptance criteria
+- scope and explicit out-of-scope items
+- affected files or documentation, when known
 
-- Build one structured Canonical Draft for either FEATURE or DOCUMENTATION.
-- Validate the draft with deterministic draft and issue-contract logic.
-- Assign a unique Draft ID.
-- Save structured JSON and render human-readable Markdown from the same data
-  under `.simple-flow/drafts/`.
-- Output the Draft ID and STOP.
-
-## Execution
-
-1. Prepare a JSON input file containing the approved draft fields.
-2. Run this skill's bundled script before reporting a Draft ID:
-
-```powershell
-python .codex/skills/issue-draft/scripts/create_draft.py --input <draft-input.json> --drafts-dir .simple-flow/drafts --roadmap-targets .simple-flow/roadmap-targets.txt
-```
-
-3. Use only the script output as the Canonical Draft handoff.
-4. Use the returned shared Canonical Draft handoff fields: `status`,
-   `draft_id`, `work_type`, `json_path`, and `markdown_path`.
-5. Reply with the Draft ID and both clickable review links, replacing the
-   placeholders below with the returned absolute paths:
-
-```markdown
-Created `{{draft_id}}` (`{{work_type}}`).
-
-[Open draft for review](<{{markdown_path}}>)
-[Open draft JSON](<{{json_path}}>)
-```
-
-Then STOP.
-
-In this source repository, the deploy-time script source of truth is
-`simple_flow_deploy/skill_resources/issue-draft/scripts/create_draft.py`.
-Installed projects use the `.codex/skills/issue-draft/scripts/create_draft.py`
-path shown above.
-
-## FEATURE Contract
-
-- Type
-- Summary
-- Requirements
-- Acceptance Criteria
-- Scope
-- Out of Scope
-- Documentation Impact
-- Roadmap Target
-
-Roadmap Target must be an existing target, UNMAPPED, or
-DOCUMENTATION_REQUIRED. Do not create a new roadmap target.
-
-## DOCUMENTATION Contract
-
-- Type
-- Change
-- Reason
-- Impact
-- Supersedes
-- Affected Project Documents
-- Source PR / Decision Context
-
-Legacy `PROJECT_CHANGE` input is accepted only as an alias for DOCUMENTATION
-during migration. New drafts must use DOCUMENTATION.
+Treat the proposal as the current conversation's implementation handoff. Do
+not write it to a project state directory or require a Draft ID.
 
 ## Boundaries
 
-- Do not publish GitHub Issues.
-- Do not create branches or pull requests.
-- Do not modify implementation code.
-- Do not invoke or simulate Start-Implement.
+- Do not create or edit a GitHub Issue.
+- Do not create a branch, pull request, or implementation change.
+- Do not invent missing product decisions; mark them as open questions.
 
-Mechanics must use the bundled `scripts/create_draft.py` entrypoint. After
-reporting the Draft ID, STOP. The entrypoint writes the Canonical Draft JSON
-and Markdown under `.simple-flow/drafts/`.
-
+When the proposal is complete, ask the user to approve implementation. A later
+clear instruction such as "implement this" is sufficient to let
+Start-Implement use this proposal; an explicit identifier is not required.

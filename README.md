@@ -17,19 +17,18 @@ skill-local scripts for executable stage handoffs, and deterministic helpers in
 `simple_flow_agent` for draft handoff, review triage, start-implement path
 selection, and PR-finalize prechecks.
 
-Phase 3 adds a deterministic release installer for deploying the portable
-workflow into another project. From a new project root:
+Phase 3 adds a deterministic release installer for deploying the portable skill
+toolkit into another project. From a new project root:
 
 ```powershell
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.1 simple-flow doctor .
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.1 simple-flow install .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow doctor .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow install .
 ```
 
-The release install is package-backed and writes
-`.simple-flow/install-manifest.json` instead of copying the full source tree.
-The versioned public GitHub repository is the only deployment source; local
-checkout, vendored, alternate-repository, and ignored `build/` deployment paths
-are not supported.
+The default release install copies only the six skill `SKILL.md` files to both
+`.codex/skills/` and `.claude/skills/`; it does not add workflow state, CI,
+documentation, or source code to the project. Use `--agent codex` or
+`--agent claude` for a single protocol.
 
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated
@@ -104,9 +103,6 @@ smoke passes. See
 `docs/phase4-scenario-impact.md` for each scenario goal and remote mutation
 impact.
 
-Phase 5 adds the Documentation-Curation skill and deterministic
-`simple_flow_documentation_curation` helpers. The skill turns normalized
-Issue/PR/review history into Decision Proposals, Documentation Findings, New
-Component Proposals, and a DOCUMENTATION Canonical Draft, then stops before the
-existing documentation workflow begins. The portable installer includes the
-sixth skill and baseline templates under `.simple-flow/baselines/`.
+Phase 5 adds the Documentation-Curation skill. The skill turns project history
+into a reviewable documentation-change proposal in conversation without adding
+project-local state.

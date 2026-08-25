@@ -1,18 +1,11 @@
 # GitHub Setup Guide
 
-For a public repository, configure:
+Simple Flow does not configure GitHub for a target project. Keep the project's
+existing branch protections, CI requirements, Issue templates, and merge policy
+in place.
 
-- Pull requests required for `main`.
-- Required status checks: `pr-contract`, `linked-issue-contract`,
-  `scope-governance`, `documentation-impact`, `tdd-evidence-order`,
-  `tdd-red-replay`, `tdd-green-replay`, and `current-head-tests`.
-- Strict required checks.
-- Review conversation resolution required.
-- Force pushes disabled.
-- Branch deletion disabled on `main`.
-- Delete merged head branches enabled.
-- Auto-merge disabled by default.
-
-Use the installed `scripts/configure_repository.ps1` helper as the deterministic
-starting point, then connect any project-specific GitHub Projects automation.
-
+For the Issue → PR → merge route, contributors need a configured `origin`, an
+authenticated GitHub CLI, and permission to create Issues and pull requests.
+Start-Implement discovers the repository and default branch locally, then opens
+the PR against that branch. PR-Finalize checks the normal GitHub protections and
+merges only after explicit user approval.
