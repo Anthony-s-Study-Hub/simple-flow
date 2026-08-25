@@ -1,6 +1,6 @@
 ---
 name: simple-flow-start-implement
-description: Start or continue formal Simple Flow implementation from an explicitly approved Draft ID and stop at human PR review.
+description: Start or continue formal Simple Flow implementation from an approved Canonical Draft and stop at human PR review.
 ---
 
 # Simple Flow Start-Implement
@@ -9,17 +9,24 @@ Owned Stage: Start-Implement
 
 Permission: publish-formal-issue
 
-Human invocation must include an explicit Draft ID:
+Human invocation may include a Draft ID, but does not need to repeat one that is
+already clear from the conversation:
 
 ```text
-Start-Implement <Draft ID>
+Start-Implement [Draft ID]
 ```
 
-The invocation means the named draft passed human review.
+The invocation means the selected draft passed human review.
 
 ## Responsibilities
 
-- Read exactly the specified Canonical Draft.
+- Resolve the approved Canonical Draft from the invocation and conversation.
+- Prefer an explicit Draft ID when supplied. Otherwise use the most recent
+  clearly relevant Canonical Draft produced or reviewed in the current
+  conversation.
+- Ask for an explicit Draft ID only when multiple plausible drafts remain and
+  the conversation does not make the implementation target clear.
+- Read exactly the selected Canonical Draft.
 - Load the draft from `.simple-flow/drafts/<Draft ID>.json`.
 - Read the draft Work Type.
 - Check whether current conversation context contains one clearly matching
@@ -34,7 +41,10 @@ The invocation means the named draft passed human review.
 
 ## Execution
 
-1. Confirm the human invocation includes the exact Draft ID.
+1. Resolve one approved Draft ID. If an explicitly supplied Draft ID does not
+   exist, report that error rather than substituting another draft. If no draft
+   is available from the invocation or conversation, report the missing
+   prerequisite and STOP.
 2. Run this skill's bundled path-selection script before publishing or updating
    Issues, branches, pull requests, or implementation files:
 
@@ -60,7 +70,12 @@ python .codex/skills/start-implement/scripts/select_path.py --draft-id <Draft ID
 python .codex/skills/start-implement/scripts/start_documentation.py --draft-id <Draft ID> --drafts-dir .simple-flow/drafts --repo <origin URL> --gh-path gh
 ```
 
-6. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`.
+6. Opening the approved formal Issue and draft pull request is not a new human
+   approval boundary. Do not pause for another approval there; continue the
+   selected implementation path, tests, and CI checks until the completed pull
+   request is ready for human review.
+7. Stop when the returned `stop_point` is `HUMAN_PR_REVIEW`, or report an
+   objective blocker that prevents reaching it.
 
 In this source repository, the deploy-time script source of truth is
 `simple_flow_deploy/skill_resources/start-implement/scripts/select_path.py`.
@@ -71,7 +86,8 @@ The deploy-time source of truth for the documentation helper is
 
 ## Boundaries
 
-- Do not guess the latest Draft ID.
+- Do not choose among multiple plausible drafts when conversation context is
+  ambiguous.
 - Do not summarize a draft from chat.
 - Do not edit an approved draft.
 - Do not fill missing draft fields and continue.

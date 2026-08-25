@@ -22,9 +22,10 @@ evidence checks.
 ## Deterministic Handoff
 
 Issue-Draft stores each Canonical Draft as JSON and Markdown under
-`.simple-flow/drafts/` with a unique Draft ID. Start-Implement must read the
-human-specified Draft ID from that location and must not use the latest draft as
-a substitute.
+`.simple-flow/drafts/` with a unique Draft ID. Start-Implement resolves the most
+recent clearly relevant approved draft from the conversation, or uses an
+explicit Draft ID when supplied, then reads that exact draft from disk. It asks
+for an explicit Draft ID only when multiple plausible drafts remain ambiguous.
 
 The stage scripts are the deterministic handoff points:
 
@@ -38,6 +39,11 @@ The stage scripts are the deterministic handoff points:
 Review-Triage results remain conversation context. Start-Implement only consumes
 a triage result when it clearly matches the draft source issue and PR. Ambiguous
 review context stops the workflow.
+
+Review-Triage derives the finding, Source Issue, and Source PR from the current
+conversation and repository context when one match is clear. Its classifier
+still receives the resolved values explicitly; the user does not need to repeat
+them.
 
 PR-Finalize requires explicit human invocation. It checks objective merge
 conditions and stops on failed CI, unresolved conversations, draft state, missing

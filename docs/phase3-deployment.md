@@ -9,8 +9,8 @@ For a new project, install from a tagged public GitHub release package and run
 the CLI from the project root:
 
 ```powershell
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow doctor .
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.0 simple-flow install .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.1 simple-flow doctor .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.1 simple-flow install .
 ```
 
 The installed package also exposes:
@@ -27,22 +27,16 @@ simple-flow upgrade .
 deployment assets, release-source configuration, and file conflicts before an
 install writes project files.
 
-The default `simple-flow install .` mode is `thin`. It installs the workflow
+`simple-flow install .` uses the sole supported `thin` mode. It installs the workflow
 files, Codex skills, small project scripts, documentation, and
 `.simple-flow/install-manifest.json`, while GitHub Actions install the pinned
 Simple Flow package from the release source instead of copying the source helper
 packages and tests into the target project.
 
-The legacy source-tree installer remains available for self-contained vendored
-deployment:
-
-```powershell
-python scripts/install_simple_flow.py --target C:\path\to\target-project
-simple-flow install C:\path\to\target-project --mode vendored
-```
-
-Both installers report created, skipped, conflicts, and failures as JSON when
-the legacy script or `--json` flag is used.
+The CLI fixes the release source to the matching version tag in the public
+`Anthony-s-Study-Hub/simple-flow` GitHub repository. It does not accept a local
+source tree, vendored mode, alternate release source, or ignored `build/`
+directory. The `--json` flag reports created, skipped, conflicts, and failures.
 
 Installed target skills are placed under `.codex/skills` with unprefixed names:
 
@@ -55,7 +49,7 @@ Installed target skills are placed under `.codex/skills` with unprefixed names:
 
 ## Installed Files
 
-Thin mode deploys:
+The public package deploys:
 
 - `AGENTS.md`
 - GitHub workflows and templates
@@ -64,12 +58,6 @@ Thin mode deploys:
 - `.simple-flow/install-manifest.json` with package version, release source, and file hashes
 - usage, integration, and GitHub setup docs
 - Phase 5 baseline templates
-
-Vendored mode also deploys:
-
-- Phase 1 validators and automation
-- Phase 2 deterministic helpers
-- source regression tests for the self-contained target layout
 
 ## Known Limits
 

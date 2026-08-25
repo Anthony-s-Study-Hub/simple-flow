@@ -6,9 +6,13 @@ import subprocess
 import sys
 import tomllib
 
+from simple_flow_deploy.cli import current_install_command
+from simple_flow_deploy.installer import DEFAULT_RELEASE_REPOSITORY, default_release_source
+
 
 ROOT = Path(__file__).resolve().parents[2]
-RELEASE_SOURCE = "git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v9.9.9"
+EXPECTED_VERSION = "0.2.1"
+RELEASE_SOURCE = f"git+{DEFAULT_RELEASE_REPOSITORY}@v{EXPECTED_VERSION}"
 
 
 def test_release_cli_doctor_is_read_only_and_reports_prechecks(tmp_path: Path) -> None:
@@ -18,8 +22,6 @@ def test_release_cli_doctor_is_read_only_and_reports_prechecks(tmp_path: Path) -
     completed = _run_cli(
         "doctor",
         str(target),
-        "--release-source",
-        RELEASE_SOURCE,
         "--json",
     )
 
@@ -45,8 +47,6 @@ def test_release_cli_default_install_uses_thin_packaged_layout(tmp_path: Path) -
         str(target),
         "--project-name",
         "release-cli-target",
-        "--release-source",
-        RELEASE_SOURCE,
         "--json",
     )
 
@@ -79,26 +79,36 @@ def test_release_cli_default_install_uses_thin_packaged_layout(tmp_path: Path) -
     assert 'python -m pip install -e ".[test]"' not in pr_governance
 
 
-def test_release_cli_vendored_mode_preserves_self_contained_layout(tmp_path: Path) -> None:
+def test_release_cli_rejects_non_public_deployment_controls(tmp_path: Path) -> None:
     target = tmp_path / "target-project"
 
-    completed = _run_cli(
+    vendored = _run_cli(
         "install",
         str(target),
         "--mode",
         "vendored",
-        "--project-name",
-        "vendored-target",
-        "--json",
+    )
+    alternate_source = _run_cli(
+        "install",
+        str(target),
+        "--release-source",
+        "git+https://example.invalid/alternate.git@v1.0.0",
     )
 
-    assert completed.returncode == 0, completed.stderr
-    report = json.loads(completed.stdout)
-    assert report["status"] == "success"
-    assert report["mode"] == "vendored"
-    assert (target / "simple_flow_gates" / "cli.py").exists()
-    assert (target / "simple_flow_agent" / "drafts.py").exists()
-    assert (target / "tests" / "test_cli.py").exists()
+    assert vendored.returncode == 2
+    assert "unrecognized arguments" in vendored.stderr
+    assert alternate_source.returncode == 2
+    assert "unrecognized arguments" in alternate_source.stderr
+    assert not target.exists()
+
+
+def test_public_repository_is_the_only_deployment_entrypoint() -> None:
+    assert _project_version() == EXPECTED_VERSION
+    assert default_release_source(EXPECTED_VERSION) == RELEASE_SOURCE
+    assert current_install_command(EXPECTED_VERSION) == (
+        f"uvx --from {RELEASE_SOURCE} simple-flow install ."
+    )
+    assert not (ROOT / "scripts" / "install_simple_flow.py").exists()
 
 
 def test_release_cli_version_reports_package_version() -> None:

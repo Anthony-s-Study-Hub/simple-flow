@@ -18,7 +18,7 @@ DOCUMENTATION Canonical Draft.
 
 Only Start-Implement may publish or update formal Issues, create implementation
 branches, create draft pull requests, or continue formal implementation from an
-approved Draft ID.
+approved Canonical Draft selected from clear context or an explicit Draft ID.
 
 Only PR-Finalize may merge pull requests after explicit human review acceptance.
 

@@ -4,7 +4,6 @@ import argparse
 from pathlib import Path
 
 from simple_flow_deploy.installer import (
-    INSTALL_MODES,
     default_release_source,
     doctor,
     install,
@@ -27,24 +26,24 @@ def main(argv: list[str] | None = None) -> int:
 
     doctor_parser = subparsers.add_parser("doctor", help="Run read-only install prechecks.")
     _add_target_argument(doctor_parser)
-    _add_install_options(doctor_parser, default_mode="thin")
+    _add_install_options(doctor_parser)
     doctor_parser.set_defaults(func=_run_doctor)
 
     install_parser = subparsers.add_parser("install", help="Install Simple Flow into a project.")
     _add_target_argument(install_parser)
-    _add_install_options(install_parser, default_mode="thin")
+    _add_install_options(install_parser)
     install_parser.add_argument("--clean-target", action="store_true")
     install_parser.add_argument("--dry-run", action="store_true")
     install_parser.set_defaults(func=_run_install)
 
     plan_parser = subparsers.add_parser("plan", help="Show the install plan without writing files.")
     _add_target_argument(plan_parser)
-    _add_install_options(plan_parser, default_mode="thin")
+    _add_install_options(plan_parser)
     plan_parser.set_defaults(func=_run_plan)
 
     upgrade_parser = subparsers.add_parser("upgrade", help="Reapply the selected release install.")
     _add_target_argument(upgrade_parser)
-    _add_install_options(upgrade_parser, default_mode="thin")
+    _add_install_options(upgrade_parser)
     upgrade_parser.add_argument("--dry-run", action="store_true")
     upgrade_parser.set_defaults(func=_run_install)
 
@@ -56,13 +55,11 @@ def _add_target_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("target", nargs="?", default=".")
 
 
-def _add_install_options(parser: argparse.ArgumentParser, *, default_mode: str) -> None:
+def _add_install_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--project-name", default="new-project")
     parser.add_argument("--test-command", default="python -m pytest")
     parser.add_argument("--scope", action="append", default=[])
     parser.add_argument("--documentation", action="append", default=[])
-    parser.add_argument("--mode", choices=sorted(INSTALL_MODES), default=default_mode)
-    parser.add_argument("--release-source")
     parser.add_argument("--json", action="store_true")
 
 
@@ -74,8 +71,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
         test_command=args.test_command,
         scope=args.scope or ["src/"],
         documentation=args.documentation or ["docs/"],
-        mode=args.mode,
-        release_source=args.release_source,
+        mode="thin",
     )
     if args.json:
         print(report.to_json())
@@ -93,8 +89,7 @@ def _run_install(args: argparse.Namespace) -> int:
         scope=args.scope or ["src/"],
         documentation=args.documentation or ["docs/"],
         clean_target=getattr(args, "clean_target", False),
-        mode=args.mode,
-        release_source=args.release_source,
+        mode="thin",
         dry_run=getattr(args, "dry_run", False),
     )
     if args.json:

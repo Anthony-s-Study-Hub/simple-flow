@@ -43,10 +43,10 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
     assert (target / ".github" / "ISSUE_TEMPLATE" / "documentation.md").exists()
     assert not (target / ".github" / "ISSUE_TEMPLATE" / "project_change.md").exists()
     assert (target / ".github" / "pull_request_template.md").exists()
-    assert (target / "simple_flow_gates" / "contracts.py").exists()
-    assert (target / "simple_flow_agent" / "drafts.py").exists()
-    assert (target / "simple_flow_documentation_curation" / "collector.py").exists()
-    assert (target / "simple_flow_documentation_curation" / "renderer.py").exists()
+    assert not (target / "simple_flow_gates").exists()
+    assert not (target / "simple_flow_agent").exists()
+    assert not (target / "simple_flow_documentation_curation").exists()
+    assert not (target / "tests").exists()
     assert (target / "scripts" / "orphan_branch_watch.py").exists()
     assert (target / ".simple-flow" / "project-config.json").exists()
     assert (target / ".simple-flow" / "baselines" / "high-level-project-baseline.md").exists()
@@ -79,11 +79,9 @@ def test_installer_populates_required_files_with_unprefixed_skills(tmp_path: Pat
             assert script in text
 
 
-def test_vendored_and_thin_modes_deploy_the_same_canonical_skill_text(tmp_path: Path) -> None:
-    vendored = tmp_path / "vendored"
-    thin = tmp_path / "thin"
-    _install(vendored)
-    _install(thin, "--mode", "thin")
+def test_public_package_deploys_the_canonical_skill_text(tmp_path: Path) -> None:
+    target = tmp_path / "public-package"
+    _install(target)
 
     for source_skill, target_skill in {
         "simple-flow-discussion": "discussion",
@@ -98,8 +96,7 @@ def test_vendored_and_thin_modes_deploy_the_same_canonical_skill_text(tmp_path: 
         )
         if target_skill == "start-implement":
             assert "derive `--repo` from\n   `git remote get-url origin`" in expected
-        assert (vendored / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
-        assert (thin / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
+        assert (target / ".codex" / "skills" / target_skill / "SKILL.md").read_text(encoding="utf-8") == expected
 
 
 def test_repeated_install_is_idempotent_and_reports_existing_files(tmp_path: Path) -> None:
@@ -167,6 +164,12 @@ def test_config_isolation_for_two_different_project_shapes(tmp_path: Path) -> No
     assert alternate_config["test_command"] == "npm test"
     assert ordinary_config["scope"] == ["src/"]
     assert alternate_config["scope"] == ["packages/"]
+    assert "run: python -m pytest" in (
+        ordinary / ".github" / "workflows" / "phase1-tests.yml"
+    ).read_text(encoding="utf-8")
+    assert "run: npm test" in (
+        alternate / ".github" / "workflows" / "phase1-tests.yml"
+    ).read_text(encoding="utf-8")
     assert _hash_core_files(ordinary) == _hash_core_files(alternate)
 
 
@@ -183,7 +186,7 @@ def test_reference_integrity_and_required_check_names(tmp_path: Path) -> None:
     phase1_tests = (target / ".github" / "workflows" / "phase1-tests.yml").read_text(
         encoding="utf-8"
     )
-    repo_rules = (target / "simple_flow_gates" / "repository_rules.py").read_text(
+    repo_rules = (ROOT / "simple_flow_gates" / "repository_rules.py").read_text(
         encoding="utf-8"
     )
 
@@ -214,7 +217,10 @@ def test_reference_integrity_and_required_check_names(tmp_path: Path) -> None:
     assert '"phase1-tests"' not in repo_rules
     assert str(ROOT) not in pr_governance
     assert "C:\\\\" not in pr_governance
-    assert "Anthony-s-Study-Hub/simple-flow" not in pr_governance
+    assert (
+        "git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.1"
+        in pr_governance
+    )
     _assert_deployed_skill_script_references_exist(target)
 
 
@@ -269,28 +275,19 @@ def test_documentation_start_script_scrubs_proxy_env_for_gh(monkeypatch) -> None
     assert "ALL_PROXY" not in env
 
 
-def test_deployed_phase1_and_phase2_regressions_pass(tmp_path: Path) -> None:
+def test_deployed_payload_matches_public_package_ssot(tmp_path: Path) -> None:
     target = tmp_path / "target-project"
     _install(target)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "pytest",
-            "tests/test_issue_contract.py",
-            "tests/test_branch_pr_gate.py",
-            "tests/test_scope_documentation_gates.py",
-            "tests/test_tdd_gate.py",
-            "tests/test_phase2_workflow.py",
-        ],
-        cwd=target,
-        capture_output=True,
-        text=True,
-        check=True,
+    manifest = json.loads(
+        (target / ".simple-flow" / "install-manifest.json").read_text(encoding="utf-8")
     )
-
-    assert "passed" in completed.stdout
+    assert manifest["install_mode"] == "thin"
+    assert manifest["release_source"].startswith(
+        "git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v"
+    )
+    assert not (target / "tests").exists()
+    assert not (target / "simple_flow_gates").exists()
 
     skill_files = list((target / ".codex" / "skills").glob("*/SKILL.md"))
     skill_text = "\n".join(path.read_text(encoding="utf-8") for path in skill_files)
@@ -328,10 +325,12 @@ def test_real_target_project_destination_is_successfully_set_up() -> None:
 def _install(target: Path, *args: str, check: bool = True) -> dict[str, object]:
     command = [
         sys.executable,
-        "scripts/install_simple_flow.py",
-        "--target",
+        "-m",
+        "simple_flow_deploy.cli",
+        "install",
         str(target),
         *args,
+        "--json",
     ]
     completed = subprocess.run(
         command,
@@ -352,16 +351,11 @@ def _hash_core_files(project: Path) -> dict[str, str]:
         "AGENTS.md",
         ".github/workflows/issue-governance.yml",
         ".github/workflows/pr-governance.yml",
-        ".github/workflows/phase1-tests.yml",
         ".codex/skills/discussion/SKILL.md",
         ".codex/skills/documentation-curation/SKILL.md",
         ".codex/skills/documentation-curation/scripts/curate_documentation.py",
         ".codex/skills/issue-draft/SKILL.md",
         ".codex/skills/issue-draft/scripts/create_draft.py",
-        "simple_flow_gates/contracts.py",
-        "simple_flow_agent/drafts.py",
-        "simple_flow_documentation_curation/collector.py",
-        "simple_flow_documentation_curation/renderer.py",
     ]:
         files[relative] = (project / relative).read_text(encoding="utf-8")
     return files

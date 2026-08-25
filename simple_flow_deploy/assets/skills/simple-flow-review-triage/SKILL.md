@@ -11,6 +11,13 @@ Use this skill only after a human PR review identifies a finding.
 
 ## Responsibilities
 
+Infer the review finding and its source from the current conversation and
+repository context. When one current pull request and linked Issue clearly
+match, use them automatically. Review-Triage does not require a Draft ID. Do
+not ask for Draft, Issue, or PR identifiers that are already unambiguous; ask
+only for the missing detail when multiple plausible targets cannot be
+distinguished.
+
 Classify exactly two dimensions:
 
 - Relationship: CURRENT, SUBISSUE, or NEW ISSUE.
@@ -26,7 +33,8 @@ The result remains conversation context. It is not written to a state file.
 
 ## Execution
 
-Run this skill's bundled classifier before outputting the triage result:
+Run this skill's bundled classifier with the inferred values before outputting
+the triage result:
 
 ```powershell
 python .codex/skills/review-triage/scripts/classify_finding.py --relationship <CURRENT|SUBISSUE|NEW ISSUE> --merge-impact <BLOCKING|FOLLOW-UP> --source-issue <issue-number> --source-pr <pr-number> --reason <reason>

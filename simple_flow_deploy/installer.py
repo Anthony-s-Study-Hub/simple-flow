@@ -21,60 +21,6 @@ SKILL_MAP = {
     "simple-flow-pr-finalize": "pr-finalize",
 }
 
-CORE_FILES = [
-    "AGENTS.md",
-    ".github/ISSUE_TEMPLATE/feature.md",
-    ".github/ISSUE_TEMPLATE/documentation.md",
-    ".github/pull_request_template.md",
-    ".github/workflows/issue-governance.yml",
-    ".github/workflows/pr-governance.yml",
-    ".github/workflows/phase1-tests.yml",
-    ".github/workflows/orphan-branch-watch.yml",
-    ".simple-flow/roadmap-targets.txt",
-    "simple_flow_gates/__init__.py",
-    "simple_flow_gates/branch_pr.py",
-    "simple_flow_gates/cli.py",
-    "simple_flow_gates/contracts.py",
-    "simple_flow_gates/git_utils.py",
-    "simple_flow_gates/orphan.py",
-    "simple_flow_gates/repository_rules.py",
-    "simple_flow_gates/scope.py",
-    "simple_flow_gates/tdd.py",
-    "simple_flow_agent/__init__.py",
-    "simple_flow_agent/drafts.py",
-    "simple_flow_agent/finalize.py",
-    "simple_flow_agent/review_triage.py",
-    "simple_flow_agent/start_implement.py",
-    "simple_flow_documentation_curation/__init__.py",
-    "simple_flow_documentation_curation/baselines.py",
-    "simple_flow_documentation_curation/collector.py",
-    "simple_flow_documentation_curation/conflicts.py",
-    "simple_flow_documentation_curation/cursor.py",
-    "simple_flow_documentation_curation/mapping.py",
-    "simple_flow_documentation_curation/models.py",
-    "simple_flow_documentation_curation/normalizer.py",
-    "simple_flow_documentation_curation/patch_planner.py",
-    "simple_flow_documentation_curation/references.py",
-    "simple_flow_documentation_curation/relationships.py",
-    "simple_flow_documentation_curation/renderer.py",
-    "simple_flow_documentation_curation/versioning.py",
-    "scripts/__init__.py",
-    "scripts/configure_repository.ps1",
-    "scripts/orphan_branch_watch.py",
-    "scripts/phase2_acceptance.py",
-    "tests/__init__.py",
-    "tests/conftest.py",
-    "tests/test_branch_pr_gate.py",
-    "tests/test_cli.py",
-    "tests/test_issue_contract.py",
-    "tests/test_orphan_and_repository_rules.py",
-    "tests/test_orphan_branch_watch_script.py",
-    "tests/test_phase2_workflow.py",
-    "tests/test_scope_documentation_gates.py",
-    "tests/test_tdd_gate.py",
-    "tests/test_workflows.py",
-]
-
 THIN_CORE_FILES = [
     "AGENTS.md",
     ".github/ISSUE_TEMPLATE/feature.md",
@@ -96,21 +42,15 @@ DOC_FILES = {
     "docs/deployment/github-setup-guide.md": "docs/simple-flow/github-setup-guide.md",
 }
 
-BASELINE_TEMPLATE_FILES = {
-    "simple_flow_deploy/baseline_templates/high-level-project-baseline.md": ".simple-flow/baselines/high-level-project-baseline.md",
-    "simple_flow_deploy/baseline_templates/component-baseline-template.md": ".simple-flow/baselines/component-baseline-template.md",
-}
-
-SKILL_RESOURCE_ROOT = Path("simple_flow_deploy/skill_resources")
 PACKAGE_NAME = "simple-flow"
 DEFAULT_RELEASE_REPOSITORY = "https://github.com/Anthony-s-Study-Hub/simple-flow.git"
-INSTALL_MODES = {"thin", "vendored"}
+INSTALL_MODES = {"thin"}
 
 
 @dataclass
 class InstallReport:
     status: str = "success"
-    mode: str = "vendored"
+    mode: str = "thin"
     release_source: str | None = None
     created: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
@@ -180,7 +120,7 @@ def install(
     scope: list[str] | None = None,
     documentation: list[str] | None = None,
     clean_target: bool = False,
-    mode: str = "vendored",
+    mode: str = "thin",
     release_source: str | None = None,
     dry_run: bool = False,
 ) -> InstallReport:
@@ -188,7 +128,8 @@ def install(
     destination = Path(target).resolve()
     _validate_mode(mode)
     version = package_version(source)
-    resolved_release_source = release_source or default_release_source(version)
+    resolved_release_source = default_release_source(version)
+    _require_public_release_source(release_source, resolved_release_source)
     report = InstallReport(
         target=str(destination),
         mode=mode,
@@ -199,12 +140,10 @@ def install(
         _clean_target(destination)
 
     desired = _desired_files(
-        source,
         project_name=project_name,
         test_command=test_command,
         scope=scope or ["src/"],
         documentation=documentation or ["docs/"],
-        mode=mode,
         package_version=version,
         release_source=resolved_release_source,
     )
@@ -248,23 +187,22 @@ def doctor(
     destination = Path(target).resolve()
     _validate_mode(mode)
     version = package_version(source)
-    resolved_release_source = release_source or default_release_source(version)
+    resolved_release_source = default_release_source(version)
+    _require_public_release_source(release_source, resolved_release_source)
     checks = [
         _check_python_version(),
         _check_command("git-command", "git"),
         _check_target_writable(destination),
-        _check_packaged_assets(source, mode),
-        _check_release_source(mode, resolved_release_source),
+        _check_packaged_assets(),
+        _check_release_source(resolved_release_source),
     ]
 
     try:
         desired = _desired_files(
-            source,
             project_name=project_name,
             test_command=test_command,
             scope=scope or ["src/"],
             documentation=documentation or ["docs/"],
-            mode=mode,
             package_version=version,
             release_source=resolved_release_source,
         )
@@ -324,89 +262,18 @@ def default_release_source(version: str) -> str:
     return f"git+{DEFAULT_RELEASE_REPOSITORY}@v{version}"
 
 
+def _require_public_release_source(
+    requested: str | None,
+    expected: str,
+) -> None:
+    if requested is not None and requested != expected:
+        raise ValueError(
+            "Deployment source is fixed to the versioned public Simple Flow repository: "
+            + expected
+        )
+
+
 def _desired_files(
-    source: Path,
-    *,
-    project_name: str,
-    test_command: str,
-    scope: list[str],
-    documentation: list[str],
-    mode: str,
-    package_version: str,
-    release_source: str,
-) -> dict[str, str]:
-    if mode == "thin":
-        return _desired_thin_files(
-            project_name=project_name,
-            test_command=test_command,
-            scope=scope,
-            documentation=documentation,
-            package_version=package_version,
-            release_source=release_source,
-        )
-    return _desired_vendored_files(
-        source,
-        project_name=project_name,
-        test_command=test_command,
-        scope=scope,
-        documentation=documentation,
-        package_version=package_version,
-    )
-
-
-def _desired_vendored_files(
-    source: Path,
-    *,
-    project_name: str,
-    test_command: str,
-    scope: list[str],
-    documentation: list[str],
-    package_version: str,
-) -> dict[str, str]:
-    files: dict[str, str] = {}
-    for relative in CORE_FILES:
-        text = (source / relative).read_text(encoding="utf-8")
-        if relative.startswith(".github/workflows/"):
-            text = _portable_workflow(text)
-        files[relative] = text
-
-    for source_skill, target_skill in SKILL_MAP.items():
-        skill_text = _canonical_skill_text(source_skill)
-        files[f".codex/skills/{target_skill}/SKILL.md"] = skill_text.replace(
-            f"name: {source_skill}",
-            f"name: {target_skill}",
-        )
-
-        resource_dir = source / SKILL_RESOURCE_ROOT / target_skill
-        if not resource_dir.exists():
-            continue
-        for path in resource_dir.rglob("*"):
-            if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
-                continue
-            skill_relative = path.relative_to(resource_dir)
-            text = path.read_text(encoding="utf-8")
-            files[f".codex/skills/{target_skill}/{skill_relative.as_posix()}"] = text
-
-    for source_doc, target_doc in DOC_FILES.items():
-        files[target_doc] = (source / source_doc).read_text(encoding="utf-8")
-
-    for source_template, target_template in BASELINE_TEMPLATE_FILES.items():
-        files[target_template] = (source / source_template).read_text(encoding="utf-8")
-
-    _add_project_metadata(
-        files,
-        project_name=project_name,
-        test_command=test_command,
-        scope=scope,
-        documentation=documentation,
-        mode="vendored",
-        package_version=package_version,
-        release_source=None,
-    )
-    return files
-
-
-def _desired_thin_files(
     *,
     project_name: str,
     test_command: str,
@@ -492,13 +359,6 @@ def _add_project_metadata(
         package_version=package_version,
         release_source=release_source,
         files=files,
-    )
-
-
-def _portable_workflow(text: str) -> str:
-    return text.replace(
-        'python -m pip install -e ".[test]"',
-        "python -m pip install pytest",
     )
 
 
@@ -673,22 +533,19 @@ def _check_target_writable(destination: Path) -> Precheck:
     )
 
 
-def _check_packaged_assets(source: Path, mode: str) -> Precheck:
+def _check_packaged_assets() -> Precheck:
     try:
-        if mode == "thin":
-            required = [
-                "AGENTS.md",
-                ".github/workflows/pr-governance.yml",
-                "skills/simple-flow-start-implement/SKILL.md",
-                "docs/deployment/usage-guide.md",
-            ]
-            missing = [
-                relative
-                for relative in required
-                if not (_package_root() / "assets" / relative).is_file()
-            ]
-        else:
-            missing = [relative for relative in CORE_FILES if not (source / relative).exists()]
+        required = [
+            "AGENTS.md",
+            ".github/workflows/pr-governance.yml",
+            "skills/simple-flow-start-implement/SKILL.md",
+            "docs/deployment/usage-guide.md",
+        ]
+        missing = [
+            relative
+            for relative in required
+            if not (_package_root() / "assets" / relative).is_file()
+        ]
     except Exception as exc:
         return Precheck(
             name="packaged-assets",
@@ -705,17 +562,11 @@ def _check_packaged_assets(source: Path, mode: str) -> Precheck:
     return Precheck(
         name="packaged-assets",
         status="ok",
-        message=f"Deployment assets are available for {mode} mode.",
+        message="Deployment assets are available from the public package SSOT.",
     )
 
 
-def _check_release_source(mode: str, release_source: str) -> Precheck:
-    if mode != "thin":
-        return Precheck(
-            name="release-source",
-            status="ok",
-            message="Vendored mode does not require a release package source.",
-        )
+def _check_release_source(release_source: str) -> Precheck:
     if release_source.strip():
         return Precheck(
             name="release-source",
