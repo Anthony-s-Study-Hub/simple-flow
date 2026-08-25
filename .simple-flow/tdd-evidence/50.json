@@ -9,7 +9,7 @@
     "commit": "7c562d41378cb76022e8b531633995586095b23c"
   },
   "green": {
-    "commit": "7c562d41378cb76022e8b531633995586095b23c",
+    "commit": "7f19560c46e27a5fd580b77d87a96e9e3bb76e21",
     "command": "python -m pytest -q",
     "exit_code": 0
   }
