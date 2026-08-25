@@ -1,7 +1,7 @@
 {
   "issue": 50,
   "red": {
-    "commit": "9b8ad72",
+    "commit": "9b8ad72abb789fd81a7b60f4a0665ea49d32f2a1",
     "command": "python -m pytest -q tests/deployment/test_skill_runtime_protocol_tdd.py",
     "exit_code": 1
   },
