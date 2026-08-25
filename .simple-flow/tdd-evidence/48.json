@@ -1,0 +1,16 @@
+{
+  "issue": 48,
+  "red": {
+    "commit": "1504e43784fd72cc7dea75a666b0276f7013b2e6",
+    "command": "python -m pytest tests/deployment/test_public_release_skill_toolkit_tdd.py -q",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "de8c2ad4431c0307a456141983a66b2f0527fc7f"
+  },
+  "green": {
+    "commit": "cbeda035f4f45747c782d4b15df739897860a1af",
+    "command": "python -m pytest tests/deployment/test_public_release_skill_toolkit_tdd.py -q",
+    "exit_code": 0
+  }
+}
