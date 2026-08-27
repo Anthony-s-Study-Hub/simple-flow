@@ -18,6 +18,11 @@ from simple_flow_agent.start_implement import (
     AmbiguousReviewTriageError,
     select_start_path,
 )
+from simple_flow_agent.implementation_plan import (
+    DraftSelectionError,
+    ImplementationIntent,
+    plan_implementation,
+)
 from simple_flow_gates.contracts import IssueContract, WorkType
 
 
@@ -389,6 +394,114 @@ def test_start_implement_stops_at_human_review_and_never_merges(tmp_path: Path) 
 
     assert plan.stop_point == "HUMAN_PR_REVIEW"
     assert "merge_pull_request" not in plan.actions
+
+
+def test_draft_execution_metadata_preserves_the_typed_issue_contract(tmp_path: Path) -> None:
+    store = DraftStore(tmp_path)
+
+    draft = store.create_feature(
+        summary="Plan deterministic implementation.",
+        requirements=["Preserve typed issue contracts"],
+        acceptance_criteria=["Planner returns one route"],
+        scope=["simple_flow_agent/"],
+        out_of_scope=["GitHub workflow changes"],
+        documentation_impact=["docs/phase2-skills.md"],
+        roadmap_target="UNMAPPED",
+        execution={
+            "intent_tags": ["planner", "workflow"],
+            "components": ["simple_flow_agent"],
+            "priority": 80,
+            "implementation_route": "CREATE_INDEPENDENT_ISSUE",
+        },
+    )
+
+    assert IssueContract.parse(draft.to_issue_body()).work_type == WorkType.FEATURE
+    assert draft.execution["implementation_route"] == "CREATE_INDEPENDENT_ISSUE"
+    assert DraftStore(tmp_path).read(draft.draft_id).execution["priority"] == 80
+
+
+def test_planner_selects_matching_draft_without_asking_for_an_id(tmp_path: Path) -> None:
+    store = DraftStore(tmp_path)
+    deployment = store.create_feature(
+        summary="Deploy the deterministic skill runtime.",
+        requirements=["Copy runtime files"],
+        acceptance_criteria=["Installed scripts run"],
+        scope=["simple_flow_deploy/"],
+        out_of_scope=["Agent behavior"],
+        documentation_impact=[],
+        roadmap_target="UNMAPPED",
+        execution={
+            "intent_tags": ["deploy", "runtime"],
+            "components": ["simple_flow_deploy"],
+            "priority": 20,
+        },
+    )
+    store.create_feature(
+        summary="Plan the workflow implementation route.",
+        requirements=["Select drafts deterministically"],
+        acceptance_criteria=["Matching draft is selected"],
+        scope=["simple_flow_agent/"],
+        out_of_scope=["Deployment"],
+        documentation_impact=[],
+        roadmap_target="UNMAPPED",
+        execution={
+            "intent_tags": ["planner", "workflow"],
+            "components": ["simple_flow_agent"],
+            "priority": 20,
+        },
+    )
+
+    plan = plan_implementation(
+        store,
+        intent=ImplementationIntent(tags=("deploy",), components=("simple_flow_deploy",)),
+    )
+
+    assert plan.draft_id == deployment.draft_id
+    assert plan.selection_reason["method"] == "intent-match"
+    assert plan.route == "CREATE_INDEPENDENT_ISSUE"
+
+
+def test_planner_stops_on_a_materially_tied_intent_match(tmp_path: Path) -> None:
+    store = DraftStore(tmp_path)
+    for summary in ("First deployment plan.", "Second deployment plan."):
+        store.create_feature(
+            summary=summary,
+            requirements=["Deploy"],
+            acceptance_criteria=["Deploy succeeds"],
+            scope=["simple_flow_deploy/"],
+            out_of_scope=["Other work"],
+            documentation_impact=[],
+            roadmap_target="UNMAPPED",
+            execution={"intent_tags": ["deploy"], "components": ["simple_flow_deploy"]},
+        )
+
+    with pytest.raises(DraftSelectionError, match="materially tied"):
+        plan_implementation(store, intent=ImplementationIntent(tags=("deploy",)))
+
+
+def test_planner_follows_the_route_persisted_in_a_review_derived_draft(tmp_path: Path) -> None:
+    store = DraftStore(tmp_path)
+    draft = store.create_feature(
+        summary="Patch the current pull request.",
+        requirements=["Apply review feedback"],
+        acceptance_criteria=["Review finding is addressed"],
+        scope=["simple_flow_agent/"],
+        out_of_scope=["New issue creation"],
+        documentation_impact=[],
+        roadmap_target="UNMAPPED",
+        source_issue=52,
+        source_pr=53,
+        execution={
+            "triage_decision_id": "RT-0001",
+            "implementation_route": "UPDATE_CURRENT_PR",
+            "intent_tags": ["review", "patch"],
+        },
+    )
+
+    plan = plan_implementation(store, draft_id=draft.draft_id)
+
+    assert plan.route == "UPDATE_CURRENT_PR"
+    assert plan.actions[0] == "resume_current_pull_request"
 
 
 def test_pr_finalize_requires_explicit_human_authorization() -> None:
