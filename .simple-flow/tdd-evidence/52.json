@@ -1,0 +1,16 @@
+{
+  "issue": 52,
+  "red": {
+    "commit": "4daeff46e51f4d18be2c4a67e1112449e5443bc1",
+    "command": "python -m pytest -q tests/test_phase2_workflow.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "06a140ad401b70349dc62edb389a4444ccc521bf"
+  },
+  "green": {
+    "commit": "95da398f18857c17e4925511f2eec1db42fbeff3",
+    "command": "python -m pytest -q",
+    "exit_code": 0
+  }
+}

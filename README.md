@@ -21,8 +21,8 @@ Phase 3 adds a deterministic release installer for deploying the portable skill
 toolkit into another project. From a new project root:
 
 ```powershell
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.2 simple-flow doctor .
-uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.2 simple-flow install .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.3 simple-flow doctor .
+uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.3 simple-flow install .
 ```
 
 The default release install copies the six short-named skills and their local
@@ -30,6 +30,11 @@ helper scripts to both `.codex/skills/` and `.claude/skills/`. It also creates
 the self-contained `.simple_tool/` runtime and durable workflow-state scaffold;
 it does not add target CI, documentation, governance, tests, or root source
 packages. Use `--agent codex` or `--agent claude` for a single protocol.
+
+Installed Start-Implement uses draft execution metadata and a deterministic
+planner to select and route eligible work. Agents still perform semantic code
+and documentation authoring, but do not decide GitHub delivery routes from chat
+alone.
 
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated
