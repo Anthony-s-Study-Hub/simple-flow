@@ -31,6 +31,11 @@ the self-contained `.simple_tool/` runtime and durable workflow-state scaffold;
 it does not add target CI, documentation, governance, tests, or root source
 packages. Use `--agent codex` or `--agent claude` for a single protocol.
 
+Installed Start-Implement uses draft execution metadata and a deterministic
+planner to select and route eligible work. Agents still perform semantic code
+and documentation authoring, but do not decide GitHub delivery routes from chat
+alone.
+
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated
 agent turns with fixed scenario prompts, collects objective Git/GitHub evidence,

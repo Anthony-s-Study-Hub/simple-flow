@@ -54,7 +54,9 @@ def test_issue_draft_feature_script_creates_draft(tmp_path: Path) -> None:
     draft_input = tmp_path / "draft-input.json"
     draft_dir = tmp_path / "drafts"
     roadmap = tmp_path / "roadmap-targets.txt"
+    status = tmp_path / "status.json"
     roadmap.write_text("PHASE_1_GOVERNANCE\n", encoding="utf-8")
+    status.write_text('{"active_draft": null}\n', encoding="utf-8")
     draft_input.write_text(
         json.dumps(
             {
@@ -68,6 +70,11 @@ def test_issue_draft_feature_script_creates_draft(tmp_path: Path) -> None:
                 "roadmap_target": "PHASE_1_GOVERNANCE",
                 "source_issue": 14,
                 "source_pr": 15,
+                "execution": {
+                    "intent_tags": ["pipeline"],
+                    "components": ["simple_flow_agent"],
+                    "priority": 10,
+                },
             }
         )
         + "\n",
@@ -84,11 +91,15 @@ def test_issue_draft_feature_script_creates_draft(tmp_path: Path) -> None:
             str(draft_dir),
             "--roadmap-targets",
             str(roadmap),
+            "--status-file",
+            str(status),
         ],
         cwd=root,
     )
     assert created["draft_id"] == "DRAFT-0001"
     assert (draft_dir / "DRAFT-0001.json").exists()
+    assert DraftStore(draft_dir).read("DRAFT-0001").execution["priority"] == 10
+    assert json.loads(status.read_text(encoding="utf-8"))["active_draft"] == "DRAFT-0001"
 
 
 def test_review_triage_script_classifies_blocking_current_finding() -> None:
@@ -115,6 +126,38 @@ def test_review_triage_script_classifies_blocking_current_finding() -> None:
     assert triage["merge_impact"] == "BLOCKING"
     assert triage["source_issue"] == 14
     assert triage["source_pr"] == 15
+
+
+def test_review_triage_script_persists_a_draft_stage_resolution(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    output_path = tmp_path / "triage" / "RT-0001.json"
+
+    triage = _run_json(
+        [
+            sys.executable,
+            str(_skill_script(root, "review-triage", "classify_finding.py")),
+            "--relationship",
+            "CURRENT",
+            "--merge-impact",
+            "FOLLOW-UP",
+            "--reason",
+            "The planned draft needs the requested behavior.",
+            "--decision-id",
+            "RT-0001",
+            "--target-draft-id",
+            "DRAFT-0001",
+            "--stage",
+            "DRAFT",
+            "--resolution",
+            "SUPERSEDE_DRAFT",
+            "--output",
+            str(output_path),
+        ],
+        cwd=root,
+    )
+
+    assert triage["resolution"] == "SUPERSEDE_DRAFT"
+    assert json.loads(output_path.read_text(encoding="utf-8"))["target_draft_id"] == "DRAFT-0001"
 
 
 def test_start_implement_script_selects_review_blocking_path(tmp_path: Path) -> None:
@@ -477,6 +520,38 @@ def test_planner_stops_on_a_materially_tied_intent_match(tmp_path: Path) -> None
 
     with pytest.raises(DraftSelectionError, match="materially tied"):
         plan_implementation(store, intent=ImplementationIntent(tags=("deploy",)))
+
+
+def test_planner_excludes_a_draft_superseded_by_an_immutable_successor(tmp_path: Path) -> None:
+    store = DraftStore(tmp_path)
+    original = store.create_feature(
+        summary="Original deployment plan.",
+        requirements=["Deploy"],
+        acceptance_criteria=["Install succeeds"],
+        scope=["simple_flow_deploy/"],
+        out_of_scope=["Other work"],
+        documentation_impact=[],
+        roadmap_target="UNMAPPED",
+        execution={"intent_tags": ["deploy"]},
+    )
+    successor = store.create_feature(
+        summary="Revised deployment plan.",
+        requirements=["Deploy with runtime"],
+        acceptance_criteria=["Installed scripts run"],
+        scope=["simple_flow_deploy/"],
+        out_of_scope=["Other work"],
+        documentation_impact=[],
+        roadmap_target="UNMAPPED",
+        execution={
+            "intent_tags": ["deploy"],
+            "supersedes_draft_id": original.draft_id,
+            "implementation_route": "PUBLISH_REVISED_DRAFT",
+        },
+    )
+
+    plan = plan_implementation(store, intent=ImplementationIntent(tags=("deploy",)))
+
+    assert plan.draft_id == successor.draft_id
 
 
 def test_planner_follows_the_route_persisted_in_a_review_derived_draft(tmp_path: Path) -> None:

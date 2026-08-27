@@ -41,3 +41,10 @@ Start-Implement selects that durable handoff before creating or reusing a
 GitHub Issue and opening a PR against the repository default branch.
 PR-Finalize merges only after explicit user acceptance and objective GitHub
 checks.
+
+Issue-Draft retains the typed Issue contract in each draft's Markdown and adds
+execution metadata only to the JSON draft. Start-Implement uses its bundled
+`plan_implementation.py` helper to choose an eligible draft from explicit
+references, durable state, or structured agent-produced intent evidence. The
+planner fixes the implementation route and constraints before an agent writes
+FEATURE code or non-mechanical DOCUMENTATION content.

@@ -60,7 +60,7 @@ def test_start_implement_uses_a_file_backed_draft_and_the_issue_pr_main_route() 
     text = (ROOT / "simple_flow_deploy" / "assets" / "skills" / "simple-flow-start-implement" / "SKILL.md").read_text(encoding="utf-8")
 
     assert ".simple_tool/drafts/" in text
-    assert "scripts/select_path.py" in text
+    assert "scripts/plan_implementation.py" in text
     assert "Create or reuse the matching GitHub Issue" in text
     assert "Open a pull request against the default branch" in text
     assert "Closes #<issue-number>" in text

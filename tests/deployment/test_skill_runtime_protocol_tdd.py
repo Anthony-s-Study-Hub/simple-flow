@@ -13,6 +13,7 @@ SKILL_SCRIPTS = {
     "documentation-curation": ["scripts/curate_documentation.py"],
     "issue-draft": ["scripts/create_draft.py"],
     "start-implement": [
+        "scripts/plan_implementation.py",
         "scripts/select_path.py",
         "scripts/start_documentation.py",
     ],

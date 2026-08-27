@@ -43,7 +43,7 @@ def test_portable_skill_toolkit_contains_six_valid_skill_entrypoints() -> None:
     assert ".simple_tool/" in skills["simple-flow-issue-draft"]
     assert "scripts/create_draft.py" in skills["simple-flow-issue-draft"]
     assert ".simple_tool/" in skills["simple-flow-start-implement"]
-    assert "scripts/select_path.py" in skills["simple-flow-start-implement"]
+    assert "scripts/plan_implementation.py" in skills["simple-flow-start-implement"]
 
 
 def test_workflow_ownership_keeps_issue_pr_and_merge_actions_separate() -> None:

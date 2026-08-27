@@ -40,6 +40,23 @@ Review-Triage results are saved under `.simple_tool/triage/`. Start-Implement
 only consumes a triage result when it clearly matches the draft source issue
 and PR. Ambiguous review context stops the workflow.
 
+## Deterministic Implementation Planning
+
+Issue-Draft preserves the typed FEATURE or DOCUMENTATION fields used to render
+the Issue body, and stores execution metadata only in the canonical JSON. That
+metadata includes intent tags, components, lifecycle, priority, and an explicit
+implementation route. Review-Triage decisions may set a route for a successor,
+child, independent, or current-PR draft.
+
+Start-Implement converts the user's request into structured intent inputs, then
+runs `scripts/plan_implementation.py`. The planner selects an eligible draft by
+explicit ID, structured intent evidence, or durable active state and records
+why it selected that draft. Multiple drafts alone do not require a question; a
+material tie or invalid structured state stops safely. The agent performs the
+semantic work of writing FEATURE code or non-mechanical documentation, while
+the plan fixes the route, scope constraints, TDD requirement, and publication
+actions.
+
 Review-Triage derives the finding, Source Issue, and Source PR from the current
 conversation and repository context when one match is clear. Its classifier
 still receives the resolved values explicitly; the user does not need to repeat
