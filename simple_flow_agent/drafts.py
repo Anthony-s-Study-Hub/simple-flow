@@ -1,11 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 import re
 
 from simple_flow_gates.contracts import IssueContract, WorkType, normalize_work_type
+
+
+EXECUTION_ROUTES = {
+    "CREATE_INDEPENDENT_ISSUE",
+    "PUBLISH_REVISED_DRAFT",
+    "CREATE_LINKED_SUBISSUE",
+    "UPDATE_CURRENT_PR",
+    "CREATE_LINKED_FOLLOW_UP",
+    "CREATE_INDEPENDENT_FOLLOW_UP",
+}
+LIFECYCLE_STATES = {"READY", "BLOCKED", "COMPLETED", "SUPERSEDED"}
 
 
 @dataclass(frozen=True)
@@ -15,6 +26,7 @@ class Draft:
     fields: dict[str, str]
     source_issue: int | None = None
     source_pr: int | None = None
+    execution: dict[str, object] = field(default_factory=dict)
 
     def to_issue_body(self) -> str:
         work_type = normalize_work_type(self.work_type)
@@ -52,6 +64,7 @@ class Draft:
             "fields": self.fields,
             "source_issue": self.source_issue,
             "source_pr": self.source_pr,
+            "execution": self.execution,
         }
 
     @classmethod
@@ -62,6 +75,7 @@ class Draft:
             fields={str(k): str(v) for k, v in dict(data["fields"]).items()},
             source_issue=_optional_int(data.get("source_issue")),
             source_pr=_optional_int(data.get("source_pr")),
+            execution=_normalize_execution(data.get("execution")),
         )
 
 
@@ -83,6 +97,7 @@ class DraftStore:
         roadmap_target: str,
         source_issue: int | None = None,
         source_pr: int | None = None,
+        execution: dict[str, object] | None = None,
     ) -> Draft:
         draft = Draft(
             draft_id=self._next_id(),
@@ -98,6 +113,7 @@ class DraftStore:
             },
             source_issue=source_issue,
             source_pr=source_pr,
+            execution=_normalize_execution(execution),
         )
         self._validate_and_save(draft)
         return draft
@@ -113,6 +129,7 @@ class DraftStore:
         source_context: str,
         source_issue: int | None = None,
         source_pr: int | None = None,
+        execution: dict[str, object] | None = None,
     ) -> Draft:
         draft = Draft(
             draft_id=self._next_id(),
@@ -127,6 +144,7 @@ class DraftStore:
             },
             source_issue=source_issue,
             source_pr=source_pr,
+            execution=_normalize_execution(execution),
         )
         self._validate_and_save(draft)
         return draft
@@ -159,6 +177,9 @@ class DraftStore:
         path = self.root / f"{draft_id}.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         return Draft.from_json_data(data)
+
+    def list(self) -> list[Draft]:
+        return [self.read(path.stem) for path in sorted(self.root.glob("DRAFT-*.json"))]
 
     def _validate_and_save(self, draft: Draft) -> None:
         IssueContract.parse(draft.to_issue_body(), self.roadmap_targets)
@@ -197,4 +218,46 @@ def _optional_int(value: object) -> int | None:
     if value is None:
         return None
     return int(value)
+
+
+def _normalize_execution(value: object) -> dict[str, object]:
+    raw = {} if value is None else dict(value) if isinstance(value, dict) else None
+    if raw is None:
+        raise ValueError("Draft execution metadata must be an object.")
+
+    route = str(raw.get("implementation_route", "CREATE_INDEPENDENT_ISSUE"))
+    if route not in EXECUTION_ROUTES:
+        raise ValueError(f"Unsupported implementation route: {route}")
+    lifecycle = str(raw.get("lifecycle", "READY"))
+    if lifecycle not in LIFECYCLE_STATES:
+        raise ValueError(f"Unsupported draft lifecycle: {lifecycle}")
+
+    priority = raw.get("priority", 0)
+    if isinstance(priority, bool) or not isinstance(priority, int):
+        raise ValueError("Draft execution priority must be an integer.")
+
+    return {
+        "lifecycle": lifecycle,
+        "intent_tags": _metadata_list(raw.get("intent_tags", []), "intent_tags"),
+        "components": _metadata_list(raw.get("components", []), "components"),
+        "priority": priority,
+        "implementation_route": route,
+        "triage_decision_id": _metadata_optional_string(raw.get("triage_decision_id")),
+        "parent_draft_id": _metadata_optional_string(raw.get("parent_draft_id")),
+        "supersedes_draft_id": _metadata_optional_string(raw.get("supersedes_draft_id")),
+    }
+
+
+def _metadata_list(value: object, name: str) -> list[str]:
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise ValueError(f"Draft execution {name} must be a list of non-empty strings.")
+    return [item.strip() for item in value]
+
+
+def _metadata_optional_string(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Draft execution references must be non-empty strings when provided.")
+    return value.strip()
 
