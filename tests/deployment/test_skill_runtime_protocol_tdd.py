@@ -9,16 +9,14 @@ from simple_flow_deploy.installer import install
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_SCRIPTS = {
-    "discussion": [],
     "documentation-curation": ["scripts/curate_documentation.py"],
     "issue-draft": ["scripts/create_draft.py"],
     "start-implement": [
         "scripts/plan_implementation.py",
-        "scripts/select_path.py",
-        "scripts/start_documentation.py",
+        "scripts/delivery_pr.py",
     ],
     "review-triage": ["scripts/classify_finding.py"],
-    "pr-finalize": ["scripts/check_pre_merge.py"],
+    "pr-finalize": ["scripts/finalize_remote_pr.py"],
 }
 
 

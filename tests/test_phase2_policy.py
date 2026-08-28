@@ -23,9 +23,8 @@ def test_agents_md_contains_global_default_deny_rules() -> None:
         assert phrase in text
 
 
-def test_portable_skill_toolkit_contains_six_valid_skill_entrypoints() -> None:
+def test_portable_skill_toolkit_contains_five_valid_skill_entrypoints() -> None:
     expected = {
-        "simple-flow-discussion",
         "simple-flow-documentation-curation",
         "simple-flow-issue-draft",
         "simple-flow-start-implement",
@@ -44,6 +43,8 @@ def test_portable_skill_toolkit_contains_six_valid_skill_entrypoints() -> None:
     assert "scripts/create_draft.py" in skills["simple-flow-issue-draft"]
     assert ".simple_tool/" in skills["simple-flow-start-implement"]
     assert "scripts/plan_implementation.py" in skills["simple-flow-start-implement"]
+    assert "scripts/delivery_pr.py" in skills["simple-flow-start-implement"]
+    assert "simple-flow-discussion" not in skills
 
 
 def test_workflow_ownership_keeps_issue_pr_and_merge_actions_separate() -> None:
