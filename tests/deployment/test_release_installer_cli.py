@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tomllib
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -107,6 +108,30 @@ def test_release_cli_version_reports_package_version() -> None:
 
 def test_next_public_release_version_is_0_2_5() -> None:
     assert _project_version() == "0.2.5"
+
+
+def test_built_release_wheel_contains_shared_agent_rules(tmp_path: Path) -> None:
+    wheel_dir = tmp_path / "wheel"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "wheel",
+            "--no-deps",
+            "--wheel-dir",
+            str(wheel_dir),
+            ".",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    wheel = next(wheel_dir.glob("simple_flow-*.whl"))
+    with ZipFile(wheel) as archive:
+        assert "simple_flow_deploy/assets/AGENTS.md" in archive.namelist()
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
