@@ -7,6 +7,10 @@ description: Implement one approved file-backed Canonical Draft through a GitHub
 
 Use this skill when the user asks to implement an approved Canonical Draft.
 
+For this skill, explicit invocation is sufficient authorization. Select the
+structured Draft and execute this skill's owned delivery stage without
+requesting a second confirmation.
+
 On Windows, use PowerShell-compatible Git and GitHub CLI commands; do not
 assume Bash-only utilities are available.
 

@@ -8,6 +8,9 @@ description: Classify a draft-stage change or human pull-request review finding 
 Use this skill after either a new request changes an unimplemented Canonical
 Draft or a human PR review identifies a finding.
 
+For this skill, explicit invocation is sufficient authorization. Record its
+decision without requesting a second confirmation.
+
 Classify the finding in the conversation as one of:
 
 - CURRENT, SUBISSUE, or NEW ISSUE

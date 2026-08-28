@@ -56,11 +56,15 @@ def test_release_cli_default_install_deploys_dual_skill_layout_and_shared_agent_
     assert "Do not ask for confirmation while the plan is incomplete or exploratory." in rules_text
     assert "The original request does not itself authorize the stage." in rules_text
     assert "covers all internal work owned by that stage" in rules_text
+    assert "## Explicit Skill Invocation" in rules_text
+    assert "Do not ask for a second confirmation" in rules_text
     assert "Only Start-Implement may publish or update formal Issues" in rules_text
     assert "Only the owning skill may change transition files under `.simple_tool/`" in rules_text
     for root in (".codex/skills", ".claude/skills"):
         assert {path.parent.name for path in (target / root).glob("*/SKILL.md")} == SKILLS
         for skill in SKILLS:
+            entrypoint = (target / root / skill / "SKILL.md").read_text(encoding="utf-8")
+            assert "explicit invocation is sufficient authorization" in entrypoint
             policy = (target / root / skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
             expected_policy = "false" if skill == "pr-finalize" else "true"
             assert f"allow_implicit_invocation: {expected_policy}" in policy

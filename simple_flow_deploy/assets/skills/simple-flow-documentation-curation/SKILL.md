@@ -8,6 +8,9 @@ description: Turn project history into a validated file-backed documentation Can
 Use this skill when the user wants to turn Issue, PR, review, and merge history
 into a future documentation change.
 
+For this skill, explicit invocation is sufficient authorization. Execute its
+owned curation stage without requesting a second confirmation.
+
 On Windows, use PowerShell-compatible commands when collecting local history.
 
 ## Outcome

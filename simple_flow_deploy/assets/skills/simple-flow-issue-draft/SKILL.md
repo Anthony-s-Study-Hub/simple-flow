@@ -8,6 +8,9 @@ description: Turn an agreed change into a validated file-backed Canonical Draft 
 Use this skill after discussion has produced an implementation-ready change, or
 after Review-Triage has recorded a decision about an existing draft.
 
+For this skill, explicit invocation is sufficient authorization. Create the
+Canonical Draft without requesting a second confirmation.
+
 ## Outcome
 
 Create exactly one Canonical Draft in `.simple_tool/drafts/`. It is the durable
