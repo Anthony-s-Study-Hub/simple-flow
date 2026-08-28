@@ -105,8 +105,8 @@ def test_release_cli_version_reports_package_version() -> None:
     assert _project_version() in completed.stdout
 
 
-def test_next_public_release_version_is_0_2_4() -> None:
-    assert _project_version() == "0.2.4"
+def test_next_public_release_version_is_0_2_5() -> None:
+    assert _project_version() == "0.2.5"
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
