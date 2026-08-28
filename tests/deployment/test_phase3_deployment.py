@@ -24,6 +24,9 @@ def test_public_release_cli_contract_deploys_only_standard_codex_and_claude_skil
     assert report["status"] == "success"
     assert report["agent"] == "both"
     assert (target / ".simple_tool" / "status.json").exists()
+    assert (target / "AGENTS.md").read_text(encoding="utf-8") == (
+        ROOT / "simple_flow_deploy" / "assets" / "AGENTS.md"
+    ).read_text(encoding="utf-8")
     for root in (".codex/skills", ".claude/skills"):
         deployed = {path.parent.name for path in (target / root).glob("*/SKILL.md")}
         assert deployed == set(SKILL_MAP.values())
@@ -34,7 +37,7 @@ def test_public_release_cli_contract_deploys_only_standard_codex_and_claude_skil
                 f"name: {source_skill}", f"name: {skill}"
             )
 
-    assert {path.name for path in target.iterdir()} == {".codex", ".claude", ".simple_tool"}
+    assert {path.name for path in target.iterdir()} == {".codex", ".claude", ".simple_tool", "AGENTS.md"}
 
 
 def test_public_release_cli_contract_is_idempotent_and_refuses_conflicting_skill(tmp_path: Path) -> None:
