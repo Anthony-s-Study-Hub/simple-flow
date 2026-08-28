@@ -40,7 +40,11 @@ def test_public_release_cli_contract_deploys_only_standard_codex_and_claude_skil
             assert invocation_policy.read_text(encoding="utf-8") == (
                 ROOT / "simple_flow_deploy" / "assets" / "skills" / source_skill / "agents" / "openai.yaml"
             ).read_text(encoding="utf-8")
-            assert "allow_implicit_invocation: true" in invocation_policy.read_text(encoding="utf-8")
+            expected_policy = "false" if skill == "pr-finalize" else "true"
+            assert (
+                f"allow_implicit_invocation: {expected_policy}"
+                in invocation_policy.read_text(encoding="utf-8")
+            )
 
     assert {path.name for path in target.iterdir()} == {".codex", ".claude", ".simple_tool", "AGENTS.md"}
 

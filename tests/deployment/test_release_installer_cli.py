@@ -62,7 +62,8 @@ def test_release_cli_default_install_deploys_dual_skill_layout_and_shared_agent_
         assert {path.parent.name for path in (target / root).glob("*/SKILL.md")} == SKILLS
         for skill in SKILLS:
             policy = (target / root / skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
-            assert "allow_implicit_invocation: true" in policy
+            expected_policy = "false" if skill == "pr-finalize" else "true"
+            assert f"allow_implicit_invocation: {expected_policy}" in policy
     assert not (target / ".simple-flow").exists()
     assert not (target / ".github").exists()
     assert not (target / "simple_flow_gates").exists()

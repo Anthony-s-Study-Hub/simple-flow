@@ -28,12 +28,16 @@ def test_install_restores_short_skill_names_scripts_and_shared_runtime(tmp_path:
     assert report.status == "success"
     assert (target / ".simple_tool" / "status.json").exists()
     assert (target / ".simple_tool" / "drafts").is_dir()
+    assert (target / ".simple_tool" / "finalizations").is_dir()
     assert (target / ".simple_tool" / "runtime" / "simple_flow_agent").is_dir()
     for root in (".codex/skills", ".claude/skills"):
         for skill, scripts in SKILL_SCRIPTS.items():
             skill_dir = target / root / skill
             assert (skill_dir / "SKILL.md").exists()
             assert f"name: {skill}" in (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+            policy = (skill_dir / "agents" / "openai.yaml").read_text(encoding="utf-8")
+            expected_policy = "false" if skill == "pr-finalize" else "true"
+            assert f"allow_implicit_invocation: {expected_policy}" in policy
             for script in scripts:
                 script_path = skill_dir / script
                 assert script_path.exists()
