@@ -1,0 +1,16 @@
+{
+  "issue": 65,
+  "red": {
+    "commit": "beac47c01e1ffd9e7d9ae28e2fa0dc659c7caa78",
+    "command": "python -m pytest -q tests/deployment/test_release_installer_cli.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "6bd6c7b1ad1196e301351531ca0bc9e301a14196"
+  },
+  "green": {
+    "commit": "0af73269a19ef584420cb8283a9e8566207246e4",
+    "command": "python -m pytest -q",
+    "exit_code": 0
+  }
+}
