@@ -52,15 +52,17 @@ def test_release_cli_default_install_deploys_dual_skill_layout_and_shared_agent_
         ROOT / "simple_flow_deploy" / "assets" / "AGENTS.md"
     ).read_text(encoding="utf-8")
     rules_text = installed_rules.read_text(encoding="utf-8")
-    assert "A normal user request is not a workflow-stage invocation." in rules_text
-    assert "analyze the request, name the next explicit invocation, and stop" in rules_text
+    assert "Treat every user message as discussion by default." in rules_text
+    assert "Do not ask for confirmation while the plan is incomplete or exploratory." in rules_text
+    assert "The original request does not itself authorize the stage." in rules_text
+    assert "covers all internal work owned by that stage" in rules_text
     assert "Only Start-Implement may publish or update formal Issues" in rules_text
     assert "Only the owning skill may change transition files under `.simple_tool/`" in rules_text
     for root in (".codex/skills", ".claude/skills"):
         assert {path.parent.name for path in (target / root).glob("*/SKILL.md")} == SKILLS
         for skill in SKILLS:
             policy = (target / root / skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
-            assert "allow_implicit_invocation: false" in policy
+            assert "allow_implicit_invocation: true" in policy
     assert not (target / ".simple-flow").exists()
     assert not (target / ".github").exists()
     assert not (target / "simple_flow_gates").exists()
