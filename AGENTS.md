@@ -10,26 +10,36 @@ authorized an action, the agent must not perform it. If the current skill has no
 
 Every skill must stop after completing its owned stage. A skill must not call or simulate the next stage, even when the next step seems obvious.
 
-Only Issue-Draft may generate a Canonical Draft.
+Only Issue-Draft may create or replace a Canonical Draft. Documentation-Curation
+retains its separate authority to create its dedicated DOCUMENTATION Canonical
+Draft and its own curation outputs.
 
 Only Documentation-Curation may curate technical history into Decision
 Proposals, Documentation Findings, New Component Proposals, and a
 DOCUMENTATION Canonical Draft.
 
 Only Start-Implement may publish or update formal Issues, create implementation
-branches, create draft pull requests, or continue formal implementation from an
-approved Canonical Draft selected from clear context or an explicit Draft ID.
+branches, create draft pull requests, mark an implementation PR ready for
+review, or continue formal implementation from an approved Canonical Draft.
 
 Only PR-Finalize may merge pull requests after explicit human review acceptance.
 
-Review-Triage must not modify issues or code.
+Review-Triage may create only its own decision files under `.simple_tool/triage/`.
+It must not modify drafts, Issues, code, branches, pull requests, or review threads.
 
 Documentation-Curation must not directly modify formal Baselines, create Issues,
 create branches, create pull requests, invoke Start-Implement, modify code or
 configuration, invoke PR-Finalize, or merge.
 
-Discussion must not generate formal drafts, publish issues, create branches,
-create pull requests, or modify formal implementation.
+Only the owning skill may change transition files under `.simple_tool/`:
+
+- Issue-Draft: `.simple_tool/drafts/` and the active Draft pointer in status.
+- Review-Triage: `.simple_tool/triage/`.
+- Start-Implement: `.simple_tool/deliveries/` and active Issue/PR pointers in status.
+- Documentation-Curation: its dedicated curation outputs and documentation Draft.
+
+No other skill or agent may create or change Canonical Drafts, implementation
+artifacts, or `.simple_tool/` transition files.
 
 Start-Implement must not merge pull requests.
 

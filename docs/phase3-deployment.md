@@ -12,7 +12,7 @@ uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.3 sim
 uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.3 simple-flow install .
 ```
 
-The default install copies the six canonical skills to both supported
+The default install copies the five canonical skills to both supported
 project-local protocols:
 
 ```text
@@ -27,7 +27,6 @@ conflict instead of overwriting a locally customized skill.
 
 ## Included skills
 
-- `discussion`
 - `issue-draft`
 - `start-implement`
 - `review-triage`
@@ -38,9 +37,9 @@ Skill-local scripts are copied beside their `SKILL.md` files, and their shared
 runtime is copied under `.simple_tool/runtime/`, so they remain runnable after
 deployment. Issue-Draft writes Canonical Drafts beneath `.simple_tool/drafts/`;
 Start-Implement selects that durable handoff before creating or reusing a
-GitHub Issue and opening a PR against the repository default branch.
-PR-Finalize merges only after explicit user acceptance and objective GitHub
-checks.
+GitHub Issue, bound branch, and draft PR against the repository default branch.
+It checks live CI before changing that PR to review-ready. PR-Finalize merges
+only after explicit user acceptance and objective GitHub checks.
 
 Issue-Draft retains the typed Issue contract in each draft's Markdown and adds
 execution metadata only to the JSON draft. Start-Implement uses its bundled

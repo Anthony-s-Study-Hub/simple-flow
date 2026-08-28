@@ -7,7 +7,6 @@ evidence checks.
 ## Artifacts
 
 - `AGENTS.md` defines the shared Default Deny rules.
-- `simple_flow_deploy/assets/skills/simple-flow-discussion` owns discussion only.
 - `simple_flow_deploy/assets/skills/simple-flow-issue-draft` owns Canonical Draft creation only.
 - `simple_flow_deploy/assets/skills/simple-flow-start-implement` owns formal implementation startup and
   continuation only.
@@ -32,13 +31,14 @@ The stage scripts are the deterministic handoff points:
 - Issue-Draft runs `scripts/create_draft.py` before reporting a Draft ID.
 - Review-Triage runs `scripts/classify_finding.py` before outputting a
   classification.
-- Start-Implement runs `scripts/select_path.py` before publishing Issues,
-  creating branches, or changing files.
-- PR-Finalize runs `scripts/check_pre_merge.py` before any merge.
+- Start-Implement runs `scripts/plan_implementation.py`, then its
+  `scripts/delivery_pr.py` entrypoint before implementation or review readiness.
+- PR-Finalize runs `scripts/finalize_remote_pr.py` before any merge.
 
-Review-Triage results are saved under `.simple_tool/triage/`. Start-Implement
-only consumes a triage result when it clearly matches the draft source issue
-and PR. Ambiguous review context stops the workflow.
+Review-Triage results are saved under `.simple_tool/triage/`. Issue-Draft
+consumes a selected decision to create the successor Draft; Start-Implement
+consumes only that routed Draft. `.simple_tool/` transition files may be
+written only by their owning skills.
 
 ## Deterministic Implementation Planning
 
@@ -55,16 +55,18 @@ why it selected that draft. Multiple drafts alone do not require a question; a
 material tie or invalid structured state stops safely. The agent performs the
 semantic work of writing FEATURE code or non-mechanical documentation, while
 the plan fixes the route, scope constraints, TDD requirement, and publication
-actions.
+actions. Start-Implement opens or reuses the Issue, branch, and draft PR
+through one idempotent delivery record; it leaves the PR review-ready only
+after the live required CI checks pass.
 
 Review-Triage derives the finding, Source Issue, and Source PR from the current
 conversation and repository context when one match is clear. Its classifier
 still receives the resolved values explicitly; the user does not need to repeat
 them.
 
-PR-Finalize requires explicit human invocation. It checks objective merge
-conditions and stops on failed CI, unresolved conversations, draft state, missing
-PRs, closed PRs, or new commits after human review.
+PR-Finalize requires explicit human invocation. It queries GitHub directly,
+stops on failed CI, unresolved conversations, draft state, missing PRs, or
+closed PRs, and performs the normal remote merge only after those checks pass.
 
 ## Human Boundary
 

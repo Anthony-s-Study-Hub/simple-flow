@@ -9,7 +9,6 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = {
-    "discussion",
     "documentation-curation",
     "issue-draft",
     "start-implement",

@@ -8,7 +8,6 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_MAP = {
-    "simple-flow-discussion": "discussion",
     "simple-flow-documentation-curation": "documentation-curation",
     "simple-flow-issue-draft": "issue-draft",
     "simple-flow-start-implement": "start-implement",
@@ -47,12 +46,12 @@ def test_public_release_cli_contract_is_idempotent_and_refuses_conflicting_skill
     assert repeated["created"] == []
     assert repeated["skipped"]
 
-    skill = target / ".codex" / "skills" / "discussion" / "SKILL.md"
+    skill = target / ".codex" / "skills" / "start-implement" / "SKILL.md"
     skill.write_text("local skill override\n", encoding="utf-8")
     conflict = _install(target, check=False)
     assert conflict["status"] == "conflict"
     assert conflict["conflicts"] == [
-        {"path": ".codex/skills/discussion/SKILL.md", "reason": "exists with different content"}
+        {"path": ".codex/skills/start-implement/SKILL.md", "reason": "exists with different content"}
     ]
 
 
@@ -61,9 +60,9 @@ def test_start_implement_uses_a_file_backed_draft_and_the_issue_pr_main_route() 
 
     assert ".simple_tool/drafts/" in text
     assert "scripts/plan_implementation.py" in text
-    assert "Create or reuse the matching GitHub Issue" in text
-    assert "Open a pull request against the default branch" in text
-    assert "Closes #<issue-number>" in text
+    assert "scripts/delivery_pr.py open" in text
+    assert "draft PR must exist before implementation begins" in text
+    assert "scripts/delivery_pr.py ready" in text
     assert "Do not merge" in text
 
 

@@ -160,10 +160,9 @@ def test_review_triage_script_persists_a_draft_stage_resolution(tmp_path: Path) 
     assert json.loads(output_path.read_text(encoding="utf-8"))["target_draft_id"] == "DRAFT-0001"
 
 
-def test_start_implement_script_selects_review_blocking_path(tmp_path: Path) -> None:
+def test_start_implement_script_selects_a_routed_draft(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[1]
     draft_dir = tmp_path / "drafts"
-    triage_output = tmp_path / "triage.json"
     store = DraftStore(draft_dir)
     store.create_feature(
         summary="Executable skill pipeline.",
@@ -175,79 +174,42 @@ def test_start_implement_script_selects_review_blocking_path(tmp_path: Path) -> 
         roadmap_target="UNMAPPED",
         source_issue=14,
         source_pr=15,
-    )
-    triage_output.write_text(
-        json.dumps(
-            {
-                "relationship": "CURRENT",
-                "merge_impact": "BLOCKING",
-                "source_issue": 14,
-                "source_pr": 15,
-                "reason": "Review found a blocking current-work issue.",
-            }
-        )
-        + "\n",
-        encoding="utf-8",
+        execution={"implementation_route": "UPDATE_CURRENT_PR"},
     )
 
     plan = _run_json(
         [
             sys.executable,
-            str(_skill_script(root, "start-implement", "select_path.py")),
+            str(_skill_script(root, "start-implement", "plan_implementation.py")),
             "--draft-id",
             "DRAFT-0001",
             "--drafts-dir",
             str(draft_dir),
-            "--triage-file",
-            str(triage_output),
         ],
         cwd=root,
     )
-    assert plan["path"] == "REVIEW_CURRENT_BLOCKING"
+    assert plan["route"] == "UPDATE_CURRENT_PR"
     assert plan["stop_point"] == "HUMAN_PR_REVIEW"
     assert "merge_pull_request" not in plan["actions"]
 
 
-def test_pr_finalize_script_allows_ready_authorized_merge(tmp_path: Path) -> None:
+def test_pr_finalize_script_requires_explicit_approval(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[1]
-    pr_state = tmp_path / "pr-state.json"
-    pr_state.write_text(
-        json.dumps(
-            {
-                "exists": True,
-                "open": True,
-                "draft": False,
-                "required_checks": {
-                    "pr-contract": True,
-                    "linked-issue-contract": True,
-                    "scope-governance": True,
-                    "documentation-impact": True,
-                    "tdd-evidence-order": True,
-                    "tdd-red-replay": True,
-                    "tdd-green-replay": True,
-                    "current-head-tests": True,
-                },
-                "unresolved_conversations": 0,
-                "commits_after_human_review": 0,
-                "linked_issue_closed": False,
-                "head_branch_deleted": False,
-                "project_item_updated": False,
-            }
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    finalize = _run_json(
+    completed = subprocess.run(
         [
             sys.executable,
-            str(_skill_script(root, "pr-finalize", "check_pre_merge.py")),
-            "--state",
-            str(pr_state),
-            "--authorized",
+            str(_skill_script(root, "pr-finalize", "finalize_remote_pr.py")),
+            "--pr",
+            "1",
+            "--repo",
+            "owner/repo",
         ],
         cwd=root,
+        capture_output=True,
+        text=True,
     )
-    assert finalize["can_merge"] is True
+    assert completed.returncode == 1
+    assert "Missing explicit user approval" in completed.stderr
 
 
 def test_issue_draft_script_creates_documentation_draft(tmp_path: Path) -> None:
