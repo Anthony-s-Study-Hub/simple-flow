@@ -52,11 +52,15 @@ def test_release_cli_default_install_deploys_dual_skill_layout_and_shared_agent_
         ROOT / "simple_flow_deploy" / "assets" / "AGENTS.md"
     ).read_text(encoding="utf-8")
     rules_text = installed_rules.read_text(encoding="utf-8")
-    assert "Only Issue-Draft may create or replace a Canonical Draft." in rules_text
+    assert "A normal user request is not a workflow-stage invocation." in rules_text
+    assert "analyze the request, name the next explicit invocation, and stop" in rules_text
     assert "Only Start-Implement may publish or update formal Issues" in rules_text
     assert "Only the owning skill may change transition files under `.simple_tool/`" in rules_text
     for root in (".codex/skills", ".claude/skills"):
         assert {path.parent.name for path in (target / root).glob("*/SKILL.md")} == SKILLS
+        for skill in SKILLS:
+            policy = (target / root / skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
+            assert "allow_implicit_invocation: false" in policy
     assert not (target / ".simple-flow").exists()
     assert not (target / ".github").exists()
     assert not (target / "simple_flow_gates").exists()
@@ -132,6 +136,8 @@ def test_built_release_wheel_contains_shared_agent_rules(tmp_path: Path) -> None
     wheel = next(wheel_dir.glob("simple_flow-*.whl"))
     with ZipFile(wheel) as archive:
         assert "simple_flow_deploy/assets/AGENTS.md" in archive.namelist()
+        for skill in SKILLS:
+            assert f"simple_flow_deploy/assets/skills/simple-flow-{skill}/agents/openai.yaml" in archive.namelist()
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
