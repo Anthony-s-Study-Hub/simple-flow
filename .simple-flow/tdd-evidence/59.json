@@ -1,0 +1,16 @@
+{
+  "issue": 59,
+  "red": {
+    "commit": "6568a7b8fbceb90cf99e0141aeb90516f4773707",
+    "command": "python -m pytest -q tests/deployment/test_release_installer_cli.py tests/deployment/test_phase3_deployment.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "9328c50e6bb20837593f2660d10086897cdccc58"
+  },
+  "green": {
+    "commit": "411ceaaf15c6388a633c8b2162cd5aa128ae527e",
+    "command": "python -m pytest -q",
+    "exit_code": 0
+  }
+}

@@ -36,7 +36,7 @@ def test_release_cli_doctor_is_read_only_and_checks_skill_assets(tmp_path: Path)
     assert list(target.iterdir()) == []
 
 
-def test_release_cli_default_install_uses_dual_skill_layout_only(tmp_path: Path) -> None:
+def test_release_cli_default_install_deploys_dual_skill_layout_and_shared_agent_rules(tmp_path: Path) -> None:
     target = tmp_path / "target-project"
 
     completed = _run_cli("install", str(target), "--json")
@@ -46,11 +46,18 @@ def test_release_cli_default_install_uses_dual_skill_layout_only(tmp_path: Path)
     assert report["status"] == "success"
     assert report["agent"] == "both"
     assert (target / ".simple_tool" / "status.json").exists()
+    installed_rules = target / "AGENTS.md"
+    assert installed_rules.read_text(encoding="utf-8") == (
+        ROOT / "simple_flow_deploy" / "assets" / "AGENTS.md"
+    ).read_text(encoding="utf-8")
+    rules_text = installed_rules.read_text(encoding="utf-8")
+    assert "Only Issue-Draft may create or replace a Canonical Draft." in rules_text
+    assert "Only Start-Implement may publish or update formal Issues" in rules_text
+    assert "Only the owning skill may change transition files under `.simple_tool/`" in rules_text
     for root in (".codex/skills", ".claude/skills"):
         assert {path.parent.name for path in (target / root).glob("*/SKILL.md")} == SKILLS
     assert not (target / ".simple-flow").exists()
     assert not (target / ".github").exists()
-    assert not (target / "AGENTS.md").exists()
     assert not (target / "simple_flow_gates").exists()
     assert not (target / "scripts").exists()
 
@@ -63,6 +70,32 @@ def test_release_cli_can_install_one_agent_protocol(tmp_path: Path) -> None:
     assert completed.returncode == 0, completed.stderr
     assert (target / ".claude" / "skills" / "start-implement" / "SKILL.md").exists()
     assert not (target / ".codex").exists()
+
+
+def test_release_cli_refuses_conflicting_shared_agent_rules(tmp_path: Path) -> None:
+    target = tmp_path / "target-project"
+    _run_cli("install", str(target), "--json")
+    (target / "AGENTS.md").write_text("local rules\n", encoding="utf-8")
+
+    completed = _run_cli("install", str(target), "--json")
+
+    assert completed.returncode != 0
+    report = json.loads(completed.stdout)
+    assert report["status"] == "conflict"
+    assert report["conflicts"] == [
+        {"path": "AGENTS.md", "reason": "exists with different content"}
+    ]
+
+
+def test_release_cli_plan_includes_shared_agent_rules_without_writing(tmp_path: Path) -> None:
+    target = tmp_path / "target-project"
+
+    completed = _run_cli("plan", str(target), "--json")
+
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads(completed.stdout)
+    assert "AGENTS.md" in report["created"]
+    assert not target.exists()
 
 
 def test_release_cli_version_reports_package_version() -> None:

@@ -156,7 +156,8 @@ def package_version(source_root: str | Path | None = None) -> str:
 
 
 def _desired_files(agent: str) -> dict[str, str]:
-    files = _state_files()
+    files = {"AGENTS.md": _asset_text("AGENTS.md")}
+    files.update(_state_files())
     selected_agents = AGENT_ROOTS if agent == "both" else {agent: AGENT_ROOTS[agent]}
     for root in selected_agents.values():
         for source_skill, target_skill in SKILL_MAP.items():
@@ -273,6 +274,8 @@ def _check_target_writable(destination: Path) -> Precheck:
 
 def _check_packaged_assets() -> Precheck:
     missing = []
+    if not (_package_root() / "assets" / "AGENTS.md").is_file():
+        missing.append("assets/AGENTS.md")
     for source_skill, target_skill in SKILL_MAP.items():
         skill_file = _package_root() / "assets" / "skills" / source_skill / "SKILL.md"
         if not skill_file.is_file():
