@@ -114,7 +114,7 @@ def test_release_cli_version_reports_package_version() -> None:
 
 
 def test_next_public_release_version_is_0_2_8() -> None:
-    assert _project_version() == "0.2.8"
+    assert _project_version() == "0.2.9"
 
 
 def test_built_release_wheel_contains_shared_agent_rules(tmp_path: Path) -> None:
