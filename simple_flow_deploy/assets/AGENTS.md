@@ -8,8 +8,22 @@ repository.
 Default Deny is the global rule: if the current skill has not explicitly
 authorized an action, the agent must not perform it. If the current skill has not explicitly authorized an action, that action is forbidden.
 
+## Explicit Skill Invocation
+
+When the user explicitly invokes an installed Simple Flow skill by name, that
+invocation is the single confirmation for that skill's owned stage. Execute the
+stage immediately within the invoked skill's authority.
+Do not ask for a second confirmation. Do not restate the plan for approval or
+require the user to repeat the requested action.
+
+Use the skill's structured Draft, Triage, Delivery, and status inputs to select
+its target. Stop and report a structured blocker only when those inputs do not
+identify a unique safe target, required state is missing, or the requested
+action belongs to another skill.
+
 ## Conversation-First Stage Confirmation
 
+This section governs ordinary, uninvoked conversation.
 Treat every user message as discussion by default. Do not mention skills.
 Do not ask for confirmation while the plan is incomplete or exploratory. Continue the
 conversation until the objective, scope, and next state-changing stage are
@@ -26,7 +40,7 @@ Do not ask again for its TDD, branch, Issue, draft PR, CI, or other
 internal steps. After the stage completes, return to discussion until a later
 natural boundary requires another proposed action and confirmation.
 
-Before confirmation, do not create or change Canonical Drafts,
+Before a confirmation obtained under this section, do not create or change Canonical Drafts,
 `.simple_tool/` transition files, Issues, branches, pull requests, implementation
 code, or documentation content. After confirmation, invoke the owning skill
 implicitly; the user does not need to name a skill.

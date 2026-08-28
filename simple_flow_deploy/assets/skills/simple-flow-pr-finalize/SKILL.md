@@ -9,6 +9,7 @@ Use this skill only when the user explicitly invokes `$simple-flow-pr-finalize`.
 It must not be invoked implicitly from ordinary conversation, including a
 message that says a PR has passed review. The explicit invocation is the merge
 authorization for the current delivery; do not ask for a second approval.
+For this skill, explicit invocation is sufficient authorization.
 
 On Windows, use PowerShell-compatible Git and GitHub CLI commands; do not
 assume Bash-only utilities are available.
