@@ -56,7 +56,7 @@ class GitHubGateway:
     def ensure_branch(self, target, issue_number: int) -> str:
         prefix = "documentation" if target.work_type == "DOCUMENTATION" else "feature"
         branch = f"{prefix}/{issue_number}-{_slug(target.summary)}"
-        _switch_branch(branch)
+        _switch_branch(branch, self.base_branch)
         if _command(["git", "rev-list", "--count", f"origin/{self.base_branch}..HEAD"]) == "0":
             _command(
                 ["git", "commit", "--allow-empty", "-m", f"chore: open delivery for #{issue_number}"],
@@ -259,7 +259,7 @@ def _required_check_names(repo: str, branch: str, gh_path: str) -> set[str]:
     return names
 
 
-def _switch_branch(branch: str) -> None:
+def _switch_branch(branch: str, base_branch: str) -> None:
     completed = subprocess.run(["git", "switch", branch], capture_output=True, text=True)
     if completed.returncode == 0:
         return
@@ -271,7 +271,7 @@ def _switch_branch(branch: str) -> None:
     if remote.returncode == 0:
         _command(["git", "switch", "--track", "-c", branch, f"origin/{branch}"])
         return
-    _command(["git", "switch", "-c", branch])
+    _command(["git", "switch", "-c", branch, f"origin/{base_branch}"])
 
 
 def _slug(value: str) -> str:
