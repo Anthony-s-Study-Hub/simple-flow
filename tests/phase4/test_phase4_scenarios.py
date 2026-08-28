@@ -139,7 +139,7 @@ def test_smoke_scenarios_are_small_representative_subset() -> None:
         for scenario_id in SMOKE_SCENARIO_IDS
         for step in scenarios[scenario_id].ordered_steps
     )
-    assert "@discussion" in smoke_actions
+    assert "@discussion" not in smoke_actions
     assert "@issue-draft" in smoke_actions
     assert "@review-triage" in smoke_actions
     assert "@start-implement" in smoke_actions
@@ -161,8 +161,8 @@ def test_remote_smoke_uses_seeded_draft_fixture_for_fast_github_path() -> None:
 
     assert len(user_actions) == 1
     assert user_actions[0].text.startswith("@start-implement {{draft_id}}")
-    assert "minimum DOCUMENTATION_NORMAL path" in user_actions[0].text
-    assert "scripts/start_documentation.py" in user_actions[0].text
+    assert "DOCUMENTATION delivery-open path" in user_actions[0].text
+    assert "scripts/delivery_pr.py open" in user_actions[0].text
     assert "draft PR" in user_actions[0].text
     assert remote_smoke.fixture_draft is not None
     assert remote_smoke.fixture_draft.work_type == "DOCUMENTATION"

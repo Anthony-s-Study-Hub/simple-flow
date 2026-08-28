@@ -17,6 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--draft-id")
     parser.add_argument("--intent", help="JSON object with tags, components, and optional terms.")
+    parser.add_argument("--output", help="Optional durable file for the ready plan JSON.")
     parser.add_argument("--status-file", default=".simple_tool/status.json")
     parser.add_argument("--drafts-dir", default=".simple_tool/drafts")
     args = parser.parse_args(argv)
@@ -34,7 +35,12 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "blocked", "error": str(exc)}, indent=2), file=sys.stderr)
         return 1
 
-    print(json.dumps({"status": "ready", **plan.to_json_data()}, indent=2))
+    output = {"status": "ready", **plan.to_json_data()}
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(output, indent=2))
     return 0
 
 

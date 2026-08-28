@@ -28,13 +28,12 @@ record; it never polls or sends a follow-up agent request.
 
 | ID | Skill and goal | Developer prompt | Passing criteria |
 | --- | --- | --- | --- |
-| P01 | Discussion: explore without workflow mutation. | `@discussion "Explore adding a lightweight health endpoint. Give concise options, risks, and open questions; then stop."` | Completed turn; no draft, worktree change, or implementation branch. |
 | P02 | Issue-Draft: create a FEATURE draft and stop. | `@issue-draft FEATURE: Add a lightweight health endpoint with a JSON status response. Requirements: provide GET /health and return a JSON status value. Acceptance criteria: a healthy service returns HTTP 200 with JSON status; the endpoint is documented. Scope: the health endpoint and its focused tests. Out of scope: dependency health checks and unrelated refactoring. Documentation impact: update the usage guide. Roadmap target: UNMAPPED.` | `create_draft.py` exits 0; at least one draft; no implementation branch. |
-| P03-U | Start-Implement: reject an absent prerequisite. | `@start-implement DRAFT-9999` | `select_path.py` returns its expected missing-draft exit; no local or remote artifact. |
-| P03-R | Start-Implement: perform the approved DOCUMENTATION path. | `@start-implement DRAFT-0001` | Framework seeds a valid independent draft; `select_path.py` and `start_documentation.py` exit 0; exact Issue, branch, draft PR, and file content; no merge. |
+| P03-U | Start-Implement: reject an absent prerequisite. | `@start-implement DRAFT-9999` | `plan_implementation.py` returns its expected missing-draft exit; no local or remote artifact. |
+| P03-R | Start-Implement: open the approved DOCUMENTATION delivery PR. | `@start-implement DRAFT-0001` | Framework seeds a valid independent draft; `plan_implementation.py` and `delivery_pr.py` open the exact Issue, branch, and draft PR; no merge. |
 | P04 | Review-Triage: classify a blocking current-work finding. | `@review-triage relationship=CURRENT merge-impact=BLOCKING source-issue=42 source-pr=84 reason='The new endpoint omits an error response test.'` | `classify_finding.py` exits 0; response contains `CURRENT`, `BLOCKING`, `42`, and `84`; no workflow mutation. |
 | P05 | Documentation-Curation: curate supplied history into one draft. | `@documentation-curation Curate the provided history into baseline update proposals and one DOCUMENTATION Canonical Draft; then stop.` | `curate_documentation.py` exits 0; one or more drafts and curation outputs only; no branch or remote artifact. |
-| P06 | PR-Finalize: complete an accepted ready PR. | `@pr-finalize <fixture-pr-number>` | Framework seeds an open, non-draft PR with fixed objective state; `check_pre_merge.py` exits 0; PR is merged, linked Issue closed, head branch deleted, and exact file content reaches `main`. |
+| P06 | PR-Finalize: complete an accepted ready PR. | `@pr-finalize <fixture-pr-number>` | Framework seeds an open, non-draft PR with fixed objective state; `finalize_remote_pr.py` exits 0; PR is merged, linked Issue closed, head branch deleted, and exact file content reaches `main`. |
 
 `<fixture-pr-number>` is the only run-scoped prompt substitution: it is the
 normal user-visible subject required by PR-Finalize, not a harness instruction.

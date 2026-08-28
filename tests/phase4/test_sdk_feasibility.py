@@ -49,9 +49,9 @@ def _config() -> LocalModelConfig:
 
 
 def test_pilot_prompts_are_developer_requests_without_harness_mechanics() -> None:
-    assert {scenario.scenario_id for scenario in PILOT_SCENARIOS} == {"P01", "P02", "P03-U", "P03-R", "P04", "P05", "P06"}
+    assert {scenario.scenario_id for scenario in PILOT_SCENARIOS} == {"P02", "P03-U", "P03-R", "P04", "P05", "P06"}
     assert {scenario.required_skill for scenario in PILOT_SCENARIOS} == {
-        "discussion", "issue-draft", "start-implement", "review-triage", "documentation-curation", "pr-finalize",
+        "issue-draft", "start-implement", "review-triage", "documentation-curation", "pr-finalize",
     }
     assert all(prompt_is_developer_realistic(scenario.prompt) for scenario in PILOT_SCENARIOS)
     assert not prompt_is_developer_realistic("Run python .codex/skills/issue-draft/scripts/create_draft.py")
@@ -400,10 +400,10 @@ def test_blocked_remote_preflight_does_not_enter_capability_confidence() -> None
 
 def test_confidence_uses_only_valid_capability_trials() -> None:
     trials = [
-        TrialResult("P01", {"workflow_outcome": Verdict.PASS}, {}),
-        TrialResult("P01", {"workflow_outcome": Verdict.FAIL}, {}),
-        TrialResult("P01", {"workflow_outcome": Verdict.BLOCKED}, {}),
-        TrialResult("P01", {"workflow_outcome": Verdict.UNKNOWN}, {}),
+        TrialResult("P02", {"workflow_outcome": Verdict.PASS}, {}),
+        TrialResult("P02", {"workflow_outcome": Verdict.FAIL}, {}),
+        TrialResult("P02", {"workflow_outcome": Verdict.BLOCKED}, {}),
+        TrialResult("P02", {"workflow_outcome": Verdict.UNKNOWN}, {}),
     ]
     summary = capability_confidence(trials, "workflow_outcome")
     assert summary["valid_trials"] == 2
@@ -415,8 +415,8 @@ def test_confidence_uses_only_valid_capability_trials() -> None:
     with pytest.raises(ValueError, match="not confidence-eligible"):
         capability_confidence(trials, "objective_state")
     with pytest.raises(ValueError, match="exactly one scenario"):
-        capability_confidence([trials[0], TrialResult("P02", {"workflow_outcome": Verdict.PASS}, {})], "workflow_outcome")
-    assert [item["scenario_id"] for item in capability_confidence_by_scenario(trials)] == ["P01"]
+        capability_confidence([trials[0], TrialResult("P03-U", {"workflow_outcome": Verdict.PASS}, {})], "workflow_outcome")
+    assert [item["scenario_id"] for item in capability_confidence_by_scenario(trials)] == ["P02"]
 
 
 def test_local_model_config_requires_non_polling_interval_and_larger_timeout() -> None:

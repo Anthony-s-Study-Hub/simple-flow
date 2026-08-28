@@ -392,7 +392,7 @@ def test_phase4_local_backend_dry_run_reports_codex_not_used(tmp_path: Path) -> 
 
 def test_compact_report_documents_processed_prompt_and_response() -> None:
     prompt = (
-        "USER_ACTION TO EXECUTE NOW: @discussion \"Add status\"\n"
+        "USER_ACTION TO EXECUTE NOW: @issue-draft \"Add status\"\n"
         "This is a human-supplied workflow action.\n"
         "Scenario ID: A01\n"
         "Scenario Purpose: Discussion smoke test.\n"
@@ -405,7 +405,7 @@ def test_compact_report_documents_processed_prompt_and_response() -> None:
         "RAW JSON NOISE " * 200
     )
 
-    assert compact_fixture_prompt(prompt)["user_action"] == '@discussion "Add status"'
+    assert compact_fixture_prompt(prompt)["user_action"] == '@issue-draft "Add status"'
     assert compact_codex_response(raw_stdout, "", 0)["meaningful_response"] == (
         "Discussed options and stopped before Issue-Draft."
     )
@@ -414,7 +414,7 @@ def test_compact_report_documents_processed_prompt_and_response() -> None:
     data = compact_report_data(report)
     markdown = render_markdown(report)
 
-    assert data["scenarios"][0]["prompt_exchange"][0]["fixture_prompt"]["user_action"].startswith("@discussion")
+    assert data["scenarios"][0]["prompt_exchange"][0]["fixture_prompt"]["user_action"].startswith("User request:")
     assert "Fixture Prompt" in markdown
     assert "Response Received" in markdown
     assert "RAW JSON NOISE" not in markdown

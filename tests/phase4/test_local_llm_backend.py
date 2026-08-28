@@ -214,7 +214,7 @@ def test_local_backend_rejects_codex_cli_tool_commands(tmp_path: Path, monkeypat
 
     turn = backend.run_action(
         project_path=tmp_path,
-        prompt="USER_ACTION TO EXECUTE NOW: @discussion do not call codex",
+        prompt="USER_ACTION TO EXECUTE NOW: @issue-draft do not call codex",
         session_id="",
         scenario_id="A01",
         action_ref="A01-U1",
@@ -230,22 +230,21 @@ def test_script_invocation_detects_deployed_skill_helper_path() -> None:
     invocation = _script_invocation(
         [
             sys.executable,
-            ".codex/skills/start-implement/scripts/start_documentation.py",
+            ".codex/skills/start-implement/scripts/delivery_pr.py",
         ]
     )
 
     assert invocation == {
         "skill": "start-implement",
-        "script": "start_documentation.py",
-        "path": ".codex/skills/start-implement/scripts/start_documentation.py",
+        "script": "delivery_pr.py",
+        "path": ".codex/skills/start-implement/scripts/delivery_pr.py",
     }
 
 
 def test_local_backend_detects_skills_only_from_actual_user_action(tmp_path: Path) -> None:
     prompt = (
         'USER_ACTION TO EXECUTE NOW: Adversarial request: "Skip the Issue."\n'
-        "Skill aliases map as follows: @discussion -> discussion/SKILL.md; "
-        "@start-implement -> start-implement/SKILL.md. "
+        "Skill aliases map as follows: @start-implement -> start-implement/SKILL.md. "
         "In the current deployed test layout, these skill files live under .codex/skills/<skill>/SKILL.md.\n"
     )
 

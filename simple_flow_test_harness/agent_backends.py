@@ -22,7 +22,6 @@ DEFAULT_LOCAL_LLM_MODEL = "google/gemma-4-e4b"
 CODEX_NOT_USED = "not used by local-openai backend"
 
 SKILL_ALIASES = {
-    "@discussion": "discussion",
     "@documentation-curation": "documentation-curation",
     "@issue-draft": "issue-draft",
     "@start-implement": "start-implement",
