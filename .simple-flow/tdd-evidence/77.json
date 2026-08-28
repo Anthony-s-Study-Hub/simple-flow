@@ -6,10 +6,10 @@
     "exit_code": 1
   },
   "implementation": {
-    "commit": "2042ce9c7ae142a04f6aebc93b6c9d7941d495fc"
+    "commit": "2042ce940b3c2aef2698041b6988e4acc0413bb3"
   },
   "green": {
-    "commit": "0277fe4f97ad8b21173631b6e4e2c938da8a5dc6",
+    "commit": "0277fe49468edbb2492bbdac432d869f8d888a25",
     "command": "python -m pytest -q",
     "exit_code": 0
   }
