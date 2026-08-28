@@ -87,6 +87,17 @@ def test_release_cli_refuses_conflicting_shared_agent_rules(tmp_path: Path) -> N
     ]
 
 
+def test_release_cli_plan_includes_shared_agent_rules_without_writing(tmp_path: Path) -> None:
+    target = tmp_path / "target-project"
+
+    completed = _run_cli("plan", str(target), "--json")
+
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads(completed.stdout)
+    assert "AGENTS.md" in report["created"]
+    assert not target.exists()
+
+
 def test_release_cli_version_reports_package_version() -> None:
     completed = _run_cli("--version")
 
