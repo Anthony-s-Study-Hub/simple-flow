@@ -24,7 +24,18 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("Missing explicit user approval for this pull request.")
         pr_number = _pr_number(args.pr)
         _verify_ready(pr_number, args.repo, args.gh_path)
-        _command([args.gh_path, "pr", "merge", str(pr_number), "--repo", args.repo, "--delete-branch"])
+        _command(
+            [
+                args.gh_path,
+                "pr",
+                "merge",
+                str(pr_number),
+                "--repo",
+                args.repo,
+                "--merge",
+                "--delete-branch",
+            ]
+        )
         result = _json_command(
             [args.gh_path, "pr", "view", str(pr_number), "--repo", args.repo, "--json", "state,mergedAt,url"]
         )

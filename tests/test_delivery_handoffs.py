@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import importlib.util
 from pathlib import Path
 
 import pytest
@@ -104,3 +105,19 @@ def test_ready_for_review_requires_passing_real_required_checks(tmp_path: Path) 
 
     assert ready.status == "REVIEW_READY"
     assert gateway.marked_ready == 1
+
+
+def test_remote_finalizer_uses_an_explicit_noninteractive_merge_method(monkeypatch) -> None:
+    script = Path(__file__).resolve().parents[1] / "simple_flow_deploy" / "skill_resources" / "pr-finalize" / "scripts" / "finalize_remote_pr.py"
+    spec = importlib.util.spec_from_file_location("finalize_remote_pr", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    commands: list[list[str]] = []
+
+    monkeypatch.setattr(module, "_verify_ready", lambda *_args: None)
+    monkeypatch.setattr(module, "_command", lambda command: commands.append(command) or "")
+    monkeypatch.setattr(module, "_json_command", lambda _command: {"state": "MERGED", "mergedAt": "now", "url": "https://github.example/pull/81"})
+
+    assert module.main(["--pr", "81", "--repo", "owner/repo", "--approved"]) == 0
+    assert commands == [["gh", "pr", "merge", "81", "--repo", "owner/repo", "--merge", "--delete-branch"]]
