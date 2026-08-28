@@ -161,10 +161,11 @@ def _desired_files(agent: str) -> dict[str, str]:
     selected_agents = AGENT_ROOTS if agent == "both" else {agent: AGENT_ROOTS[agent]}
     for root in selected_agents.values():
         for source_skill, target_skill in SKILL_MAP.items():
-            skill_text = _asset_text(f"skills/{source_skill}/SKILL.md")
-            files[f"{root}/{target_skill}/SKILL.md"] = skill_text.replace(
-                f"name: {source_skill}", f"name: {target_skill}"
-            )
+            for relative in ("SKILL.md", "agents/openai.yaml"):
+                skill_text = _asset_text(f"skills/{source_skill}/{relative}")
+                files[f"{root}/{target_skill}/{relative}"] = skill_text.replace(
+                    f"name: {source_skill}", f"name: {target_skill}"
+                )
             for relative, text in _resource_text_files(target_skill).items():
                 files[f"{root}/{target_skill}/{relative}"] = text
 
@@ -280,6 +281,9 @@ def _check_packaged_assets() -> Precheck:
         skill_file = _package_root() / "assets" / "skills" / source_skill / "SKILL.md"
         if not skill_file.is_file():
             missing.append(str(skill_file))
+        invocation_policy = skill_file.parent / "agents" / "openai.yaml"
+        if not invocation_policy.is_file():
+            missing.append(str(invocation_policy))
         if not _resource_text_files(target_skill):
             missing.append(f"skill_resources/{target_skill}/scripts")
     if missing:

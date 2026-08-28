@@ -8,6 +8,18 @@ repository.
 Default Deny is the global rule: if the current skill has not explicitly
 authorized an action, the agent must not perform it. If the current skill has not explicitly authorized an action, that action is forbidden.
 
+## Explicit Stage Invocation
+
+A normal user request is not a workflow-stage invocation. Unless the user
+explicitly invokes the named skill in the current message, the agent must not
+create or change Canonical Drafts, `.simple_tool/` transition files, Issues,
+branches, pull requests, or implementation code.
+
+For a normal change request, analyze the request, name the next explicit invocation, and stop.
+The explicit invocations are `$issue-draft`,
+`$review-triage`, `$documentation-curation`, `$start-implement <Draft-ID>`,
+and `$pr-finalize --approved <PR-number>`.
+
 Every skill must stop after completing its owned stage. A skill must not call or simulate the next stage, even when the next step seems obvious.
 
 Only Issue-Draft may create or replace a Canonical Draft. Documentation-Curation

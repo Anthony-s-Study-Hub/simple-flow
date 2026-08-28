@@ -34,5 +34,6 @@ exclude = ["skills*", "tests*", "scripts*"]
 simple_flow_deploy = [
   "assets/AGENTS.md",
   "assets/skills/*/SKILL.md",
+  "assets/skills/*/agents/openai.yaml",
   "skill_resources/*/scripts/*.py",
 ]
