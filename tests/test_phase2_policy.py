@@ -70,3 +70,18 @@ def test_pr_finalize_is_explicit_only_and_owns_only_finalization_cleanup() -> No
     assert "allow_implicit_invocation: false" in policy
     assert ".simple_tool/finalizations/" in agents
     assert "may conditionally clear matching active Issue/PR pointers" in " ".join(agents.split())
+
+
+def test_explicit_skill_invocation_is_single_stage_confirmation() -> None:
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    skills = {
+        path.parent.name: path.read_text(encoding="utf-8")
+        for path in SKILLS_ROOT.glob("*/SKILL.md")
+    }
+
+    assert "## Explicit Skill Invocation" in agents
+    assert "single confirmation for that skill's owned stage" in " ".join(agents.split())
+    assert "Do not ask for a second confirmation" in agents
+    assert "ordinary, uninvoked conversation" in agents
+    for text in skills.values():
+        assert "explicit invocation is sufficient authorization" in text
