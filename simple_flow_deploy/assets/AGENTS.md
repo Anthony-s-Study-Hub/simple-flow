@@ -8,17 +8,28 @@ repository.
 Default Deny is the global rule: if the current skill has not explicitly
 authorized an action, the agent must not perform it. If the current skill has not explicitly authorized an action, that action is forbidden.
 
-## Explicit Stage Invocation
+## Conversation-First Stage Confirmation
 
-A normal user request is not a workflow-stage invocation. Unless the user
-explicitly invokes the named skill in the current message, the agent must not
-create or change Canonical Drafts, `.simple_tool/` transition files, Issues,
-branches, pull requests, or implementation code.
+Treat every user message as discussion by default. Do not mention skills.
+Do not ask for confirmation while the plan is incomplete or exploratory. Continue the
+conversation until the objective, scope, and next state-changing stage are
+clear enough to act on.
 
-For a normal change request, analyze the request, name the next explicit invocation, and stop.
-The explicit invocations are `$issue-draft`,
-`$review-triage`, `$documentation-curation`, `$start-implement <Draft-ID>`,
-and `$pr-finalize --approved <PR-number>`.
+When that stage is ready, briefly propose one specific action and its intended
+effect, then ask for confirmation once. The original request does not itself authorize the stage.
+Proceed only after a later, unambiguous user confirmation
+that still matches the proposed action. If the scope changes materially, return
+to discussion and make a new proposal when it is ready.
+
+One confirmation is single-use and covers all internal work owned by that stage.
+Do not ask again for its TDD, branch, Issue, draft PR, CI, or other
+internal steps. After the stage completes, return to discussion until a later
+natural boundary requires another proposed action and confirmation.
+
+Before confirmation, do not create or change Canonical Drafts,
+`.simple_tool/` transition files, Issues, branches, pull requests, implementation
+code, or documentation content. After confirmation, invoke the owning skill
+implicitly; the user does not need to name a skill.
 
 Every skill must stop after completing its owned stage. A skill must not call or simulate the next stage, even when the next step seems obvious.
 
