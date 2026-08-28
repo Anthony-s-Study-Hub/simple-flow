@@ -72,6 +72,10 @@ def test_release_cli_version_reports_package_version() -> None:
     assert _project_version() in completed.stdout
 
 
+def test_next_public_release_version_is_0_2_4() -> None:
+    assert _project_version() == "0.2.4"
+
+
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-m", "simple_flow_deploy.cli", *args],
