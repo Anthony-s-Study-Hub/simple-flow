@@ -185,11 +185,14 @@ _SCENARIOS = (
                 "S01-U1",
                 (
                     "@start-implement {{draft_id}}. For this smoke scenario, execute the minimum "
-                    "DOCUMENTATION_NORMAL path by running: python .codex/skills/start-implement/"
-                    "scripts/start_documentation.py --draft-id {{draft_id}} --drafts-dir "
-                    '.simple-flow/drafts --repo {{test_repo}} --gh-path "{{gh_path}}". '
-                    "The helper creates the GitHub Issue, creates the bound documentation branch, "
-                    "applies the approved docs change, pushes the branch, and opens a draft PR. "
+                    "DOCUMENTATION delivery-open path by running: python .codex/skills/start-implement/"
+                    "scripts/plan_implementation.py --draft-id {{draft_id}} --drafts-dir .simple_tool/drafts "
+                    "--output .simple_tool/deliveries/{{draft_id}}-plan.json; then running: python "
+                    ".codex/skills/start-implement/scripts/delivery_pr.py open "
+                    "--plan .simple_tool/deliveries/{{draft_id}}-plan.json --drafts-dir "
+                    '.simple_tool/drafts --repo {{test_repo}} --gh-path "{{gh_path}}". '
+                    "The helper creates the GitHub Issue, creates the bound branch, pushes it, "
+                    "and opens a draft PR before implementation. "
                     "Then STOP at Human PR Review. Do not inspect "
                     "unrelated implementation, tests, or helper internals unless one command fails."
                 ),
@@ -241,7 +244,7 @@ _SCENARIOS = (
             _ua(
                 "A01-U1",
                 (
-                    '@discussion "Explore adding a lightweight health endpoint. '
+                    'User request: "Explore adding a lightweight health endpoint. '
                     'Do not inspect repository files; give a concise conceptual '
                     'options/risks/open-questions summary and STOP."'
                 ),
@@ -319,7 +322,7 @@ _SCENARIOS = (
         "A - Single Skill",
         "Issue-Draft creates a DOCUMENTATION Canonical Draft without TDD or implementation.",
         (
-            _ua("A03-U1", '@discussion "Document that Phase 4 reports must mark stale harness commits."'),
+            _ua("A03-U1", 'User request: "Document that Phase 4 reports must mark stale harness commits."'),
             _ua("A03-U2", "@issue-draft DOCUMENTATION for docs/simple-flow/usage-guide.md"),
             _obs("A03-O1", "Read Canonical Draft JSON and Markdown."),
             _assert("A03-A1", "DOCUMENTATION draft exists and no implementation starts."),
@@ -454,7 +457,7 @@ _SCENARIOS = (
         "B - Skill Connection",
         "Normal FEATURE flow from Discussion through PR-Finalize merges only after predefined human acceptance.",
         (
-            _ua("B01-U1", '@discussion "Add an app status helper with tests."'),
+            _ua("B01-U1", 'User request: "Add an app status helper with tests."'),
             _ua("B01-U2", "@issue-draft FEATURE"),
             _ua("B01-U3", "@start-implement {{draft_id}}"),
             _obs("B01-O1", "Confirm stop at Human PR Review."),
@@ -798,7 +801,7 @@ _SCENARIOS = (
             _ua("D01-U1", "@issue-draft FEATURE for Feature A"),
             _ua("D01-U2", "@start-implement {{draft_id}}"),
             _ua("D01-U3", "@review-triage CURRENT BLOCKING source={{issue_number}} pr={{pr_number}}"),
-            _ua("D01-U4", "@discussion for unrelated Feature B"),
+            _ua("D01-U4", "User request for unrelated Feature B"),
             _ua("D01-U5", "@issue-draft FEATURE for Feature B without source issue/pr"),
             _ua("D01-U6", "@start-implement {{draft_id}}"),
             _assert("D01-A1", "Feature B does not inherit Feature A review triage result."),
@@ -821,8 +824,8 @@ _SCENARIOS = (
         "D - Context Risk",
         "Requirement change during Discussion produces a draft for current effective requirement only.",
         (
-            _ua("D02-U1", '@discussion "At first, add XML health output."'),
-            _ua("D02-U2", '@discussion "Change requirement: use JSON status only; no XML."'),
+            _ua("D02-U1", 'User request: "At first, add XML health output."'),
+            _ua("D02-U2", 'User request: "Change requirement: use JSON status only; no XML."'),
             _ua("D02-U3", "@issue-draft FEATURE for the current JSON-only requirement"),
             _obs("D02-O1", "Read final draft contents."),
             _assert("D02-A1", "Draft reflects JSON-only requirement and excludes obsolete XML requirement."),
@@ -845,7 +848,7 @@ _SCENARIOS = (
         "D - Context Risk",
         "Ambiguous requirement does not silently become formal implementation.",
         (
-            _ua("D03-U1", '@discussion "Make the app better."'),
+            _ua("D03-U1", 'User request: "Make the app better."'),
             _ua("D03-U2", "@issue-draft FEATURE despite missing reliable acceptance criteria"),
             _obs("D03-O1", "Read draft files, issues, branches, and PRs."),
             _assert("D03-A1", "Workflow asks for clarification or stops before formal development."),

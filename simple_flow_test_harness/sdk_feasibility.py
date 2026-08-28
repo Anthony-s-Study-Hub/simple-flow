@@ -134,15 +134,6 @@ class PilotScenario:
 
 PILOT_SCENARIOS = (
     PilotScenario(
-        "P01",
-        "Discussion remains exploratory and creates no workflow artifact.",
-        '@discussion "Explore adding a lightweight health endpoint. Give concise options, risks, and open questions; then stop."',
-        ("no new draft", "no workspace change"),
-        "discussion",
-        True,
-        script_expectations=(),
-    ),
-    PilotScenario(
         "P02",
         "Issue-Draft creates one feature draft and stops before implementation.",
         "@issue-draft FEATURE: Add a lightweight health endpoint with a JSON status response. "
@@ -180,7 +171,7 @@ PILOT_SCENARIOS = (
         ("no new draft", "no workspace change"),
         "start-implement",
         True,
-        script_expectations=(ScriptExpectation("select_path.py", (1,)),),
+        script_expectations=(ScriptExpectation("plan_implementation.py", (1,)),),
     ),
     PilotScenario(
         "P03-R",
@@ -228,8 +219,8 @@ PILOT_SCENARIOS = (
             exact_files=(("docs/app/usage.md", "# Test Project Usage\n\nThe sample app exposes a small health payload helper.\n\nPhase 4 P03 remote verification marker.\n"),),
         ),
         script_expectations=(
-            ScriptExpectation("select_path.py"),
-            ScriptExpectation("start_documentation.py"),
+            ScriptExpectation("plan_implementation.py"),
+            ScriptExpectation("delivery_pr.py"),
         ),
     ),
     PilotScenario(
@@ -300,7 +291,7 @@ PILOT_SCENARIOS = (
             exact_files=(("docs/app/usage.md", "# Test Project Usage\n\nThe sample app exposes a small health payload helper.\n\nPhase 4 P06 PR-Finalize fixture marker.\n"),),
             mode=RemoteMode.FINALIZE_SEEDED_PR,
         ),
-        script_expectations=(ScriptExpectation("check_pre_merge.py"),),
+        script_expectations=(ScriptExpectation("finalize_remote_pr.py"),),
     ),
 )
 

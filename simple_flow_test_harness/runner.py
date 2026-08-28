@@ -729,7 +729,6 @@ def _user_action_prompt(
         "Do not ask what to do next. Stop when the invoked skill stage says STOP.\n"
         "The harness will perform OBSERVE and ASSERT steps after the agent turn exits; do not decide PASS or FAIL.\n"
         "Run in this test project only and use AGENTS.md plus installed agent skills as workflow truth.\n"
-        "Skill aliases map as follows: @discussion -> discussion/SKILL.md; "
         "@documentation-curation -> documentation-curation/SKILL.md; "
         "@issue-draft -> issue-draft/SKILL.md; "
         "@start-implement -> start-implement/SKILL.md; "

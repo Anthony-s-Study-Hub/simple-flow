@@ -14,7 +14,6 @@ NOT_APPLICABLE = "NOT_APPLICABLE"
 UNKNOWN = "UNKNOWN"
 
 ALIAS_TO_SKILL = {
-    "@discussion": "discussion",
     "@documentation-curation": "documentation-curation",
     "@issue-draft": "issue-draft",
     "@start-implement": "start-implement",
@@ -25,9 +24,9 @@ ALIAS_TO_SKILL = {
 DEFAULT_HELPER_SCRIPTS = {
     "documentation-curation": ("curate_documentation.py",),
     "issue-draft": ("create_draft.py",),
-    "pr-finalize": ("check_pre_merge.py",),
+    "pr-finalize": ("finalize_remote_pr.py",),
     "review-triage": ("classify_finding.py",),
-    "start-implement": ("select_path.py", "start_documentation.py"),
+    "start-implement": ("plan_implementation.py", "delivery_pr.py"),
 }
 
 

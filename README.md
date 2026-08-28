@@ -12,10 +12,10 @@ The phase 1 implementation lives in `simple_flow_gates` and validates:
 - deterministic file scope and documentation impact rules
 - orphan development branches without open pull requests
 
-Phase 2 adds `AGENTS.md`, five Codex skill entrypoints under `skills/`, bundled
-skill-local scripts for executable stage handoffs, and deterministic helpers in
-`simple_flow_agent` for draft handoff, review triage, start-implement path
-selection, and PR-finalize prechecks.
+Phase 2 adds `AGENTS.md`, five installed skill entrypoints, bundled skill-local
+scripts for executable handoffs, and deterministic helpers in
+`simple_flow_agent` for draft routing, delivery PR state, and remote PR
+finalization.
 
 Phase 3 adds a deterministic release installer for deploying the portable skill
 toolkit into another project. From a new project root:
@@ -25,16 +25,18 @@ uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.3 sim
 uvx --from git+https://github.com/Anthony-s-Study-Hub/simple-flow.git@v0.2.3 simple-flow install .
 ```
 
-The default release install copies the six short-named skills and their local
+The default release install copies the five short-named skills and their local
 helper scripts to both `.codex/skills/` and `.claude/skills/`. It also creates
 the self-contained `.simple_tool/` runtime and durable workflow-state scaffold;
 it does not add target CI, documentation, governance, tests, or root source
 packages. Use `--agent codex` or `--agent claude` for a single protocol.
 
 Installed Start-Implement uses draft execution metadata and a deterministic
-planner to select and route eligible work. Agents still perform semantic code
-and documentation authoring, but do not decide GitHub delivery routes from chat
-alone.
+planner to select and route eligible work. Its delivery helper opens the Issue,
+bound branch, and draft PR before work begins, then accepts review readiness
+only after the repository's required CI checks pass. Agents still perform the
+semantic code and documentation authoring, but do not decide delivery routes or
+CI state from chat alone.
 
 Phase 4 adds `phase4-run`, a real workflow experiment harness. It resets a
 dedicated test project, deploys the current workflow package, launches isolated

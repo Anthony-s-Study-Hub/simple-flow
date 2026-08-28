@@ -11,7 +11,6 @@ import tomllib
 
 
 SKILL_MAP = {
-    "simple-flow-discussion": "discussion",
     "simple-flow-documentation-curation": "documentation-curation",
     "simple-flow-issue-draft": "issue-draft",
     "simple-flow-start-implement": "start-implement",
@@ -189,6 +188,7 @@ def _state_files() -> dict[str, str]:
         f"{TOOL_ROOT}/roadmap-targets.txt": "# Optional project roadmap target identifiers.\n",
         f"{TOOL_ROOT}/.gitignore": "tmp/\n*.lock\n",
         f"{TOOL_ROOT}/drafts/.gitkeep": "",
+        f"{TOOL_ROOT}/deliveries/.gitkeep": "",
         f"{TOOL_ROOT}/handoffs/.gitkeep": "",
         f"{TOOL_ROOT}/triage/.gitkeep": "",
         f"{TOOL_ROOT}/evidence/.gitkeep": "",
@@ -202,9 +202,6 @@ def _asset_text(relative: str) -> str:
 
 def _resource_text_files(skill: str) -> dict[str, str]:
     resource_root = _package_root() / "skill_resources" / skill
-    # Discussion has no deterministic helper script, so it intentionally has
-    # no resource directory.  Every other skill is validated by
-    # _check_packaged_assets().
     return _traversable_text_files(resource_root) if resource_root.is_dir() else {}
 
 
@@ -281,9 +278,7 @@ def _check_packaged_assets() -> Precheck:
         if not skill_file.is_file():
             missing.append(str(skill_file))
         if not _resource_text_files(target_skill):
-            # Discussion intentionally has no deterministic helper.
-            if target_skill != "discussion":
-                missing.append(f"skill_resources/{target_skill}/scripts")
+            missing.append(f"skill_resources/{target_skill}/scripts")
     if missing:
         return Precheck("packaged-assets", "fail", "Missing toolkit assets: " + ", ".join(missing))
     return Precheck("packaged-assets", "ok", "All skill packages and runtime assets are available.")

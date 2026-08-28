@@ -113,7 +113,6 @@ class Scenario:
             "Run in this test project only. Do not use any context from the main project task.\n"
             "Use the installed project files, AGENTS.md, and installed agent skills as the source of workflow truth.\n"
             "Skill aliases in USER_ACTION lines map to installed skills: "
-            "@discussion -> discussion/SKILL.md; "
             "@documentation-curation -> documentation-curation/SKILL.md; "
             "@issue-draft -> issue-draft/SKILL.md; "
             "@start-implement -> start-implement/SKILL.md; "

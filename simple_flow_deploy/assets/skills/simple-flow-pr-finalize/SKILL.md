@@ -10,22 +10,14 @@ Use this skill only when the user explicitly approves merging a pull request.
 On Windows, use PowerShell-compatible Git and GitHub CLI commands; do not
 assume Bash-only utilities are available.
 
-## Select and verify the pull request
+## Verify and merge the real pull request
 
-Use a PR number or URL supplied by the user. If none is supplied, infer the
-single current PR from the conversation or checked-out branch. Ask for a choice
-only when more than one plausible open PR exists.
-
-Before merging, use GitHub CLI to confirm that the PR is open, targets the
-repository's default branch, is not a draft, has completed required checks, and
-has no unresolved review threads. If any condition fails, report it and stop.
-
-## Merge route
-
-Merge with the repository's normal merge method into its default branch
-(normally `main`), close the linked Issue through the PR's `Closes #...` link,
-and delete the head branch when repository policy permits. Report the merge URL
-and final status.
+Use the PR number or URL explicitly accepted by the user. Run this skill's
+bundled `scripts/finalize_remote_pr.py` with that PR, the repository, and its
+explicit approval flag. The script reads live GitHub state: the default branch,
+open and non-draft PR state, required checks, and unresolved review threads.
+It fails closed on any blocker, then merges with the repository's normal GitHub
+route and verifies the merge remotely.
 
 ## Boundaries
 

@@ -15,7 +15,7 @@ def test_agents_md_contains_global_default_deny_rules() -> None:
         "current skill has not explicitly authorized",
         "must stop after completing its owned stage",
         "must not call or simulate the next stage",
-        "Only Issue-Draft may generate a Canonical Draft",
+        "Only Issue-Draft may create or replace a Canonical Draft",
         "Only Start-Implement may publish or update formal Issues",
         "Only PR-Finalize may merge",
     ]
@@ -23,9 +23,8 @@ def test_agents_md_contains_global_default_deny_rules() -> None:
         assert phrase in text
 
 
-def test_portable_skill_toolkit_contains_six_valid_skill_entrypoints() -> None:
+def test_portable_skill_toolkit_contains_five_valid_skill_entrypoints() -> None:
     expected = {
-        "simple-flow-discussion",
         "simple-flow-documentation-curation",
         "simple-flow-issue-draft",
         "simple-flow-start-implement",
@@ -44,6 +43,8 @@ def test_portable_skill_toolkit_contains_six_valid_skill_entrypoints() -> None:
     assert "scripts/create_draft.py" in skills["simple-flow-issue-draft"]
     assert ".simple_tool/" in skills["simple-flow-start-implement"]
     assert "scripts/plan_implementation.py" in skills["simple-flow-start-implement"]
+    assert "scripts/delivery_pr.py" in skills["simple-flow-start-implement"]
+    assert "simple-flow-discussion" not in skills
 
 
 def test_workflow_ownership_keeps_issue_pr_and_merge_actions_separate() -> None:
@@ -52,8 +53,8 @@ def test_workflow_ownership_keeps_issue_pr_and_merge_actions_separate() -> None:
     finalize = (SKILLS_ROOT / "simple-flow-pr-finalize" / "SKILL.md").read_text(encoding="utf-8")
 
     assert "Do not create or edit a GitHub Issue" in issue_draft
-    assert "Create or reuse the matching GitHub Issue" in start
-    assert "Open a pull request against the default branch" in start
+    assert "scripts/delivery_pr.py open" in start
+    assert "draft PR must exist before implementation begins" in start
     assert "Do not merge" in start
     assert "explicitly approves merging a pull request" in finalize
-    assert "Merge with the repository's normal merge method" in finalize
+    assert "merges with the repository's normal GitHub" in finalize
