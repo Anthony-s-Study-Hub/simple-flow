@@ -191,6 +191,7 @@ def _state_files() -> dict[str, str]:
         f"{TOOL_ROOT}/.gitignore": "tmp/\n*.lock\n",
         f"{TOOL_ROOT}/drafts/.gitkeep": "",
         f"{TOOL_ROOT}/deliveries/.gitkeep": "",
+        f"{TOOL_ROOT}/finalizations/.gitkeep": "",
         f"{TOOL_ROOT}/handoffs/.gitkeep": "",
         f"{TOOL_ROOT}/triage/.gitkeep": "",
         f"{TOOL_ROOT}/evidence/.gitkeep": "",

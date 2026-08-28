@@ -209,7 +209,7 @@ def test_pr_finalize_script_requires_explicit_approval(tmp_path: Path) -> None:
         text=True,
     )
     assert completed.returncode == 1
-    assert "Missing explicit user approval" in completed.stderr
+    assert "Missing explicit PR-Finalize invocation authorization" in completed.stderr
 
 
 def test_issue_draft_script_creates_documentation_draft(tmp_path: Path) -> None:

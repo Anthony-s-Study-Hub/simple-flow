@@ -45,7 +45,7 @@ Only Start-Implement may publish or update formal Issues, create implementation
 branches, create draft pull requests, mark an implementation PR ready for
 review, or continue formal implementation from an approved Canonical Draft.
 
-Only PR-Finalize may merge pull requests after explicit human review acceptance.
+Only PR-Finalize may merge pull requests after explicit human invocation.
 
 Review-Triage may create only its own decision files under `.simple_tool/triage/`.
 It must not modify drafts, Issues, code, branches, pull requests, or review threads.
@@ -60,6 +60,8 @@ Only the owning skill may change transition files under `.simple_tool/`:
 - Review-Triage: `.simple_tool/triage/`.
 - Start-Implement: `.simple_tool/deliveries/` and active Issue/PR pointers in status.
 - Documentation-Curation: its dedicated curation outputs and documentation Draft.
+- PR-Finalize: `.simple_tool/finalizations/` and may conditionally clear matching
+  active Issue/PR pointers in status after a verified merge.
 
 No other skill or agent may create or change Canonical Drafts, implementation
 artifacts, or `.simple_tool/` transition files.

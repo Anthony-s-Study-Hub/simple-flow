@@ -56,5 +56,17 @@ def test_workflow_ownership_keeps_issue_pr_and_merge_actions_separate() -> None:
     assert "scripts/delivery_pr.py open" in start
     assert "draft PR must exist before implementation begins" in start
     assert "Do not merge" in start
-    assert "explicitly approves merging a pull request" in finalize
-    assert "merges with the repository's normal GitHub" in finalize
+    assert "explicitly invokes" in finalize
+    assert "invocation is the merge authorization" in finalize.replace("\n", " ")
+    assert "active_pull_request" in finalize
+    assert "scripts/finalize_remote_pr.py" in finalize
+
+
+def test_pr_finalize_is_explicit_only_and_owns_only_finalization_cleanup() -> None:
+    skill = SKILLS_ROOT / "simple-flow-pr-finalize"
+    policy = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+    assert "allow_implicit_invocation: false" in policy
+    assert ".simple_tool/finalizations/" in agents
+    assert "may conditionally clear matching active Issue/PR pointers" in " ".join(agents.split())

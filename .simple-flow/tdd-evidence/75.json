@@ -1,0 +1,16 @@
+{
+  "issue": 75,
+  "red": {
+    "commit": "52dd03cf36d0d507a99b80230905356c7085e90f",
+    "command": "python -m pytest -q tests/test_delivery_handoffs.py tests/test_phase2_policy.py tests/deployment/test_skill_runtime_protocol_tdd.py tests/deployment/test_phase3_deployment.py tests/deployment/test_release_installer_cli.py tests/test_phase2_workflow.py",
+    "exit_code": 1
+  },
+  "implementation": {
+    "commit": "801f681ad7e2626da0d27b52e229f3609db3f07f"
+  },
+  "green": {
+    "commit": "ef698e0baf063c82fcd8f5c234b0c25d1fcd7a29",
+    "command": "python -m pytest -q",
+    "exit_code": 0
+  }
+}
