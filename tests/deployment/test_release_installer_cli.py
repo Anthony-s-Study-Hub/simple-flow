@@ -106,8 +106,8 @@ def test_release_cli_version_reports_package_version() -> None:
     assert _project_version() in completed.stdout
 
 
-def test_next_public_release_version_is_0_2_5() -> None:
-    assert _project_version() == "0.2.5"
+def test_next_public_release_version_is_0_2_6() -> None:
+    assert _project_version() == "0.2.6"
 
 
 def test_built_release_wheel_contains_shared_agent_rules(tmp_path: Path) -> None:
